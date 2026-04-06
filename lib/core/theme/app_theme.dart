@@ -1,59 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_tokens.dart';
+import 'app_typography.dart';
 
 abstract final class AppTheme {
   static ThemeData light() {
-    final TextTheme textTheme = GoogleFonts.notoSansKrTextTheme().copyWith(
-      displayLarge: GoogleFonts.notoSansKr(
-        fontSize: 40,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-      ),
-      headlineMedium: GoogleFonts.notoSansKr(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-      ),
-      titleLarge: GoogleFonts.notoSansKr(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-      ),
-      bodyLarge: GoogleFonts.notoSansKr(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: AppColors.textPrimary,
-      ),
-      bodyMedium: GoogleFonts.notoSansKr(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: AppColors.textSecondary,
-      ),
-      labelLarge: GoogleFonts.notoSansKr(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.surface,
-      ),
-    );
-
     final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.secondary,
+      seedColor: AppColors.primary,
       brightness: Brightness.light,
-      primary: AppColors.secondary,
-      secondary: AppColors.accent,
+      primary: AppColors.primary,
+      secondary: AppColors.cautionary,
       surface: AppColors.surface,
     );
 
     return ThemeData(
+      fontFamily: AppTypography.fontFamily,
       useMaterial3: true,
-      colorScheme: colorScheme.copyWith(surface: AppColors.surface),
+      colorScheme: colorScheme.copyWith(
+        surface: AppColors.surface,
+        onSurface: AppColors.labelStrong,
+        outline: AppColors.border,
+      ),
       scaffoldBackgroundColor: AppColors.background,
-      textTheme: textTheme,
+      textTheme: AppTypography.theme,
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.labelStrong,
         elevation: 0,
         centerTitle: false,
       ),
@@ -62,18 +35,18 @@ abstract final class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.surfaceMuted),
+          borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+          side: const BorderSide(color: AppColors.border),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.secondary,
+          backgroundColor: AppColors.primary,
           foregroundColor: AppColors.surface,
-          textStyle: textTheme.labelLarge,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          textStyle: AppTypography.labelBold,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -85,18 +58,19 @@ abstract final class AppTheme {
           vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: AppColors.surfaceMuted),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: AppColors.surfaceMuted),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: AppColors.secondary, width: 1.5),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
+      dividerColor: AppColors.lineNormalNeutral,
     );
   }
 }
