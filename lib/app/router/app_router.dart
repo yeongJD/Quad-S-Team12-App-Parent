@@ -6,6 +6,7 @@ import '../../features/login/presentation/pages/login_page.dart';
 import '../../features/my_page/presentation/pages/delete_account_complete_page.dart';
 import '../../features/my_page/presentation/pages/my_page.dart';
 import '../../features/my_page/presentation/pages/password_change_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/parent_home/presentation/pages/parent_home_page.dart';
 import '../../features/signup/presentation/pages/signup_page.dart';
 
@@ -31,7 +32,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) => const PlaceholderPage(title: '알림창'),
+      builder: (context, state) => const NotificationsPage(),
     ),
     GoRoute(
       path: '/child/add',
