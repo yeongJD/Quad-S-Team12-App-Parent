@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -149,7 +150,7 @@ class _ActionSection extends StatelessWidget {
           width: double.infinity,
           height: HomePage._buttonHeight * yScale,
           child: FilledButton(
-            onPressed: () {},
+            onPressed: () => context.push('/signup'),
             style: FilledButton.styleFrom(
               padding: EdgeInsets.symmetric(vertical: 13.486 * yScale),
               backgroundColor: AppColors.primary,
@@ -171,19 +172,24 @@ class _ActionSection extends StatelessWidget {
           ),
         ),
         SizedBox(height: HomePage._actionGap * yScale),
-        Text.rich(
-          TextSpan(
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14.385 * xScale,
-              fontWeight: FontWeight.w500,
-              height: 1.5,
-              letterSpacing: 0.082 * xScale,
-              color: AppColors.gray400,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '이미 계정이 있나요?  ',
+              style: AppTypography.labelMedium.copyWith(
+                fontSize: 14.385 * xScale,
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+                letterSpacing: 0.082 * xScale,
+                color: AppColors.gray400,
+              ),
             ),
-            children: [
-              const TextSpan(text: '이미 계정이 있나요?  '),
-              TextSpan(
-                text: '로그인',
+            GestureDetector(
+              onTap: () => context.push('/login'),
+              behavior: HitTestBehavior.opaque,
+              child: Text(
+                '로그인',
                 style: AppTypography.labelMedium.copyWith(
                   fontSize: 14.385 * xScale,
                   fontWeight: FontWeight.w500,
@@ -192,9 +198,8 @@ class _ActionSection extends StatelessWidget {
                   color: AppColors.gray800,
                 ),
               ),
-            ],
-          ),
-          textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ],
     );
