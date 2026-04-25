@@ -9,9 +9,14 @@ import '../widgets/today_mission_section.dart';
 import '../widgets/today_time_section.dart';
 
 class ParentHomePage extends StatefulWidget {
-  const ParentHomePage({super.key, this.showFilledPreview = false});
+  const ParentHomePage({
+    super.key,
+    this.showFilledPreview = false,
+    this.showTimeEmptyPreview = false,
+  });
 
   final bool showFilledPreview;
+  final bool showTimeEmptyPreview;
 
   @override
   State<ParentHomePage> createState() => _ParentHomePageState();
@@ -20,6 +25,8 @@ class ParentHomePage extends StatefulWidget {
 class _ParentHomePageState extends State<ParentHomePage> {
   late final ParentHomeData _data = widget.showFilledPreview
       ? ParentHomeData.sampleFilled()
+      : widget.showTimeEmptyPreview
+      ? ParentHomeData.sampleTimeEmpty()
       : ParentHomeData.empty();
 
   int _selectedChildIndex = 0;

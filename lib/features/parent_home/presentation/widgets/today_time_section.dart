@@ -189,15 +189,13 @@ class _PrimaryAddButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 35.963,
-      height: 35.963,
+      width: 40,
+      height: 40,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: Color(0xFFEBF5FE),
       ),
-      child: const Center(
-        child: _AddIcon(size: 21.578, color: AppColors.primary),
-      ),
+      child: const Center(child: _AddIcon(size: 24, color: AppColors.primary)),
     );
   }
 }
@@ -210,7 +208,7 @@ class _AddIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double stroke = 1.8;
+    const double stroke = 2;
 
     return SizedBox(
       width: size,

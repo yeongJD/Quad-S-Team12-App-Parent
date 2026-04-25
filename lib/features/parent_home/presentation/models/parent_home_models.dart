@@ -72,6 +72,15 @@ class ParentHomeData {
     );
   }
 
+  factory ParentHomeData.sampleTimeEmpty() {
+    return const ParentHomeData(
+      children: <ParentHomeChild>[
+        ParentHomeChild(name: '박진아', accentColor: AppColors.primary),
+      ],
+      hasUnreadNotification: true,
+    );
+  }
+
   factory ParentHomeData.sampleFilled() {
     return ParentHomeData(
       children: const <ParentHomeChild>[

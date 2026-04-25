@@ -10,6 +10,7 @@ import '../../features/my_page/presentation/pages/password_change_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/parent_home/presentation/pages/parent_home_page.dart';
 import '../../features/signup/presentation/pages/signup_page.dart';
+import '../../features/today_time/presentation/pages/today_time_setup_page.dart';
 
 final GoRouter appRouter = GoRouter(
   routes: <RouteBase>[
@@ -20,6 +21,7 @@ final GoRouter appRouter = GoRouter(
       path: '/parent-home',
       builder: (context, state) => ParentHomePage(
         showFilledPreview: state.uri.queryParameters['demo'] == 'filled',
+        showTimeEmptyPreview: state.uri.queryParameters['demo'] == 'time-empty',
       ),
     ),
     GoRoute(path: '/mypage', builder: (context, state) => const MyPage()),
@@ -45,7 +47,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/today-time/setup',
-      builder: (context, state) => const PlaceholderPage(title: '오늘의 시간 설정'),
+      builder: (context, state) => const TodayTimeSetupPage(),
     ),
     GoRoute(
       path: '/today-mission',
