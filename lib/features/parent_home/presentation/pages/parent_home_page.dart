@@ -30,6 +30,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
         _data.hasChildren ||
         _data.hasConfiguredTime ||
         _data.hasConfiguredMissions;
+    final bool hasChildren = _data.hasChildren;
 
     return Scaffold(
       backgroundColor: hasFilledContent ? AppColors.gray100 : AppColors.gray050,
@@ -39,7 +40,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 375),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -60,19 +61,31 @@ class _ParentHomePageState extends State<ParentHomePage> {
                     onAddChildTap: () => context.push('/child/add'),
                   ),
                   const SizedBox(height: 36),
-                  TodayTimeSection(
-                    timeSummary: _data.timeSummary,
-                    onOpen: () => context.push('/today-time'),
-                    onSetup: () => context.push('/today-time/setup'),
+                  Opacity(
+                    opacity: hasChildren ? 1 : 0.2,
+                    child: IgnorePointer(
+                      ignoring: !hasChildren,
+                      child: TodayTimeSection(
+                        timeSummary: _data.timeSummary,
+                        onOpen: () => context.push('/today-time'),
+                        onSetup: () => context.push('/today-time/setup'),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 36),
-                  TodayMissionSection(
-                    missions: _data.missions,
-                    completedCount: _data.completedMissionCount,
-                    totalCount: _data.missionCount,
-                    onOpen: () => context.push('/today-mission'),
-                    onSetup: () => context.push('/today-mission/setup'),
-                    onAdd: () => context.push('/today-mission/setup'),
+                  Opacity(
+                    opacity: hasChildren ? 1 : 0.2,
+                    child: IgnorePointer(
+                      ignoring: !hasChildren,
+                      child: TodayMissionSection(
+                        missions: _data.missions,
+                        completedCount: _data.completedMissionCount,
+                        totalCount: _data.missionCount,
+                        onOpen: () => context.push('/today-mission'),
+                        onSetup: () => context.push('/today-mission/setup'),
+                        onAdd: () => context.push('/today-mission/setup'),
+                      ),
+                    ),
                   ),
                 ],
               ),

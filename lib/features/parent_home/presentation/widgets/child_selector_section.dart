@@ -23,7 +23,18 @@ class ChildSelectorSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (children.isEmpty) {
-      return Row(children: [_AddChildCard(onTap: onAddChildTap)]);
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _AddChildCard(onTap: onAddChildTap, isEmptyState: true),
+            const SizedBox(width: 20),
+            const _AddChildGuideCard(),
+          ],
+        ),
+      );
     }
 
     return SingleChildScrollView(
@@ -130,12 +141,23 @@ class _ChildCard extends StatelessWidget {
 }
 
 class _AddChildCard extends StatelessWidget {
-  const _AddChildCard({required this.onTap});
+  const _AddChildCard({required this.onTap, this.isEmptyState = false});
 
   final VoidCallback onTap;
+  final bool isEmptyState;
 
   @override
   Widget build(BuildContext context) {
+    final double size = isEmptyState ? 74 : 66.532;
+    final double innerSize = isEmptyState ? 64 : 57.541;
+    final Color dashColor = isEmptyState
+        ? const Color(0xFFC2DFFD)
+        : AppColors.gray200;
+    final Color fillColor = isEmptyState
+        ? const Color(0xFFEBF5FE)
+        : const Color(0xFFF0F2F5);
+    final Color plusColor = isEmptyState ? AppColors.primary : AppColors.gray400;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -143,27 +165,27 @@ class _AddChildCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: 66.532,
-            height: 66.532,
+            width: size,
+            height: size,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CustomPaint(
-                  size: const Size.square(66.532),
+                  size: Size.square(size),
                   painter: _DashedCirclePainter(
-                    color: AppColors.gray200,
+                    color: dashColor,
                     strokeWidth: 2,
                   ),
                 ),
                 Container(
-                  width: 57.541,
-                  height: 57.541,
-                  decoration: const BoxDecoration(
+                  width: innerSize,
+                  height: innerSize,
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFFF0F2F5),
+                    color: fillColor,
                   ),
-                  child: const Center(
-                    child: _PlusIcon(color: AppColors.gray400, size: 21.578),
+                  child: Center(
+                    child: _PlusIcon(color: plusColor, size: 21.578),
                   ),
                 ),
               ],
@@ -173,10 +195,75 @@ class _AddChildCard extends StatelessWidget {
           Text(
             '추가',
             style: AppTypography.labelMedium.copyWith(
-              fontSize: 14.4,
+              fontSize: isEmptyState ? 16 : 14.4,
               height: 1.5,
-              letterSpacing: 0.08,
+              letterSpacing: isEmptyState ? 0.0912 : 0.08,
               color: AppColors.gray400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddChildGuideCard extends StatelessWidget {
+  const _AddChildGuideCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 270,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEBF5FE),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFC2DFFD),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '1',
+                  style: AppTypography.captionBold.copyWith(
+                    fontSize: 12,
+                    height: 1.334,
+                    letterSpacing: 0.3024,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 9.8),
+              Text(
+                '자녀추가하기',
+                style: AppTypography.captionBold.copyWith(
+                  fontSize: 12,
+                  height: 1.334,
+                  letterSpacing: 0.3024,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '+ 버튼을 눌러 자녀계정과 연결해서\n같은 목표를 향해 움직일 준비를 해요.',
+            style: AppTypography.captionRegular.copyWith(
+              fontSize: 12,
+              height: 1.334,
+              letterSpacing: 0.3024,
+              color: AppColors.gray600,
             ),
           ),
         ],

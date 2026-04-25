@@ -201,18 +201,31 @@ class _MissionStatusIcon extends StatelessWidget {
           iconColor: AppColors.white,
         );
       case MissionStatus.inProgress:
-        return _StatusCircle(
-          backgroundColor: AppColors.positive,
-          icon: Icons.autorenew_rounded,
-          iconColor: AppColors.white,
-        );
+        return const _ProgressStatusCircle();
       case MissionStatus.pending:
         return const _StatusCircle(
-          backgroundColor: Color(0xFFF1D36F),
+          backgroundColor: Color(0xFFF9D877),
           icon: Icons.check_rounded,
           iconColor: AppColors.white,
         );
     }
+  }
+}
+
+class _ProgressStatusCircle extends StatelessWidget {
+  const _ProgressStatusCircle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 21.578,
+      height: 21.578,
+      decoration: const BoxDecoration(
+        color: AppColors.positive,
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.sync_rounded, size: 13, color: AppColors.white),
+    );
   }
 }
 

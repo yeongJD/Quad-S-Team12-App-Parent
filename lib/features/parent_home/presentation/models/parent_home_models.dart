@@ -59,7 +59,8 @@ class ParentHomeData {
   bool get hasConfiguredMissions => missions.isNotEmpty;
 
   int get completedMissionCount => missions.where((MissionItem mission) {
-    return mission.status == MissionStatus.completed;
+    return mission.status == MissionStatus.completed ||
+        mission.status == MissionStatus.inProgress;
   }).length;
 
   int get missionCount => totalMissionCount ?? missions.length;
@@ -81,8 +82,8 @@ class ParentHomeData {
       timeSummary: const TimeSummary(
         basicTime: '01:30',
         bonusTime: '00:30',
-        basicProgress: 0.78,
-        bonusProgress: 0.66,
+        basicProgress: 0.76,
+        bonusProgress: 0.82,
       ),
       missions: const <MissionItem>[
         MissionItem(

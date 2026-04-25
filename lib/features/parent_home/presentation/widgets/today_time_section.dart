@@ -67,9 +67,8 @@ class _TimeSummaryContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           SizedBox(
             width: 111.485,
@@ -81,52 +80,58 @@ class _TimeSummaryContent extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '기본시간',
-                  style: AppTypography.labelMedium.copyWith(
-                    fontSize: 12.587,
-                    height: 1.429,
-                    letterSpacing: 0.18,
-                    color: AppColors.primary,
+          const SizedBox(width: 36),
+          SizedBox(
+            width: 95,
+            height: 105,
+            child: FittedBox(
+              alignment: Alignment.centerLeft,
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '기본시간',
+                    style: AppTypography.labelMedium.copyWith(
+                      fontSize: 12.587,
+                      height: 1.429,
+                      letterSpacing: 0.18,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  summary.basicTime,
-                  style: AppTypography.heading2Bold.copyWith(
-                    fontSize: 21.578,
-                    height: 1.364,
-                    letterSpacing: -0.42,
-                    color: AppColors.primary,
+                  const SizedBox(height: 2),
+                  Text(
+                    summary.basicTime,
+                    style: AppTypography.heading2Bold.copyWith(
+                      fontSize: 21.578,
+                      height: 1.364,
+                      letterSpacing: -0.42,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  '보너스시간',
-                  style: AppTypography.labelMedium.copyWith(
-                    fontSize: 12.587,
-                    height: 1.429,
-                    letterSpacing: 0.18,
-                    color: const Color(0xFFFFB300),
+                  const SizedBox(height: 14),
+                  Text(
+                    '보너스시간',
+                    style: AppTypography.labelMedium.copyWith(
+                      fontSize: 12.587,
+                      height: 1.429,
+                      letterSpacing: 0.18,
+                      color: const Color(0xFFFFB300),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  summary.bonusTime,
-                  style: AppTypography.heading2Bold.copyWith(
-                    fontSize: 21.578,
-                    height: 1.364,
-                    letterSpacing: -0.42,
-                    color: const Color(0xFFFFB300),
+                  const SizedBox(height: 2),
+                  Text(
+                    summary.bonusTime,
+                    style: AppTypography.heading2Bold.copyWith(
+                      fontSize: 21.578,
+                      height: 1.364,
+                      letterSpacing: -0.42,
+                      color: const Color(0xFFFFB300),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -247,17 +252,19 @@ class _TimeRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Offset center = size.center(Offset.zero);
+    final double safeOuterProgress = outerProgress.clamp(0, 1).toDouble();
+    final double safeInnerProgress = innerProgress.clamp(0, 1).toDouble();
     final Paint basePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.butt;
 
     basePaint
-      ..color = AppColors.gray200
+      ..color = const Color(0xFFE8EBF0)
       ..strokeWidth = 11;
     canvas.drawCircle(center, size.width / 2 - 5.5, basePaint);
 
     basePaint
-      ..color = const Color(0xFFDFE4EA)
+      ..color = const Color(0xFFF0F2F5)
       ..strokeWidth = 11;
     canvas.drawCircle(center, size.width / 2 - 21, basePaint);
 
@@ -269,7 +276,7 @@ class _TimeRingPainter extends CustomPainter {
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: size.width / 2 - 5.5),
       -math.pi / 2,
-      2 * math.pi * outerProgress,
+      2 * math.pi * safeOuterProgress,
       false,
       outerPaint,
     );
@@ -282,7 +289,7 @@ class _TimeRingPainter extends CustomPainter {
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: size.width / 2 - 21),
       -math.pi / 2,
-      2 * math.pi * innerProgress,
+      2 * math.pi * safeInnerProgress,
       false,
       innerPaint,
     );
