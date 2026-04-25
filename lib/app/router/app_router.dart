@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/child_add/presentation/pages/child_add_page.dart';
 import '../../features/common/presentation/pages/placeholder_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/login/presentation/pages/login_page.dart';
@@ -36,7 +37,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/child/add',
-      builder: (context, state) => const PlaceholderPage(title: '자녀 추가'),
+      builder: (context, state) => const ChildAddPage(),
     ),
     GoRoute(
       path: '/today-time',
