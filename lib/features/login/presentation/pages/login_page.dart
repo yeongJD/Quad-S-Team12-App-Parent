@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -55,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     if (_username != _mockUsername) {
@@ -75,6 +76,10 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       _activeError = null;
     });
+    await AuthSession.saveLogin(username: _username);
+    if (!mounted) {
+      return;
+    }
     context.go('/parent-home');
   }
 

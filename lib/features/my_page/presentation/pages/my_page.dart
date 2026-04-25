@@ -2,14 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
-class MyPage extends StatelessWidget {
+class MyPage extends StatefulWidget {
   const MyPage({super.key});
 
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
   static const String _accountType = '부모회원';
-  static const String _username = 'gdg12';
+
+  String _username = AuthSession.fallbackUsername;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  Future<void> _loadUsername() async {
+    final String username = await AuthSession.username();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _username = username;
+    });
+  }
 
   Future<void> _showDeleteAccountDialog(BuildContext context) {
     return showGeneralDialog<void>(
@@ -46,6 +69,14 @@ class MyPage extends StatelessWidget {
     );
   }
 
+  Future<void> _logout() async {
+    await AuthSession.clearLogin();
+    if (!mounted) {
+      return;
+    }
+    context.go('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,7 +95,7 @@ class MyPage extends StatelessWidget {
                   const SizedBox(height: 22),
                   const _InfoRow(label: '회원유형', value: _accountType),
                   const SizedBox(height: 22),
-                  const _InfoRow(label: '아이디', value: _username),
+                  _InfoRow(label: '아이디', value: _username),
                   const SizedBox(height: 22),
                   _PasswordRow(
                     onEditTap: () => context.push('/mypage/password'),
@@ -78,32 +109,66 @@ class MyPage extends StatelessWidget {
                   const SizedBox(height: 23),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () => _showDeleteAccountDialog(context),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        width: 71.926,
-                        height: 31.468,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD3D3),
-                          borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _MyPageActionButton(
+                          label: '로그아웃',
+                          backgroundColor: const Color(0xFFEDEEF1),
+                          foregroundColor: AppColors.gray600,
+                          onTap: _logout,
                         ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '탈퇴하기',
-                          style: AppTypography.labelMedium.copyWith(
-                            fontSize: 14.39,
-                            height: 1.5,
-                            letterSpacing: 0.082,
-                            color: AppColors.destructive,
-                          ),
+                        const SizedBox(width: 12),
+                        _MyPageActionButton(
+                          label: '탈퇴하기',
+                          backgroundColor: const Color(0xFFFFD3D3),
+                          foregroundColor: AppColors.destructive,
+                          onTap: () => _showDeleteAccountDialog(context),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MyPageActionButton extends StatelessWidget {
+  const _MyPageActionButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 80,
+        height: 35,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: AppTypography.bodyMedium.copyWith(
+            color: foregroundColor,
+            letterSpacing: 0.091,
           ),
         ),
       ),

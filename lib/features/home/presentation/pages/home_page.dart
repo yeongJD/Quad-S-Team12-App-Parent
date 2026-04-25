@@ -3,10 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   static const double _designWidth = 375;
@@ -21,26 +22,49 @@ class HomePage extends StatelessWidget {
   static const double _buttonHeight = 48.55;
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    _redirectCachedLogin();
+  }
+
+  Future<void> _redirectCachedLogin() async {
+    final bool isLoggedIn = await AuthSession.isLoggedIn();
+    if (!mounted || !isLoggedIn) {
+      return;
+    }
+    context.go('/parent-home');
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.gray050,
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double xScale = constraints.maxWidth / _designWidth;
-          final double yScale = constraints.maxHeight / _designHeight;
+          final double xScale = constraints.maxWidth / HomePage._designWidth;
+          final double yScale = constraints.maxHeight / HomePage._designHeight;
 
           return Stack(
             children: [
               Positioned(
-                top: _introTop * yScale,
-                left: (constraints.maxWidth - (_introWidth * xScale)) / 2,
-                width: _introWidth * xScale,
+                top: HomePage._introTop * yScale,
+                left:
+                    (constraints.maxWidth - (HomePage._introWidth * xScale)) /
+                    2,
+                width: HomePage._introWidth * xScale,
                 child: _IntroSection(xScale: xScale, yScale: yScale),
               ),
               Positioned(
-                left: (constraints.maxWidth - (_actionWidth * xScale)) / 2,
-                bottom: _actionBottom * yScale,
-                width: _actionWidth * xScale,
+                left:
+                    (constraints.maxWidth - (HomePage._actionWidth * xScale)) /
+                    2,
+                bottom: HomePage._actionBottom * yScale,
+                width: HomePage._actionWidth * xScale,
                 child: _ActionSection(xScale: xScale, yScale: yScale),
               ),
             ],

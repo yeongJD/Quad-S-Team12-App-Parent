@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -20,6 +21,7 @@ class _DeleteAccountCompletePageState extends State<DeleteAccountCompletePage> {
   @override
   void initState() {
     super.initState();
+    unawaited(AuthSession.clearLogin());
     _redirectTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) {
         return;
