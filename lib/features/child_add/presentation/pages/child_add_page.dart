@@ -9,6 +9,36 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
+abstract final class _ChildAddMetrics {
+  static const double screenMaxWidth = 375;
+  static const double horizontalPadding = 24;
+  static const double topBarHeight = 52;
+  static const double photoTopGap = 50;
+  static const double photoSize = 74;
+  static const double photoInnerSize = 64;
+  static const double photoLabelGap = 12;
+  static const double photoToFormGap = 31;
+  static const double formGap = 16;
+  static const double labelToFieldGap = 10;
+  static const double helperHeight = 18;
+  static const double fieldHeight = 50;
+  static const double fieldRadius = 12;
+  static const double fieldHorizontalPadding = 16;
+  static const double fieldVerticalPadding = 12;
+  static const double buttonHeight = 54;
+  static const double bottomButtonGap = 31;
+  static const double sheetHeight = 397;
+  static const double sheetRadius = 24;
+  static const double sheetTitleTop = 27;
+  static const double sheetPickerTop = 82;
+  static const double sheetPickerHeight = 168;
+  static const double sheetPickerInset = 25.5;
+  static const double sheetSelectionTop = 58.5;
+  static const double sheetYearItemHeight = 50;
+  static const double sheetYearSuffixOffset = 77;
+  static const double sheetButtonBottom = 63;
+}
+
 class ChildAddPage extends StatefulWidget {
   const ChildAddPage({super.key});
 
@@ -133,19 +163,20 @@ class _ChildAddPageState extends State<ChildAddPage> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 375),
+            constraints: const BoxConstraints(
+              maxWidth: _ChildAddMetrics.screenMaxWidth,
+            ),
             child: Stack(
               children: [
                 Column(
                   children: [
-                    const SizedBox(height: 4),
                     _ChildAddTopBar(onBack: context.pop),
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(
-                          21.58,
-                          41,
-                          21.58,
+                          _ChildAddMetrics.horizontalPadding,
+                          _ChildAddMetrics.photoTopGap,
+                          _ChildAddMetrics.horizontalPadding,
                           24,
                         ),
                         child: Column(
@@ -154,79 +185,81 @@ class _ChildAddPageState extends State<ChildAddPage> {
                               photoBytes: _photoBytes,
                               onTap: _pickPhoto,
                             ),
-                            const SizedBox(height: 32),
-                            SizedBox(
-                              width: 293.998,
-                              child: Column(
-                                children: [
-                                  _ChildAddTextField(
-                                    label: '이름',
-                                    controller: _nameController,
-                                    hintText: '자녀의 이름을 입력해주세요',
-                                    errorText: _nameErrorText,
-                                    showClear: _nameErrorText != null,
-                                    onClear: () {
-                                      _nameController.clear();
-                                      setState(() {
-                                        _nameErrorText = null;
-                                      });
-                                    },
-                                    onChanged: (_) {
-                                      setState(() {
-                                        _nameErrorText = null;
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(height: 14.385),
-                                  _BirthYearField(
-                                    selectedYear: _selectedBirthYear,
-                                    onTap: _openBirthYearSheet,
-                                  ),
-                                  const SizedBox(height: 14.385),
-                                  _ChildAddTextField(
-                                    label: '자녀코드',
-                                    controller: _childCodeController,
-                                    hintText: '자녀 코드를 입력해주세요',
-                                    onChanged: (_) => setState(() {}),
-                                    trailingLabel: GestureDetector(
-                                      onTap: _toggleTooltip,
-                                      behavior: HitTestBehavior.opaque,
-                                      child: const Padding(
-                                        padding: EdgeInsets.only(left: 4),
-                                        child: Icon(
-                                          Icons.help_outline_rounded,
-                                          size: 16,
-                                          color: AppColors.gray400,
-                                        ),
+                            const SizedBox(
+                              height: _ChildAddMetrics.photoToFormGap,
+                            ),
+                            Column(
+                              children: [
+                                _ChildAddTextField(
+                                  label: '이름',
+                                  controller: _nameController,
+                                  hintText: '자녀의 이름을 입력해주세요',
+                                  errorText: _nameErrorText,
+                                  showClear: _nameErrorText != null,
+                                  onClear: () {
+                                    _nameController.clear();
+                                    setState(() {
+                                      _nameErrorText = null;
+                                    });
+                                  },
+                                  onChanged: (_) {
+                                    setState(() {
+                                      _nameErrorText = null;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(
+                                  height: _ChildAddMetrics.formGap,
+                                ),
+                                _BirthYearField(
+                                  selectedYear: _selectedBirthYear,
+                                  onTap: _openBirthYearSheet,
+                                ),
+                                const SizedBox(
+                                  height: _ChildAddMetrics.formGap,
+                                ),
+                                _ChildAddTextField(
+                                  label: '자녀코드',
+                                  controller: _childCodeController,
+                                  hintText: '자녀 코드를 입력해주세요',
+                                  onChanged: (_) => setState(() {}),
+                                  trailingLabel: GestureDetector(
+                                    onTap: _toggleTooltip,
+                                    behavior: HitTestBehavior.opaque,
+                                    child: const Padding(
+                                      padding: EdgeInsets.only(left: 4),
+                                      child: Icon(
+                                        Icons.help_outline_rounded,
+                                        size: 16,
+                                        color: AppColors.gray400,
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(21.58, 0, 21.58, 28),
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: SizedBox(
-                          width: 293.998,
-                          child: _RegisterButton(
-                            enabled: _canSubmit,
-                            onTap: _submit,
-                          ),
-                        ),
+                      padding: const EdgeInsets.fromLTRB(
+                        _ChildAddMetrics.horizontalPadding,
+                        0,
+                        _ChildAddMetrics.horizontalPadding,
+                        _ChildAddMetrics.bottomButtonGap,
+                      ),
+                      child: _RegisterButton(
+                        enabled: _canSubmit,
+                        onTap: _submit,
                       ),
                     ),
                   ],
                 ),
                 if (_showCodeTooltip)
                   Positioned(
-                    left: 66,
-                    top: _selectedBirthYear == null ? 482 : 468,
+                    left: 74,
+                    top: _selectedBirthYear == null ? 536 : 520,
                     child: _ChildCodeTooltip(onClose: _toggleTooltip),
                   ),
               ],
@@ -246,23 +279,23 @@ class _ChildAddTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52,
+      height: _ChildAddMetrics.topBarHeight,
       child: Stack(
         children: [
           Center(
             child: Text(
               '자녀등록',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 16.18,
+                fontSize: 18,
                 height: 1.445,
-                letterSpacing: -0.0036,
+                letterSpacing: 0,
                 color: const Color(0xFF050505),
               ),
             ),
           ),
           Positioned(
-            left: 21.58,
-            top: 12.59,
+            left: _ChildAddMetrics.horizontalPadding,
+            top: 14,
             child: GestureDetector(
               onTap: onBack,
               behavior: HitTestBehavior.opaque,
@@ -296,9 +329,9 @@ class _PhotoPicker extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 66.532,
-            height: 66.532,
-            padding: const EdgeInsets.all(4),
+            width: _ChildAddMetrics.photoSize,
+            height: _ChildAddMetrics.photoSize,
+            padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.gray200, width: 2),
@@ -317,18 +350,18 @@ class _PhotoPicker extends StatelessWidget {
                   : Image.memory(
                       photoBytes!,
                       fit: BoxFit.cover,
-                      width: 57.541,
-                      height: 57.541,
+                      width: _ChildAddMetrics.photoInnerSize,
+                      height: _ChildAddMetrics.photoInnerSize,
                     ),
             ),
           ),
-          const SizedBox(height: 10.79),
+          const SizedBox(height: _ChildAddMetrics.photoLabelGap),
           Text(
             '사진등록',
             style: AppTypography.bodyMedium.copyWith(
-              fontSize: 14.385,
+              fontSize: 16,
               height: 1.5,
-              letterSpacing: 0.0912,
+              letterSpacing: 0,
               color: AppColors.gray600,
             ),
           ),
@@ -372,41 +405,47 @@ class _ChildAddTextField extends StatelessWidget {
             Text(
               label,
               style: AppTypography.bodyMedium.copyWith(
-                fontSize: 14.385,
+                fontSize: 16,
                 height: 1.5,
-                letterSpacing: 0.082,
+                letterSpacing: 0,
                 color: AppColors.gray600,
               ),
             ),
             ?trailingLabel,
           ],
         ),
-        const SizedBox(height: 8.991),
+        const SizedBox(height: _ChildAddMetrics.labelToFieldGap),
         SizedBox(
-          height: 44.954,
+          height: _ChildAddMetrics.fieldHeight,
           child: TextField(
             controller: controller,
             onChanged: onChanged,
             cursorColor: AppColors.gray200,
+            textAlignVertical: TextAlignVertical.center,
             style: AppTypography.bodyMedium.copyWith(
-              fontSize: 14.385,
+              fontSize: 16,
               height: 1.5,
-              letterSpacing: 0.082,
+              letterSpacing: 0,
               color: const Color(0xFF050505),
             ),
             decoration: InputDecoration(
+              isDense: true,
               filled: true,
               fillColor: AppColors.gray100,
               hintText: hintText,
               hintStyle: AppTypography.bodyMedium.copyWith(
-                fontSize: 14.385,
+                fontSize: 16,
                 height: 1.5,
-                letterSpacing: 0.082,
+                letterSpacing: 0,
                 color: AppColors.gray300,
               ),
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14.385,
-                vertical: 10.789,
+                horizontal: _ChildAddMetrics.fieldHorizontalPadding,
+                vertical: _ChildAddMetrics.fieldVerticalPadding,
+              ),
+              suffixIconConstraints: const BoxConstraints.tightFor(
+                width: 36,
+                height: 36,
               ),
               suffixIcon: showClear
                   ? GestureDetector(
@@ -414,39 +453,43 @@ class _ChildAddTextField extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       child: const Icon(
                         Icons.cancel,
-                        size: 21.578,
+                        size: 24,
                         color: AppColors.gray600,
                       ),
                     )
                   : null,
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  _ChildAddMetrics.fieldRadius,
+                ),
                 borderSide: BorderSide(
                   color: _hasError ? AppColors.destructive : AppColors.gray200,
-                  width: 0.899,
+                  width: 1,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  _ChildAddMetrics.fieldRadius,
+                ),
                 borderSide: BorderSide(
                   color: _hasError ? AppColors.destructive : AppColors.gray200,
-                  width: 0.899,
+                  width: 1,
                 ),
               ),
             ),
           ),
         ),
         SizedBox(
-          height: 16.183,
+          height: _ChildAddMetrics.helperHeight,
           child: _hasError
               ? Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     errorText!,
                     style: AppTypography.captionMedium.copyWith(
-                      fontSize: 10.79,
+                      fontSize: 12,
                       height: 1.334,
-                      letterSpacing: 0.2719,
+                      letterSpacing: 0,
                       color: AppColors.destructive,
                     ),
                   ),
@@ -472,32 +515,34 @@ class _BirthYearField extends StatelessWidget {
         Text(
           '출생연도',
           style: AppTypography.bodyMedium.copyWith(
-            fontSize: 14.385,
+            fontSize: 16,
             height: 1.5,
-            letterSpacing: 0.082,
+            letterSpacing: 0,
             color: AppColors.gray600,
           ),
         ),
-        const SizedBox(height: 8.991),
+        const SizedBox(height: _ChildAddMetrics.labelToFieldGap),
         GestureDetector(
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
           child: Container(
-            height: 44.954,
+            height: _ChildAddMetrics.fieldHeight,
             width: double.infinity,
             alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 14.385),
+            padding: const EdgeInsets.symmetric(
+              horizontal: _ChildAddMetrics.fieldHorizontalPadding,
+            ),
             decoration: BoxDecoration(
               color: AppColors.gray100,
-              borderRadius: BorderRadius.circular(10.789),
-              border: Border.all(color: AppColors.gray200, width: 0.899),
+              borderRadius: BorderRadius.circular(_ChildAddMetrics.fieldRadius),
+              border: Border.all(color: AppColors.gray200),
             ),
             child: Text(
               selectedYear?.toString() ?? '자녀가 태어난 연도를 입력해주세요',
               style: AppTypography.bodyMedium.copyWith(
-                fontSize: 14.385,
+                fontSize: 16,
                 height: 1.5,
-                letterSpacing: 0.082,
+                letterSpacing: 0,
                 color: selectedYear == null
                     ? AppColors.gray300
                     : const Color(0xFF050505),
@@ -505,7 +550,7 @@ class _BirthYearField extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16.183),
+        const SizedBox(height: _ChildAddMetrics.helperHeight),
       ],
     );
   }
@@ -625,52 +670,51 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
     return SafeArea(
       top: false,
       child: Container(
-        height: 356.933,
+        height: _ChildAddMetrics.sheetHeight,
         decoration: const BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(21.578)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(_ChildAddMetrics.sheetRadius),
+          ),
         ),
         child: Stack(
           children: [
             Positioned(
-              top: 24.276,
+              top: _ChildAddMetrics.sheetTitleTop,
               left: 0,
               right: 0,
               child: Center(
                 child: Text(
                   '출생연도',
                   style: AppTypography.headlineMedium.copyWith(
-                    fontSize: 16.183,
+                    fontSize: 18,
                     height: 1.445,
-                    letterSpacing: -0.0036,
+                    letterSpacing: 0,
                     color: const Color(0xFF050505),
                   ),
                 ),
               ),
             ),
             Positioned(
-              top: 73.725,
+              top: _ChildAddMetrics.sheetPickerTop,
               left: 0,
               right: 0,
-              height: 151,
+              height: _ChildAddMetrics.sheetPickerHeight,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Positioned(
-                    left: 22.926,
-                    right: 22.926,
-                    top: 52.5,
+                    left: _ChildAddMetrics.sheetPickerInset,
+                    right: _ChildAddMetrics.sheetPickerInset,
+                    top: _ChildAddMetrics.sheetSelectionTop,
                     child: Container(
-                      height: 45,
+                      height: _ChildAddMetrics.fieldHeight,
                       decoration: const BoxDecoration(
                         border: Border(
-                          top: BorderSide(
-                            color: AppColors.primary,
-                            width: 1.798,
-                          ),
+                          top: BorderSide(color: AppColors.primary, width: 2),
                           bottom: BorderSide(
                             color: AppColors.primary,
-                            width: 1.798,
+                            width: 2,
                           ),
                         ),
                       ),
@@ -678,7 +722,7 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
                   ),
                   CupertinoPicker(
                     scrollController: _scrollController,
-                    itemExtent: 45,
+                    itemExtent: _ChildAddMetrics.sheetYearItemHeight,
                     diameterRatio: 10,
                     squeeze: 1,
                     selectionOverlay: const SizedBox.shrink(),
@@ -694,9 +738,9 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
                           child: Text(
                             widget.years[index].toString(),
                             style: AppTypography.headlineMedium.copyWith(
-                              fontSize: 21.578,
+                              fontSize: 24,
                               height: 1.445,
-                              letterSpacing: -0.0048,
+                              letterSpacing: 0,
                               color: index == _selectedIndex
                                   ? const Color(0xFF050505)
                                   : AppColors.gray200,
@@ -708,13 +752,15 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
                   IgnorePointer(
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 69),
+                        padding: const EdgeInsets.only(
+                          left: _ChildAddMetrics.sheetYearSuffixOffset,
+                        ),
                         child: Text(
                           '년',
                           style: AppTypography.headlineMedium.copyWith(
-                            fontSize: 21.578,
+                            fontSize: 24,
                             height: 1.445,
-                            letterSpacing: -0.0048,
+                            letterSpacing: 0,
                             color: const Color(0xFF050505),
                           ),
                         ),
@@ -725,9 +771,9 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
               ),
             ),
             Positioned(
-              left: 21.578,
-              right: 21.578,
-              bottom: 56.641,
+              left: _ChildAddMetrics.horizontalPadding,
+              right: _ChildAddMetrics.horizontalPadding,
+              bottom: _ChildAddMetrics.sheetButtonBottom,
               child: _BottomSheetConfirmButton(onTap: widget.onConfirm),
             ),
           ],
@@ -748,18 +794,18 @@ class _BottomSheetConfirmButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 48.55,
+        height: _ChildAddMetrics.buttonHeight,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(7.193),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           '확인',
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16.183,
+            fontSize: 18,
             height: 1.445,
-            letterSpacing: -0.0036,
+            letterSpacing: 0,
             color: AppColors.white,
           ),
         ),
@@ -797,18 +843,18 @@ class _RegisterButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: double.infinity,
-        height: 48.55,
+        height: _ChildAddMetrics.buttonHeight,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: enabled ? AppColors.primary : AppColors.gray200,
-          borderRadius: BorderRadius.circular(7.193),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           '등록',
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16.183,
+            fontSize: 18,
             height: 1.445,
-            letterSpacing: -0.0036,
+            letterSpacing: 0,
             color: enabled ? AppColors.white : AppColors.gray300,
           ),
         ),
