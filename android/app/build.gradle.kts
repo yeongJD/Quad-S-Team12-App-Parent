@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.quad_s_team12_app"
+    namespace = "com.example.bridge_p"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.quad_s_team12_app"
+        applicationId = "com.example.bridge_p"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

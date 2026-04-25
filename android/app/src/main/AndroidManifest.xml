@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="quad_s_team12_app"
+        android:label="Bridge_P"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

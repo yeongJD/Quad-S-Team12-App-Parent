@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "quad_s_team12_app" "\0"
+            VALUE "FileDescription", "Bridge_P" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "quad_s_team12_app" "\0"
+            VALUE "InternalName", "bridge_p" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "quad_s_team12_app.exe" "\0"
-            VALUE "ProductName", "quad_s_team12_app" "\0"
+            VALUE "OriginalFilename", "bridge_p.exe" "\0"
+            VALUE "ProductName", "Bridge_P" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
