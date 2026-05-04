@@ -13,11 +13,13 @@ class TodayTimeSection extends StatelessWidget {
     required this.timeSummary,
     required this.onOpen,
     required this.onSetup,
+    required this.onAdd,
   });
 
   final TimeSummary? timeSummary;
   final VoidCallback onOpen;
   final VoidCallback onSetup;
+  final VoidCallback onAdd;
 
   bool get _hasData => timeSummary != null;
 
@@ -33,7 +35,7 @@ class TodayTimeSection extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         GestureDetector(
-          onTap: _hasData ? onOpen : onSetup,
+          onTap: _hasData ? onOpen : onAdd,
           behavior: HitTestBehavior.opaque,
           child: Container(
             width: double.infinity,
@@ -51,7 +53,7 @@ class TodayTimeSection extends StatelessWidget {
             ),
             child: _hasData
                 ? _TimeSummaryContent(summary: timeSummary!)
-                : const Center(child: _PrimaryAddButton()),
+                : Center(child: _PrimaryAddButton(onTap: onAdd)),
           ),
         ),
       ],
@@ -184,18 +186,26 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _PrimaryAddButton extends StatelessWidget {
-  const _PrimaryAddButton();
+  const _PrimaryAddButton({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color(0xFFEBF5FE),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xFFEBF5FE),
+        ),
+        child: const Center(
+          child: _AddIcon(size: 24, color: AppColors.primary),
+        ),
       ),
-      child: const Center(child: _AddIcon(size: 24, color: AppColors.primary)),
     );
   }
 }

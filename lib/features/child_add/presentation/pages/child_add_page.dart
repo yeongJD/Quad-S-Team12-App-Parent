@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/child/child_connection_store.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -48,11 +49,6 @@ class ChildAddPage extends StatefulWidget {
 
 class _ChildAddPageState extends State<ChildAddPage> {
   static const List<int> _birthYears = <int>[
-    2019,
-    2018,
-    2017,
-    2016,
-    2015,
     2014,
     2013,
     2012,
@@ -60,7 +56,6 @@ class _ChildAddPageState extends State<ChildAddPage> {
     2010,
     2009,
     2008,
-    2007,
   ];
 
   final TextEditingController _nameController = TextEditingController();
@@ -70,7 +65,9 @@ class _ChildAddPageState extends State<ChildAddPage> {
   Uint8List? _photoBytes;
   int? _selectedBirthYear;
   String? _nameErrorText;
+  String? _childCodeErrorText;
   bool _showCodeTooltip = false;
+  bool _isSubmitting = false;
 
   bool get _canSubmit =>
       _nameController.text.trim().isNotEmpty &&
@@ -143,8 +140,8 @@ class _ChildAddPageState extends State<ChildAddPage> {
     });
   }
 
-  void _submit() {
-    if (!_canSubmit) {
+  Future<void> _submit() async {
+    if (!_canSubmit || _isSubmitting) {
       return;
     }
     if (!_isNameValid) {
@@ -153,7 +150,36 @@ class _ChildAddPageState extends State<ChildAddPage> {
       });
       return;
     }
-    context.go('/parent-home?demo=filled');
+
+    setState(() {
+      _isSubmitting = true;
+      _childCodeErrorText = null;
+    });
+
+    final String childCode = _childCodeController.text.trim();
+    final bool isValidCode = await ChildConnectionStore.validateChildCode(
+      childCode,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (!isValidCode) {
+      setState(() {
+        _isSubmitting = false;
+        _childCodeErrorText = '유효하지 않은 자녀코드입니다';
+      });
+      return;
+    }
+
+    await ChildConnectionStore.saveLinkedChild(
+      name: _nameController.text.trim(),
+      birthYear: _selectedBirthYear!,
+      code: childCode,
+    );
+    if (!mounted) {
+      return;
+    }
+    context.go('/parent-home');
   }
 
   @override
@@ -222,7 +248,19 @@ class _ChildAddPageState extends State<ChildAddPage> {
                                   label: '자녀코드',
                                   controller: _childCodeController,
                                   hintText: '자녀 코드를 입력해주세요',
-                                  onChanged: (_) => setState(() {}),
+                                  errorText: _childCodeErrorText,
+                                  showClear: _childCodeErrorText != null,
+                                  onClear: () {
+                                    _childCodeController.clear();
+                                    setState(() {
+                                      _childCodeErrorText = null;
+                                    });
+                                  },
+                                  onChanged: (_) {
+                                    setState(() {
+                                      _childCodeErrorText = null;
+                                    });
+                                  },
                                   trailingLabel: GestureDetector(
                                     onTap: _toggleTooltip,
                                     behavior: HitTestBehavior.opaque,
@@ -250,7 +288,7 @@ class _ChildAddPageState extends State<ChildAddPage> {
                         _ChildAddMetrics.bottomButtonGap,
                       ),
                       child: _RegisterButton(
-                        enabled: _canSubmit,
+                        enabled: _canSubmit && !_isSubmitting,
                         onTap: _submit,
                       ),
                     ),
@@ -619,6 +657,18 @@ class _ChildCodeTooltip extends StatelessWidget {
                     color: const Color(0xFFEDEEF1),
                   ),
                 ),
+                if (ChildConnectionStore.usesLocalTestValidator) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '테스트 코드: ${ChildConnectionStore.testChildCode}',
+                    style: AppTypography.captionBold.copyWith(
+                      fontSize: 12,
+                      height: 1.334,
+                      letterSpacing: 0.3024,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

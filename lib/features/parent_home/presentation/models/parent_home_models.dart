@@ -81,6 +81,15 @@ class ParentHomeData {
     );
   }
 
+  factory ParentHomeData.withLinkedChild({required String name}) {
+    return ParentHomeData(
+      children: <ParentHomeChild>[
+        ParentHomeChild(name: name, accentColor: AppColors.primary),
+      ],
+      hasUnreadNotification: true,
+    );
+  }
+
   factory ParentHomeData.sampleFilled() {
     return ParentHomeData(
       children: const <ParentHomeChild>[
