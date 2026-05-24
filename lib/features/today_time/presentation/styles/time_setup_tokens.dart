@@ -23,6 +23,7 @@ abstract final class TimeSetupSpacing {
 }
 
 abstract final class TimeSetupSize {
+  static const double timeSheetHeightRatio = 0.45;
   static const double addButton = 40;
   static const double addIcon = 24;
   static const double bottomButtonHeight = 54;

@@ -11,15 +11,13 @@ class TodayTimeSection extends StatelessWidget {
   const TodayTimeSection({
     super.key,
     required this.timeSummary,
-    required this.onOpen,
+    this.waitingForChildPlan = false,
     required this.onSetup,
-    required this.onAdd,
   });
 
   final TimeSummary? timeSummary;
-  final VoidCallback onOpen;
+  final bool waitingForChildPlan;
   final VoidCallback onSetup;
-  final VoidCallback onAdd;
 
   bool get _hasData => timeSummary != null;
 
@@ -28,35 +26,49 @@ class TodayTimeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          title: '오늘의 시간',
-          onTap: _hasData ? onOpen : onSetup,
-          onSettingsTap: onSetup,
-        ),
+        _SectionHeader(title: '오늘의 시간', onSettingsTap: onSetup),
         const SizedBox(height: 18),
-        GestureDetector(
-          onTap: _hasData ? onOpen : onAdd,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            width: double.infinity,
-            height: 157.338,
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(14.385),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(217, 217, 217, 0.5),
-                  blurRadius: 7.2,
-                  offset: Offset(0, 3.6),
-                ),
-              ],
-            ),
-            child: _hasData
-                ? _TimeSummaryContent(summary: timeSummary!)
-                : Center(child: _PrimaryAddButton(onTap: onAdd)),
+        Container(
+          width: double.infinity,
+          height: 157.338,
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(14.385),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(217, 217, 217, 0.5),
+                blurRadius: 7.2,
+                offset: Offset(0, 3.6),
+              ),
+            ],
           ),
+          child: _hasData
+              ? _TimeSummaryContent(summary: timeSummary!)
+              : waitingForChildPlan
+              ? const _WaitingTimePlanMessage()
+              : const Center(child: _PrimaryAddButton()),
         ),
       ],
+    );
+  }
+}
+
+class _WaitingTimePlanMessage extends StatelessWidget {
+  const _WaitingTimePlanMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        '아직 자녀가 이번주 사용계획을\n설정하지 않았어요.',
+        textAlign: TextAlign.center,
+        style: AppTypography.heading2Bold.copyWith(
+          fontSize: 16,
+          height: 1.4,
+          letterSpacing: 0,
+          color: AppColors.gray300,
+        ),
+      ),
     );
   }
 }
@@ -143,31 +155,22 @@ class _TimeSummaryContent extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.onTap,
-    required this.onSettingsTap,
-  });
+  const _SectionHeader({required this.title, required this.onSettingsTap});
 
   final String title;
-  final VoidCallback onTap;
   final VoidCallback onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Text(
-            title,
-            style: AppTypography.headlineBold.copyWith(
-              fontSize: 18,
-              height: 1.4,
-              letterSpacing: -0.22,
-              color: AppColors.black,
-            ),
+        Text(
+          title,
+          style: AppTypography.headlineBold.copyWith(
+            fontSize: 18,
+            height: 1.4,
+            letterSpacing: -0.22,
+            color: AppColors.black,
           ),
         ),
         const SizedBox(width: 6),
@@ -186,26 +189,18 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _PrimaryAddButton extends StatelessWidget {
-  const _PrimaryAddButton({required this.onTap});
-
-  final VoidCallback onTap;
+  const _PrimaryAddButton();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: Color(0xFFEBF5FE),
-        ),
-        child: const Center(
-          child: _AddIcon(size: 24, color: AppColors.primary),
-        ),
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFFEBF5FE),
       ),
+      child: const Center(child: _AddIcon(size: 24, color: AppColors.primary)),
     );
   }
 }

@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
-enum _LoginErrorType { missingUser, wrongPassword }
+enum _LoginErrorType { missingName, missingEmail, wrongPassword }
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,22 +18,24 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const String _mockUsername = 'gdg12';
-  static const String _mockPassword = 'Gdg123456789!';
-
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   _LoginErrorType? _activeError;
 
-  String get _username => _usernameController.text;
+  String get _name => _nameController.text;
+  String get _email => _emailController.text;
   String get _password => _passwordController.text;
-  bool get _canSubmit => _username.isNotEmpty && _password.isNotEmpty;
+  bool get _canSubmit =>
+      _name.isNotEmpty && _email.isNotEmpty && _password.isNotEmpty;
 
   String? get _errorMessage {
     switch (_activeError) {
-      case _LoginErrorType.missingUser:
-        return '존재하지 않는 아이디입니다.';
+      case _LoginErrorType.missingName:
+        return '해당 이름으로 가입된 정보가 없습니다.';
+      case _LoginErrorType.missingEmail:
+        return '해당 이메일로 가입된 정보가 없습니다.';
       case _LoginErrorType.wrongPassword:
         return '비밀번호가 일치하지 않습니다.';
       case null:
@@ -40,33 +43,78 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _onUsernameChanged(String value) {
+  void _reconcileActiveError() {
+    switch (_activeError) {
+      case _LoginErrorType.missingName:
+        if (_name.trim().isNotEmpty) {
+          _activeError = null;
+        }
+        break;
+      case _LoginErrorType.missingEmail:
+        if (_email.trim().isNotEmpty) {
+          _activeError = _name.trim().isNotEmpty
+              ? null
+              : _LoginErrorType.missingName;
+        }
+        break;
+      case _LoginErrorType.wrongPassword:
+        if (_password.isNotEmpty) {
+          _activeError = null;
+        }
+        break;
+      case null:
+        break;
+    }
+  }
+
+  void _onNameChanged(String value) {
     setState(() {
-      if (_activeError == _LoginErrorType.missingUser) {
-        _activeError = null;
-      }
+      _reconcileActiveError();
+    });
+  }
+
+  void _onEmailChanged(String value) {
+    setState(() {
+      _reconcileActiveError();
     });
   }
 
   void _onPasswordChanged(String value) {
     setState(() {
-      if (_activeError == _LoginErrorType.wrongPassword) {
-        _activeError = null;
-      }
+      _reconcileActiveError();
     });
   }
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
-    if (_username != _mockUsername) {
+    if (_name.trim().isEmpty) {
       setState(() {
-        _activeError = _LoginErrorType.missingUser;
+        _activeError = _LoginErrorType.missingName;
       });
       return;
     }
 
-    if (_password != _mockPassword) {
+    final ParentAccount? account = await AccountStore.getAccountByEmail(_email);
+    if (account == null) {
+      setState(() {
+        _activeError = _LoginErrorType.missingEmail;
+      });
+      return;
+    }
+
+    if (account.name != _name || _name.trim().isEmpty) {
+      setState(() {
+        _activeError = _LoginErrorType.missingName;
+      });
+      return;
+    }
+
+    final bool isValidLogin = await AccountStore.validateLogin(
+      email: _email,
+      password: _password,
+    );
+    if (!isValidLogin) {
       setState(() {
         _activeError = _LoginErrorType.wrongPassword;
       });
@@ -76,16 +124,17 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       _activeError = null;
     });
-    await AuthSession.saveLogin(username: _username);
+    await AuthSession.login(parentId: account.parentId, email: account.email);
     if (!mounted) {
       return;
     }
-    context.go('/parent-home');
+    context.go('/login/complete');
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -114,18 +163,35 @@ class _LoginPageState extends State<LoginPage> {
                             _LoginTopBar(onBack: () => context.go('/')),
                             const SizedBox(height: 25),
                             _LoginField(
-                              label: '아이디',
-                              controller: _usernameController,
+                              label: '이름',
+                              controller: _nameController,
                               borderColor:
-                                  _activeError == _LoginErrorType.missingUser
+                                  _activeError == _LoginErrorType.missingName
                                   ? AppColors.destructive
                                   : AppColors.gray200,
-                              onChanged: _onUsernameChanged,
+                              onChanged: _onNameChanged,
                               inputFormatters: <TextInputFormatter>[
                                 FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                                LengthLimitingTextInputFormatter(12),
+                                LengthLimitingTextInputFormatter(20),
                               ],
                               keyboardType: TextInputType.text,
+                              labelBottomSpacing: 10,
+                              labelFontSize: 14.385,
+                            ),
+                            const SizedBox(height: 35),
+                            _LoginField(
+                              label: '이메일',
+                              controller: _emailController,
+                              borderColor:
+                                  _activeError == _LoginErrorType.missingEmail
+                                  ? AppColors.destructive
+                                  : AppColors.gray200,
+                              onChanged: _onEmailChanged,
+                              inputFormatters: <TextInputFormatter>[
+                                FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                                LengthLimitingTextInputFormatter(50),
+                              ],
+                              keyboardType: TextInputType.emailAddress,
                               labelBottomSpacing: 10,
                             ),
                             const SizedBox(height: 35),
@@ -224,6 +290,7 @@ class _LoginField extends StatelessWidget {
     required this.inputFormatters,
     required this.keyboardType,
     required this.labelBottomSpacing,
+    this.labelFontSize = 16,
   });
 
   final String label;
@@ -233,6 +300,7 @@ class _LoginField extends StatelessWidget {
   final List<TextInputFormatter> inputFormatters;
   final TextInputType keyboardType;
   final double labelBottomSpacing;
+  final double labelFontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -242,7 +310,7 @@ class _LoginField extends StatelessWidget {
         Text(
           label,
           style: AppTypography.bodyMedium.copyWith(
-            fontSize: 16,
+            fontSize: labelFontSize,
             height: 1.5,
             letterSpacing: 0.0912,
             color: AppColors.gray600,

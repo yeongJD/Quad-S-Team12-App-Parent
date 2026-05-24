@@ -14,6 +14,7 @@ class TodayMissionSection extends StatelessWidget {
     required this.onOpen,
     required this.onSetup,
     required this.onAdd,
+    required this.onMissionTap,
   });
 
   final List<MissionItem> missions;
@@ -22,6 +23,7 @@ class TodayMissionSection extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onSetup;
   final VoidCallback onAdd;
+  final ValueChanged<int> onMissionTap;
 
   bool get _hasData => missions.isNotEmpty;
 
@@ -82,17 +84,16 @@ class TodayMissionSection extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         if (_hasData) ...[
-          GestureDetector(
-            onTap: onOpen,
-            behavior: HitTestBehavior.opaque,
-            child: Column(
-              children: [
-                for (int index = 0; index < missions.length; index++) ...[
-                  _MissionCard(item: missions[index]),
-                  if (index != missions.length - 1) const SizedBox(height: 11),
-                ],
+          Column(
+            children: [
+              for (int index = 0; index < missions.length; index++) ...[
+                _MissionCard(
+                  item: missions[index],
+                  onTitleTap: () => onMissionTap(index),
+                ),
+                if (index != missions.length - 1) const SizedBox(height: 11),
               ],
-            ),
+            ],
           ),
           const SizedBox(height: 18),
           Center(
@@ -107,7 +108,7 @@ class TodayMissionSection extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.only(top: 43, bottom: 40),
               child: GestureDetector(
-                onTap: onSetup,
+                onTap: onAdd,
                 behavior: HitTestBehavior.opaque,
                 child: const _MissionAddButton(),
               ),
@@ -119,14 +120,15 @@ class TodayMissionSection extends StatelessWidget {
 }
 
 class _MissionCard extends StatelessWidget {
-  const _MissionCard({required this.item});
+  const _MissionCard({required this.item, required this.onTitleTap});
 
   final MissionItem item;
+  final VoidCallback onTitleTap;
 
   @override
   Widget build(BuildContext context) {
-    final bool isPending = item.status == MissionStatus.pending;
-    final TextDecoration? lineThrough = isPending
+    final bool isCompleted = item.status == MissionStatus.completed;
+    final TextDecoration? lineThrough = isCompleted
         ? TextDecoration.lineThrough
         : null;
 
@@ -134,13 +136,13 @@ class _MissionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 17.082, vertical: 16.183),
       decoration: BoxDecoration(
-        color: isPending ? const Color(0xFFEDEEF1) : AppColors.white,
+        color: isCompleted ? const Color(0xFFEDEEF1) : AppColors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           Opacity(
-            opacity: isPending ? 0.3 : 1,
+            opacity: isCompleted ? 0.3 : 1,
             child: SvgPicture.asset(
               item.iconAsset,
               width: 43.156,
@@ -152,27 +154,33 @@ class _MissionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.title,
-                  style: AppTypography.labelMedium.copyWith(
-                    fontSize: isPending ? 16 : 14.39,
-                    height: 1.5,
-                    letterSpacing: isPending ? 0.0912 : 0.082,
-                    color: isPending ? AppColors.gray300 : AppColors.gray800,
-                    decoration: lineThrough,
-                    decorationColor: isPending ? AppColors.gray300 : null,
+                GestureDetector(
+                  onTap: onTitleTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(
+                    item.title,
+                    style: AppTypography.labelMedium.copyWith(
+                      fontSize: isCompleted ? 16 : 14.39,
+                      height: 1.5,
+                      letterSpacing: isCompleted ? 0.0912 : 0.082,
+                      color: isCompleted
+                          ? AppColors.gray300
+                          : AppColors.gray800,
+                      decoration: lineThrough,
+                      decorationColor: isCompleted ? AppColors.gray300 : null,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2.7),
                 Text(
                   item.reward,
                   style: AppTypography.captionRegular.copyWith(
-                    fontSize: isPending ? 12 : 10.79,
+                    fontSize: isCompleted ? 12 : 10.79,
                     height: 1.334,
-                    letterSpacing: isPending ? 0.3024 : 0.2719,
-                    color: isPending ? AppColors.gray300 : AppColors.gray500,
+                    letterSpacing: isCompleted ? 0.3024 : 0.2719,
+                    color: isCompleted ? AppColors.gray300 : AppColors.gray500,
                     decoration: lineThrough,
-                    decorationColor: isPending ? AppColors.gray300 : null,
+                    decorationColor: isCompleted ? AppColors.gray300 : null,
                   ),
                 ),
               ],
@@ -195,17 +203,23 @@ class _MissionStatusIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (status) {
       case MissionStatus.completed:
-        return _StatusCircle(
-          backgroundColor: AppColors.gray200,
+        return const _StatusCircle(
+          backgroundColor: AppColors.positive,
           icon: Icons.check_rounded,
           iconColor: AppColors.white,
         );
-      case MissionStatus.inProgress:
+      case MissionStatus.reviewing:
         return const _ProgressStatusCircle();
       case MissionStatus.pending:
         return const _StatusCircle(
-          backgroundColor: Color(0xFFF9D877),
-          icon: Icons.check_rounded,
+          backgroundColor: AppColors.gray200,
+          icon: Icons.radio_button_unchecked_rounded,
+          iconColor: AppColors.gray400,
+        );
+      case MissionStatus.rejected:
+        return const _StatusCircle(
+          backgroundColor: AppColors.destructive,
+          icon: Icons.close_rounded,
           iconColor: AppColors.white,
         );
     }
@@ -221,7 +235,7 @@ class _ProgressStatusCircle extends StatelessWidget {
       width: 21.578,
       height: 21.578,
       decoration: const BoxDecoration(
-        color: AppColors.positive,
+        color: AppColors.cautionary,
         shape: BoxShape.circle,
       ),
       child: const Icon(Icons.sync_rounded, size: 13, color: AppColors.white),

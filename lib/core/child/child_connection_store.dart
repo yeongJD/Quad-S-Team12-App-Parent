@@ -2,19 +2,47 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import '../auth/account_store.dart';
+
+class ConnectedChild {
+  const ConnectedChild({
+    required this.childrenId,
+    required this.childCode,
+    required this.name,
+  });
+
+  final String childrenId;
+  final String childCode;
+  final String name;
+
+  factory ConnectedChild.fromAccountChild(AccountChildData child) {
+    return ConnectedChild(
+      childrenId: child.childrenId,
+      childCode: child.childCode,
+      name: child.name,
+    );
+  }
+
+  AccountChildData toAccountChild() {
+    return AccountChildData(
+      childrenId: childrenId,
+      childCode: childCode,
+      name: name,
+    );
+  }
+}
 
 abstract final class ChildConnectionStore {
-  static const String linkedKey = 'bridge_p.child.is_linked';
-  static const String nameKey = 'bridge_p.child.name';
-  static const String birthYearKey = 'bridge_p.child.birth_year';
-  static const String codeKey = 'bridge_p.child.code';
-
   static const String validationEndpoint = String.fromEnvironment(
     'CHILD_CODE_VALIDATION_URL',
   );
   // Backend contract: docs/child-code-validation-api.md
-  static const String testChildCode = 'GDG12-CHILD';
+  static const List<String> testChildCodes = <String>[
+    'GDG12-1',
+    'GDG12-2',
+    'GDG12-3',
+  ];
+  static const String testChildCode = 'GDG12-1';
 
   static bool get usesLocalTestValidator => validationEndpoint.isEmpty;
 
@@ -31,38 +59,56 @@ abstract final class ChildConnectionStore {
     return _validateWithServer(trimmedCode);
   }
 
-  static Future<void> saveLinkedChild({
-    required String name,
-    required int birthYear,
-    required String code,
+  static Future<List<ConnectedChild>> loadChildren(String parentId) async {
+    final ParentAccount? account = await AccountStore.getAccountById(parentId);
+    if (account == null) {
+      return <ConnectedChild>[];
+    }
+    return account.children
+        .map(ConnectedChild.fromAccountChild)
+        .toList(growable: false);
+  }
+
+  static Future<void> addChild({
+    required String parentId,
+    required ConnectedChild child,
   }) async {
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-    await preferences.setBool(linkedKey, true);
-    await preferences.setString(nameKey, name.trim());
-    await preferences.setInt(birthYearKey, birthYear);
-    await preferences.setString(codeKey, code.trim());
+    await AccountStore.addChild(
+      parentId: parentId,
+      child: child.toAccountChild(),
+    );
   }
 
-  static Future<bool> hasLinkedChild() async {
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-    return preferences.getBool(linkedKey) ?? false;
+  static Future<void> removeChild({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    await AccountStore.removeChild(parentId: parentId, childrenId: childrenId);
   }
 
-  static Future<String?> linkedChildName() async {
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-    return preferences.getString(nameKey);
+  static Future<ConnectedChild?> getSelectedChild(String parentId) async {
+    final List<ConnectedChild> children = await loadChildren(parentId);
+    return children.isEmpty ? null : children.first;
   }
 
-  static Future<void> clearLinkedChild() async {
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-    await preferences.remove(linkedKey);
-    await preferences.remove(nameKey);
-    await preferences.remove(birthYearKey);
-    await preferences.remove(codeKey);
+  static ConnectedChild childFromCode({
+    required String name,
+    required String childCode,
+  }) {
+    final String normalizedCode = _normalizeCode(childCode);
+    return ConnectedChild(
+      childrenId: normalizedCode,
+      childCode: normalizedCode,
+      name: name.trim(),
+    );
   }
 
   static bool _validateWithTestCode(String code) {
-    return code.toUpperCase() == testChildCode;
+    return testChildCodes.contains(_normalizeCode(code));
+  }
+
+  static String _normalizeCode(String code) {
+    return code.trim().toUpperCase();
   }
 
   static Future<bool> _validateWithServer(String code) async {

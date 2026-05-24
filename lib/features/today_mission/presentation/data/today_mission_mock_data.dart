@@ -8,6 +8,8 @@ abstract final class TodayMissionMockData {
     confirmationMethod: MissionConfirmationMethod.child,
     rewardMinutes: 30,
     description: '방청소하고 깨끗하진 방 사진 찍기',
+    status: TodayMissionStatus.completed,
+    verificationStatus: MissionVerificationStatus.approved,
   );
 
   static const List<TodayMission> filledMissions = <TodayMission>[
@@ -19,6 +21,9 @@ abstract final class TodayMissionMockData {
       confirmationMethod: MissionConfirmationMethod.child,
       rewardMinutes: 30,
       description: '설거지 완료하기',
+      status: TodayMissionStatus.reviewing,
+      verificationStatus: MissionVerificationStatus.approved,
+      submittedAtText: '2025.1.21 오후 7:01',
     ),
     TodayMission(
       title: '수학 문제 풀기',
@@ -27,6 +32,7 @@ abstract final class TodayMissionMockData {
       confirmationMethod: MissionConfirmationMethod.child,
       rewardMinutes: 30,
       description: '수학 문제집 풀기',
+      status: TodayMissionStatus.pending,
     ),
     TodayMission(
       title: '7시 기상',

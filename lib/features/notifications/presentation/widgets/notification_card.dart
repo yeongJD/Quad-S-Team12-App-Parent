@@ -9,11 +9,13 @@ class NotificationCard extends StatefulWidget {
     super.key,
     required this.item,
     required this.onTap,
+    required this.onActionTap,
     required this.onDeleteIntent,
   });
 
   final NotificationItem item;
   final VoidCallback onTap;
+  final VoidCallback onActionTap;
   final Future<void> Function(NotificationItem item) onDeleteIntent;
 
   @override
@@ -176,14 +178,11 @@ class _NotificationCardState extends State<NotificationCard>
                         ),
                       ),
                       const SizedBox(height: 10.789),
-                      Text(
-                        '${widget.item.actionLabel} →',
-                        style: AppTypography.labelMedium.copyWith(
-                          fontSize: 10.79,
-                          height: 1.334,
-                          letterSpacing: 0.2719,
-                          color: AppColors.gray500,
-                          decoration: TextDecoration.none,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: _NotificationActionChip(
+                          label: widget.item.actionLabel,
+                          onTap: widget.onActionTap,
                         ),
                       ),
                     ],
@@ -192,6 +191,40 @@ class _NotificationCardState extends State<NotificationCard>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationActionChip extends StatelessWidget {
+  const _NotificationActionChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 24,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.gray100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          '$label →',
+          style: AppTypography.captionBold.copyWith(
+            fontSize: 11,
+            height: 1.334,
+            letterSpacing: 0,
+            color: AppColors.gray500,
+            decoration: TextDecoration.none,
+          ),
         ),
       ),
     );
@@ -222,6 +255,14 @@ class _NotificationLeadingIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!style.hasBackground) {
+      return SizedBox(
+        width: 18,
+        height: 18,
+        child: Icon(style.icon, size: 17, color: style.accentColor),
+      );
+    }
+
     return Container(
       width: 18,
       height: 18,
@@ -243,14 +284,23 @@ class _NotificationStyle {
     required this.accentColor,
     required this.backgroundColor,
     required this.icon,
+    this.hasBackground = true,
   });
 
   final Color accentColor;
   final Color backgroundColor;
   final IconData icon;
+  final bool hasBackground;
 
   factory _NotificationStyle.fromType(NotificationType type) {
     switch (type) {
+      case NotificationType.weeklyUsageReport:
+        return const _NotificationStyle(
+          accentColor: AppColors.primary,
+          backgroundColor: AppColors.primary,
+          icon: Icons.menu_book_rounded,
+          hasBackground: false,
+        );
       case NotificationType.missionCompleted:
         return const _NotificationStyle(
           accentColor: Color(0xFFFFCC33),

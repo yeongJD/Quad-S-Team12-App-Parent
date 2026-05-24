@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../data/daily_time_rule_store.dart';
 import '../data/today_time_mock_data.dart';
 import '../models/daily_time_rule.dart';
 import '../styles/time_setup_tokens.dart';
@@ -11,13 +12,18 @@ import '../widgets/time_setup_action_button.dart';
 import '../widgets/time_setup_header.dart';
 import '../widgets/time_setup_top_bar.dart';
 import '../widgets/time_tip_popover.dart';
+import 'monthly_time_setup_page.dart';
 
 class TodayTimeSetupPage extends StatefulWidget {
   const TodayTimeSetupPage({
     super.key,
+    this.parentId,
+    this.childrenId,
     this.initialRules = TodayTimeMockData.emptyDailyRules,
   });
 
+  final String? parentId;
+  final String? childrenId;
   final List<DailyTimeRule> initialRules;
 
   @override
@@ -36,6 +42,36 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
   void initState() {
     super.initState();
     _rules = <DailyTimeRule>[...widget.initialRules];
+    _restoreSavedRulesIfNeeded();
+  }
+
+  Future<void> _restoreSavedRulesIfNeeded() async {
+    if (_rules.isNotEmpty) {
+      return;
+    }
+
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    if (parentId == null ||
+        parentId.isEmpty ||
+        childrenId == null ||
+        childrenId.isEmpty) {
+      return;
+    }
+
+    final List<DailyTimeRule> savedRules = await DailyTimeRuleStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    if (!mounted || savedRules.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _rules
+        ..clear()
+        ..addAll(savedRules);
+    });
   }
 
   void _toggleTip() {
@@ -63,13 +99,24 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
   }
 
   Future<void> _openRuleSheet({DailyTimeRule? initialRule, int? index}) async {
+    final Set<int> unavailableDays = <int>{};
+    for (int ruleIndex = 0; ruleIndex < _rules.length; ruleIndex++) {
+      if (ruleIndex == index) {
+        continue;
+      }
+      unavailableDays.addAll(_rules[ruleIndex].days);
+    }
+
     final DailyTimeRule? result = await showModalBottomSheet<DailyTimeRule>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: const Color.fromRGBO(68, 68, 68, 0.6),
       builder: (BuildContext context) {
-        return DailyTimeRuleSheet(initialRule: initialRule);
+        return DailyTimeRuleSheet(
+          initialRule: initialRule,
+          unavailableDays: unavailableDays,
+        );
       },
     );
 
@@ -85,11 +132,33 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
     });
   }
 
-  void _continueToMonthlySetup() {
+  Future<void> _continueToMonthlySetup() async {
     if (!_canContinue) {
       return;
     }
-    context.push('/today-time/monthly');
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    if (parentId != null &&
+        parentId.isNotEmpty &&
+        childrenId != null &&
+        childrenId.isNotEmpty) {
+      await DailyTimeRuleStore.save(
+        parentId: parentId,
+        childrenId: childrenId,
+        rules: List<DailyTimeRule>.from(_rules),
+      );
+    }
+    if (!mounted) {
+      return;
+    }
+    context.push(
+      '/today-time/monthly',
+      extra: MonthlyTimeSetupArgs(
+        parentId: parentId,
+        childrenId: childrenId,
+        rules: List<DailyTimeRule>.from(_rules),
+      ),
+    );
   }
 
   @override

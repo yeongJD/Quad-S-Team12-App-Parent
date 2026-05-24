@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -14,9 +15,8 @@ class MyPage extends StatefulWidget {
 }
 
 class _MyPageState extends State<MyPage> {
-  static const String _accountType = '부모회원';
-
-  String _username = AuthSession.fallbackUsername;
+  String _name = AuthSession.fallbackName;
+  String _email = '';
 
   @override
   void initState() {
@@ -25,12 +25,16 @@ class _MyPageState extends State<MyPage> {
   }
 
   Future<void> _loadUsername() async {
-    final String username = await AuthSession.username();
+    final String? parentId = await AuthSession.getCurrentParentId();
+    final ParentAccount? account = parentId == null
+        ? null
+        : await AccountStore.getAccountById(parentId);
     if (!mounted) {
       return;
     }
     setState(() {
-      _username = username;
+      _name = account?.name ?? AuthSession.fallbackName;
+      _email = account?.email ?? '';
     });
   }
 
@@ -70,7 +74,7 @@ class _MyPageState extends State<MyPage> {
   }
 
   Future<void> _logout() async {
-    await AuthSession.clearLogin();
+    await AuthSession.logout();
     if (!mounted) {
       return;
     }
@@ -86,34 +90,47 @@ class _MyPageState extends State<MyPage> {
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 375),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _MyPageTopBar(onBack: context.pop),
-                  const SizedBox(height: 22),
-                  const _InfoRow(label: '회원유형', value: _accountType),
-                  const SizedBox(height: 22),
-                  _InfoRow(label: '아이디', value: _username),
-                  const SizedBox(height: 22),
-                  _PasswordRow(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _MyPageTopBar(onBack: context.pop),
+                ),
+                const SizedBox(height: 57),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _InfoRow(label: '이름', value: _name),
+                ),
+                const SizedBox(height: 31),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _InfoRow(label: '이메일', value: _email),
+                ),
+                const SizedBox(height: 31),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _PasswordRow(
                     onEditTap: () => context.push('/mypage/password'),
                   ),
-                  const SizedBox(height: 48),
-                  Container(
-                    width: double.infinity,
-                    height: 6.294,
-                    color: const Color(0xFFEDEEF1),
-                  ),
-                  const SizedBox(height: 23),
-                  Align(
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  height: 6.294,
+                  color: const Color(0xFFEDEEF1),
+                ),
+                const SizedBox(height: 29),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Align(
                     alignment: Alignment.centerRight,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _MyPageActionButton(
                           label: '로그아웃',
+                          width: 89,
                           backgroundColor: const Color(0xFFEDEEF1),
                           foregroundColor: AppColors.gray600,
                           onTap: _logout,
@@ -121,6 +138,7 @@ class _MyPageState extends State<MyPage> {
                         const SizedBox(width: 12),
                         _MyPageActionButton(
                           label: '탈퇴하기',
+                          width: 80,
                           backgroundColor: const Color(0xFFFFD3D3),
                           foregroundColor: AppColors.destructive,
                           onTap: () => _showDeleteAccountDialog(context),
@@ -128,8 +146,8 @@ class _MyPageState extends State<MyPage> {
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -141,12 +159,14 @@ class _MyPageState extends State<MyPage> {
 class _MyPageActionButton extends StatelessWidget {
   const _MyPageActionButton({
     required this.label,
+    required this.width,
     required this.backgroundColor,
     required this.foregroundColor,
     required this.onTap,
   });
 
   final String label;
+  final double width;
   final Color backgroundColor;
   final Color foregroundColor;
   final VoidCallback onTap;
@@ -157,8 +177,8 @@ class _MyPageActionButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 80,
-        height: 35,
+        width: width,
+        height: 37,
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
@@ -168,6 +188,7 @@ class _MyPageActionButton extends StatelessWidget {
           label,
           style: AppTypography.bodyMedium.copyWith(
             color: foregroundColor,
+            height: 1.5,
             letterSpacing: 0.091,
           ),
         ),
@@ -259,8 +280,9 @@ class _DeleteAccountDialog extends StatelessWidget {
                     label: '확인',
                     filled: true,
                     onTap: () {
+                      final GoRouter router = GoRouter.of(context);
                       context.pop();
-                      context.push('/mypage/delete-complete');
+                      router.go('/mypage/delete-complete');
                     },
                   ),
                 ],
@@ -369,15 +391,14 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 22,
+      height: 24,
       child: Row(
         children: [
           SizedBox(
-            width: 58,
+            width: 68,
             child: Text(
               label,
-              style: AppTypography.labelMedium.copyWith(
-                fontSize: 14.385,
+              style: AppTypography.bodyMedium.copyWith(
                 height: 1.5,
                 letterSpacing: 0.082,
                 color: AppColors.gray600,
@@ -385,14 +406,17 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
           Container(width: 1, height: 19.78, color: AppColors.gray200),
-          const SizedBox(width: 19),
-          Text(
-            value,
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14.385,
-              height: 1.5,
-              letterSpacing: 0.082,
-              color: const Color(0xFF050505),
+          const SizedBox(width: 24),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.bodyMedium.copyWith(
+                height: 1.5,
+                letterSpacing: 0.082,
+                color: const Color(0xFF050505),
+              ),
             ),
           ),
         ],
@@ -409,25 +433,24 @@ class _PasswordRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 32,
+      height: 37,
       child: Row(
         children: [
           Text(
             '비밀번호',
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14.385,
+            style: AppTypography.bodyMedium.copyWith(
               height: 1.5,
               letterSpacing: 0.082,
               color: AppColors.gray600,
             ),
           ),
-          const SizedBox(width: 13.5),
+          const SizedBox(width: 13),
           GestureDetector(
             onTap: onEditTap,
             behavior: HitTestBehavior.opaque,
             child: Container(
-              height: 31.468,
-              padding: const EdgeInsets.symmetric(horizontal: 10.789),
+              height: 37,
+              padding: const EdgeInsets.symmetric(horizontal: 13),
               decoration: BoxDecoration(
                 color: AppColors.gray600,
                 borderRadius: BorderRadius.circular(8),
@@ -435,8 +458,7 @@ class _PasswordRow extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 '수정하기',
-                style: AppTypography.labelMedium.copyWith(
-                  fontSize: 14.39,
+                style: AppTypography.bodyMedium.copyWith(
                   height: 1.5,
                   letterSpacing: 0.082,
                   color: AppColors.white,

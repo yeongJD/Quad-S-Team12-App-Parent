@@ -12,12 +12,16 @@ class ChildSelectorSection extends StatelessWidget {
     required this.children,
     required this.selectedIndex,
     required this.onChildTap,
+    required this.onChildDelete,
     required this.onAddChildTap,
+    this.deleteIndex,
   });
 
   final List<ParentHomeChild> children;
   final int selectedIndex;
+  final int? deleteIndex;
   final ValueChanged<int> onChildTap;
+  final ValueChanged<int> onChildDelete;
   final VoidCallback onAddChildTap;
 
   @override
@@ -28,11 +32,7 @@ class ChildSelectorSection extends StatelessWidget {
         padding: EdgeInsets.zero,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _AddChildCard(onTap: onAddChildTap, isEmptyState: true),
-            const SizedBox(width: 20),
-            const _AddChildGuideCard(),
-          ],
+          children: [_AddChildCard(onTap: onAddChildTap, isEmptyState: true)],
         ),
       );
     }
@@ -46,7 +46,9 @@ class ChildSelectorSection extends StatelessWidget {
             _ChildCard(
               child: children[index],
               isSelected: index == selectedIndex,
+              isDeleteVisible: index == deleteIndex,
               onTap: () => onChildTap(index),
+              onDeleteTap: () => onChildDelete(index),
             ),
             const SizedBox(width: 18),
           ],
@@ -61,68 +63,28 @@ class _ChildCard extends StatelessWidget {
   const _ChildCard({
     required this.child,
     required this.isSelected,
+    required this.isDeleteVisible,
     required this.onTap,
+    required this.onDeleteTap,
   });
 
   final ParentHomeChild child;
   final bool isSelected;
+  final bool isDeleteVisible;
   final VoidCallback onTap;
+  final VoidCallback onDeleteTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isDeleteVisible ? onDeleteTap : onTap,
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 66.532,
-            height: 66.532,
-            padding: const EdgeInsets.all(4.5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.gray200,
-                width: isSelected ? 2 : 1.4,
-              ),
-            ),
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFDADDE3),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned(
-                    top: 10,
-                    child: Container(
-                      width: 18,
-                      height: 18,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFFF6F7F9),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 8,
-                    child: Container(
-                      width: 34,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF6F7F9),
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(16),
-                          bottom: Radius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          _ChildAvatar(
+            isSelected: isSelected || isDeleteVisible,
+            isDeleteVisible: isDeleteVisible,
           ),
           const SizedBox(height: 6),
           Text(
@@ -136,6 +98,34 @@ class _ChildCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ChildAvatar extends StatelessWidget {
+  const _ChildAvatar({required this.isSelected, required this.isDeleteVisible});
+
+  static const double _childAvatarSize = 74;
+  static const String _unselectedAsset = 'assets/icons/속성 1=미선택.png';
+  static const String _selectedAsset = 'assets/icons/속성 1=선택.png';
+  static const String _deleteAsset = 'assets/icons/속성 1=삭제.png';
+
+  final bool isSelected;
+  final bool isDeleteVisible;
+
+  String get _assetPath {
+    if (isDeleteVisible) {
+      return _deleteAsset;
+    }
+    return isSelected ? _selectedAsset : _unselectedAsset;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _childAvatarSize,
+      height: _childAvatarSize,
+      child: Image.asset(_assetPath, fit: BoxFit.contain),
     );
   }
 }
@@ -156,7 +146,9 @@ class _AddChildCard extends StatelessWidget {
     final Color fillColor = isEmptyState
         ? const Color(0xFFEBF5FE)
         : const Color(0xFFF0F2F5);
-    final Color plusColor = isEmptyState ? AppColors.primary : AppColors.gray400;
+    final Color plusColor = isEmptyState
+        ? AppColors.primary
+        : AppColors.gray400;
 
     return GestureDetector(
       onTap: onTap,
@@ -199,71 +191,6 @@ class _AddChildCard extends StatelessWidget {
               height: 1.5,
               letterSpacing: isEmptyState ? 0.0912 : 0.08,
               color: AppColors.gray400,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddChildGuideCard extends StatelessWidget {
-  const _AddChildGuideCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 270,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEBF5FE),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFFC2DFFD),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  '1',
-                  style: AppTypography.captionBold.copyWith(
-                    fontSize: 12,
-                    height: 1.334,
-                    letterSpacing: 0.3024,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 9.8),
-              Text(
-                '자녀추가하기',
-                style: AppTypography.captionBold.copyWith(
-                  fontSize: 12,
-                  height: 1.334,
-                  letterSpacing: 0.3024,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '+ 버튼을 눌러 자녀계정과 연결해서\n같은 목표를 향해 움직일 준비를 해요.',
-            style: AppTypography.captionRegular.copyWith(
-              fontSize: 12,
-              height: 1.334,
-              letterSpacing: 0.3024,
-              color: AppColors.gray600,
             ),
           ),
         ],

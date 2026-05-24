@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../data/daily_time_rule_store.dart';
 import '../data/today_time_mock_data.dart';
 import '../models/daily_time_rule.dart';
 import '../models/time_plan_confirmation.dart';
@@ -11,8 +12,15 @@ import '../widgets/time_plan_confirmation_widgets.dart';
 import '../widgets/time_setup_top_bar.dart';
 
 class TodayTimeConfirmationPage extends StatefulWidget {
-  const TodayTimeConfirmationPage({super.key, this.initialData});
+  const TodayTimeConfirmationPage({
+    super.key,
+    this.parentId,
+    this.childrenId,
+    this.initialData,
+  });
 
+  final String? parentId;
+  final String? childrenId;
   final TimePlanConfirmationData? initialData;
 
   @override
@@ -27,7 +35,7 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
   @override
   void initState() {
     super.initState();
-    _data = widget.initialData ?? TodayTimeMockData.filledConfirmation;
+    _data = widget.initialData ?? TodayTimeMockData.parentOnlyConfirmation;
     _childRevisionAllowed = _data.childRevisionAllowed;
   }
 
@@ -40,8 +48,48 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     router.go('/parent-home');
   }
 
-  void _openEditFlow() {
-    context.push('/today-time/setup');
+  Future<void> _openEditFlow() async {
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    final List<DailyTimeRule> savedRules =
+        parentId == null ||
+            parentId.isEmpty ||
+            childrenId == null ||
+            childrenId.isEmpty
+        ? <DailyTimeRule>[]
+        : await DailyTimeRuleStore.load(
+            parentId: parentId,
+            childrenId: childrenId,
+          );
+    if (!mounted) {
+      return;
+    }
+
+    final List<DailyTimeRule> rulesToEdit = savedRules.isNotEmpty
+        ? savedRules
+        : _data.weeklyRules;
+    if (rulesToEdit.isEmpty) {
+      context.push(_timeSetupLocation);
+      return;
+    }
+
+    context.push(
+      _timeSetupLocation,
+      extra: List<DailyTimeRule>.from(rulesToEdit),
+    );
+  }
+
+  String get _timeSetupLocation {
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    return Uri(
+      path: '/today-time/setup',
+      queryParameters: <String, String>{
+        if (parentId != null && parentId.isNotEmpty) 'parentId': parentId,
+        if (childrenId != null && childrenId.isNotEmpty)
+          'childrenId': childrenId,
+      },
+    ).toString();
   }
 
   @override

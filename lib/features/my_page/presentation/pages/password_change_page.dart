@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/account_store.dart';
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -16,7 +18,6 @@ class PasswordChangePage extends StatefulWidget {
 }
 
 class _PasswordChangePageState extends State<PasswordChangePage> {
-  static const String _mockCurrentPassword = 'Gdg123456789!';
   static final RegExp _passwordPattern = RegExp(
     r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{12,15}$',
   );
@@ -32,6 +33,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   final FocusNode _confirmPasswordFocusNode = FocusNode();
 
   _PasswordChangeErrorType? _currentPasswordError;
+  ParentAccount? _account;
   bool _showNewPasswordRuleError = false;
   bool _showSameAsCurrentError = false;
   bool _showConfirmMismatchError = false;
@@ -40,10 +42,14 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   String get _newPassword => _newPasswordController.text;
   String get _confirmPassword => _confirmPasswordController.text;
 
-  bool get _isCurrentPasswordValid => _currentPassword == _mockCurrentPassword;
+  bool get _isCurrentPasswordValid =>
+      _account?.passwordHash ==
+      AccountStore.passwordHashForLocalMock(_currentPassword);
   bool get _isNewPasswordValid => _passwordPattern.hasMatch(_newPassword);
   bool get _isSameAsCurrentPassword =>
-      _newPassword.isNotEmpty && _newPassword == _mockCurrentPassword;
+      _newPassword.isNotEmpty &&
+      _account?.passwordHash ==
+          AccountStore.passwordHashForLocalMock(_newPassword);
   bool get _isConfirmMatched =>
       _newPassword.isNotEmpty &&
       _confirmPassword.isNotEmpty &&
@@ -79,6 +85,25 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     return '비밀번호가 일치하지 않습니다.';
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadAccount();
+  }
+
+  Future<void> _loadAccount() async {
+    final String? parentId = await AuthSession.getCurrentParentId();
+    final ParentAccount? account = parentId == null
+        ? null
+        : await AccountStore.getAccountById(parentId);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _account = account;
+    });
+  }
+
   void _handleCurrentPasswordChanged(String value) {
     setState(() {
       _currentPasswordError = null;
@@ -108,7 +133,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     onChanged('');
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -127,6 +152,17 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       return;
     }
 
+    final ParentAccount? account = _account;
+    if (account == null) {
+      return;
+    }
+    await AccountStore.updatePassword(
+      parentId: account.parentId,
+      password: _newPassword,
+    );
+    if (!mounted) {
+      return;
+    }
     context.pop();
   }
 

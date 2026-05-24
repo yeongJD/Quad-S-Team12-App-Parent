@@ -5,12 +5,22 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../data/today_mission_mock_data.dart';
+import '../data/today_mission_store.dart';
 import '../models/today_mission.dart';
+import 'today_mission_check_page.dart';
+import 'today_mission_edit_page.dart';
 import '../widgets/mission_top_bar.dart';
 
 class TodayMissionListPage extends StatefulWidget {
-  const TodayMissionListPage({super.key, this.demo});
+  const TodayMissionListPage({
+    super.key,
+    this.parentId,
+    this.childrenId,
+    this.demo,
+  });
 
+  final String? parentId;
+  final String? childrenId;
   final String? demo;
 
   @override
@@ -18,11 +28,31 @@ class TodayMissionListPage extends StatefulWidget {
 }
 
 class _TodayMissionListPageState extends State<TodayMissionListPage> {
-  late final List<TodayMission> _missions = <TodayMission>[
-    ...TodayMissionMockData.missionsForDemo(widget.demo),
-  ];
-  late bool _showDeleteAction = widget.demo == 'delete';
+  List<TodayMission> _missions = <TodayMission>[];
+  bool _isLoading = true;
   late bool _showDeleteDialog = widget.demo == 'dialog';
+  int? _pendingDeleteIndex;
+
+  bool get _usesDemo => widget.demo != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMissions();
+  }
+
+  Future<void> _loadMissions() async {
+    final List<TodayMission> missions = _usesDemo
+        ? TodayMissionMockData.missionsForDemo(widget.demo)
+        : await _loadStoredMissions();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _missions = missions;
+      _isLoading = false;
+    });
+  }
 
   void _handleBack() {
     final GoRouter router = GoRouter.of(context);
@@ -33,31 +63,120 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
     router.go('/parent-home');
   }
 
-  void _openEdit() {
-    context.push('/today-mission/setup');
+  Future<void> _openAdd() async {
+    await context.push(_missionSetupLocation);
+    if (!_usesDemo) {
+      await _loadMissions();
+    }
   }
 
-  void _requestDelete() {
+  Future<void> _openEdit(int index) async {
+    if (index < 0 || index >= _missions.length) {
+      return;
+    }
+    await context.push(
+      _missionSetupLocation,
+      extra: TodayMissionEditArgs(
+        parentId: widget.parentId ?? '',
+        childrenId: widget.childrenId ?? '',
+        index: index,
+        mission: _missions[index],
+      ),
+    );
+    if (!_usesDemo) {
+      await _loadMissions();
+    }
+  }
+
+  Future<void> _openCheck(int index, MissionCheckTab tab) async {
+    if (index < 0 || index >= _missions.length) {
+      return;
+    }
+    await context.push(
+      '/today-mission/check',
+      extra: TodayMissionCheckArgs(
+        parentId: widget.parentId ?? '',
+        childrenId: widget.childrenId ?? '',
+        index: index,
+        mission: _missions[index],
+        initialTab: tab,
+      ),
+    );
+    if (!_usesDemo) {
+      await _loadMissions();
+    }
+  }
+
+  void _requestDelete(int index) {
     setState(() {
-      _showDeleteAction = true;
       _showDeleteDialog = true;
+      _pendingDeleteIndex = index;
     });
   }
 
   void _cancelDelete() {
     setState(() {
       _showDeleteDialog = false;
+      _pendingDeleteIndex = null;
     });
   }
 
-  void _confirmDelete() {
-    setState(() {
-      if (_missions.isNotEmpty) {
-        _missions.removeAt(0);
+  Future<void> _confirmDelete() async {
+    final int? deleteIndex = _pendingDeleteIndex;
+    if (deleteIndex == null ||
+        deleteIndex < 0 ||
+        deleteIndex >= _missions.length) {
+      _cancelDelete();
+      return;
+    }
+
+    if (!_usesDemo) {
+      final String? parentId = widget.parentId;
+      final String? childrenId = widget.childrenId;
+      if (parentId != null &&
+          parentId.isNotEmpty &&
+          childrenId != null &&
+          childrenId.isNotEmpty) {
+        await TodayMissionStore.removeAt(
+          parentId: parentId,
+          childrenId: childrenId,
+          index: deleteIndex,
+        );
       }
-      _showDeleteAction = false;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _missions.removeAt(deleteIndex);
       _showDeleteDialog = false;
+      _pendingDeleteIndex = null;
     });
+  }
+
+  Future<List<TodayMission>> _loadStoredMissions() async {
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    if (parentId == null ||
+        parentId.isEmpty ||
+        childrenId == null ||
+        childrenId.isEmpty) {
+      return <TodayMission>[];
+    }
+    return TodayMissionStore.load(parentId: parentId, childrenId: childrenId);
+  }
+
+  String get _missionSetupLocation {
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    return Uri(
+      path: '/today-mission/setup',
+      queryParameters: <String, String>{
+        if (parentId != null && parentId.isNotEmpty) 'parentId': parentId,
+        if (childrenId != null && childrenId.isNotEmpty)
+          'childrenId': childrenId,
+      },
+    ).toString();
   }
 
   @override
@@ -77,14 +196,19 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
                   children: [
                     MissionTopBar(onBack: _handleBack),
                     Expanded(
-                      child: isEmpty
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : isEmpty
                           ? const _MissionEmptyState()
                           : _MissionListContent(
                               missions: _missions,
-                              showDeleteAction: _showDeleteAction,
                               onEdit: _openEdit,
+                              onOpenInfo: (int index) =>
+                                  _openCheck(index, MissionCheckTab.info),
+                              onOpenReview: (int index) =>
+                                  _openCheck(index, MissionCheckTab.review),
                               onDelete: _requestDelete,
-                              onAdd: _openEdit,
+                              onAdd: _openAdd,
                             ),
                     ),
                   ],
@@ -125,16 +249,18 @@ class _MissionEmptyState extends StatelessWidget {
 class _MissionListContent extends StatelessWidget {
   const _MissionListContent({
     required this.missions,
-    required this.showDeleteAction,
     required this.onEdit,
+    required this.onOpenInfo,
+    required this.onOpenReview,
     required this.onDelete,
     required this.onAdd,
   });
 
   final List<TodayMission> missions;
-  final bool showDeleteAction;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final ValueChanged<int> onEdit;
+  final ValueChanged<int> onOpenInfo;
+  final ValueChanged<int> onOpenReview;
+  final ValueChanged<int> onDelete;
   final VoidCallback onAdd;
 
   @override
@@ -146,9 +272,11 @@ class _MissionListContent extends StatelessWidget {
           for (int index = 0; index < missions.length; index++) ...[
             _MissionListCard(
               mission: missions[index],
-              showDeleteAction: index == 0 && showDeleteAction,
-              onEdit: onEdit,
-              onDelete: onDelete,
+              index: index,
+              onEdit: () => onEdit(index),
+              onOpenInfo: () => onOpenInfo(index),
+              onOpenReview: () => onOpenReview(index),
+              onDeleteRequested: onDelete,
             ),
             if (index != missions.length - 1) const SizedBox(height: 13.486),
           ],
@@ -167,48 +295,94 @@ class _MissionListContent extends StatelessWidget {
 class _MissionListCard extends StatelessWidget {
   const _MissionListCard({
     required this.mission,
-    required this.showDeleteAction,
+    required this.index,
     required this.onEdit,
-    required this.onDelete,
+    required this.onOpenInfo,
+    required this.onOpenReview,
+    required this.onDeleteRequested,
   });
 
   final TodayMission mission;
-  final bool showDeleteAction;
+  final int index;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback onOpenInfo;
+  final VoidCallback onOpenReview;
+  final ValueChanged<int> onDeleteRequested;
 
   @override
   Widget build(BuildContext context) {
-    if (!showDeleteAction) {
-      return _MissionCardSurface(mission: mission, onEdit: onEdit);
-    }
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(14.385),
-      child: SizedBox(
-        height: 76.421,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                color: const Color(0xFFFFD3D3),
-                child: GestureDetector(
-                  onTap: onDelete,
-                  behavior: HitTestBehavior.opaque,
-                  child: const _DeleteActionButton(),
-                ),
-              ),
-            ),
-            Positioned(
-              left: -58,
-              top: 0,
-              bottom: 0,
-              width: 327,
-              child: _MissionCardSurface(mission: mission, onEdit: onEdit),
-            ),
-          ],
+      child: Dismissible(
+        key: ValueKey<String>(
+          'mission-${mission.title}-${mission.category.name}-$index',
+        ),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (DismissDirection direction) async {
+          onDeleteRequested(index);
+          return false;
+        },
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          color: const Color(0xFFFFD3D3),
+          child: const _DeleteActionButton(),
+        ),
+        child: _MissionCardSurface(
+          mission: mission,
+          onEdit: onEdit,
+          onOpenInfo: onOpenInfo,
+          onOpenReview: onOpenReview,
+        ),
+      ),
+    );
+  }
+}
+
+class _MissionStatusBadge extends StatelessWidget {
+  const _MissionStatusBadge({required this.status, required this.onTap});
+
+  final TodayMissionStatus status;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color backgroundColor;
+    final Color textColor;
+    switch (status) {
+      case TodayMissionStatus.pending:
+        backgroundColor = AppColors.gray100;
+        textColor = AppColors.gray500;
+      case TodayMissionStatus.reviewing:
+        backgroundColor = const Color(0xFFFFF5D6);
+        textColor = const Color(0xFFFF9200);
+      case TodayMissionStatus.completed:
+        backgroundColor = const Color(0xFFE9F8EF);
+        textColor = AppColors.positive;
+      case TodayMissionStatus.rejected:
+        backgroundColor = const Color(0xFFFFE8E8);
+        textColor = AppColors.destructive;
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 24,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          status.label,
+          style: AppTypography.captionBold.copyWith(
+            fontSize: 11,
+            height: 1.334,
+            letterSpacing: 0,
+            color: textColor,
+          ),
         ),
       ),
     );
@@ -216,16 +390,23 @@ class _MissionListCard extends StatelessWidget {
 }
 
 class _MissionCardSurface extends StatelessWidget {
-  const _MissionCardSurface({required this.mission, required this.onEdit});
+  const _MissionCardSurface({
+    required this.mission,
+    required this.onEdit,
+    required this.onOpenInfo,
+    required this.onOpenReview,
+  });
 
   final TodayMission mission;
   final VoidCallback onEdit;
+  final VoidCallback onOpenInfo;
+  final VoidCallback onOpenReview;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 76.421,
-      padding: const EdgeInsets.all(16.183),
+      padding: const EdgeInsets.symmetric(horizontal: 16.183, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(14.385),
@@ -246,26 +427,43 @@ class _MissionCardSurface extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  mission.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.headlineBold.copyWith(
-                    fontSize: 16.183,
-                    height: 1.445,
-                    letterSpacing: -0.0032,
-                    color: const Color(0xFF050505),
+                GestureDetector(
+                  onTap: onOpenInfo,
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(
+                    mission.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.headlineBold.copyWith(
+                      fontSize: 16.183,
+                      height: 1.445,
+                      letterSpacing: -0.0032,
+                      color: const Color(0xFF050505),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2.697),
-                Text(
-                  mission.rewardLabel,
-                  style: AppTypography.labelMedium.copyWith(
-                    fontSize: 12.587,
-                    height: 1.429,
-                    letterSpacing: 0.1825,
-                    color: AppColors.gray500,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        mission.rewardLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.labelMedium.copyWith(
+                          fontSize: 12.587,
+                          height: 1.429,
+                          letterSpacing: 0.1825,
+                          color: AppColors.gray500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _MissionStatusBadge(
+                      status: mission.effectiveStatus,
+                      onTap: onOpenReview,
+                    ),
+                  ],
                 ),
               ],
             ),

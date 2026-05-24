@@ -13,12 +13,14 @@ class TimeTipPopover extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned(
-          top: -8,
-          left: 130,
-          child: CustomPaint(
-            size: const Size(12, 8),
-            painter: TipCaretPainter(),
+        Align(
+          alignment: Alignment.topCenter,
+          child: Transform.translate(
+            offset: const Offset(0, -5),
+            child: CustomPaint(
+              size: const Size(12, 8),
+              painter: TipCaretPainter(),
+            ),
           ),
         ),
         Container(

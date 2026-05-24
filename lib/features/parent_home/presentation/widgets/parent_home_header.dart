@@ -52,19 +52,47 @@ class ParentHomeHeader extends StatelessWidget {
             child: SizedBox(
               width: 32,
               height: 32,
-              child: Center(
-                child: SvgPicture.asset(
-                  hasUnreadNotification
-                      ? 'assets/icons/속성 1=새알림.svg'
-                      : 'assets/icons/속성 1=알림없음.svg',
-                  width: 28.77,
-                  height: 28.77,
-                ),
-              ),
+              child: _NotificationIcon(hasUnread: hasUnreadNotification),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _NotificationIcon extends StatelessWidget {
+  const _NotificationIcon({required this.hasUnread});
+
+  final bool hasUnread;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Center(
+          child: SvgPicture.asset(
+            'assets/icons/alert.svg',
+            width: 32,
+            height: 32,
+          ),
+        ),
+        if (hasUnread)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: AppColors.destructive,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.white, width: 1),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

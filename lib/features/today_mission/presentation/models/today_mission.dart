@@ -4,6 +4,18 @@ enum MissionResetPeriod { daily, weekly, monthly }
 
 enum MissionConfirmationMethod { ai, child, parent }
 
+enum TodayMissionStatus { pending, reviewing, completed, rejected }
+
+enum MissionVerificationType { parent, self, ai }
+
+enum MissionVerificationStatus {
+  idle,
+  waitingParentApproval,
+  waitingAiVerification,
+  approved,
+  rejected,
+}
+
 class TodayMission {
   const TodayMission({
     required this.title,
@@ -12,6 +24,9 @@ class TodayMission {
     required this.confirmationMethod,
     required this.rewardMinutes,
     required this.description,
+    this.status = TodayMissionStatus.pending,
+    this.verificationStatus = MissionVerificationStatus.idle,
+    this.submittedAtText,
   });
 
   final String title;
@@ -20,8 +35,143 @@ class TodayMission {
   final MissionConfirmationMethod confirmationMethod;
   final int rewardMinutes;
   final String description;
+  final TodayMissionStatus status;
+  final MissionVerificationStatus verificationStatus;
+  final String? submittedAtText;
 
-  String get rewardLabel => '$rewardMinutes분 지급';
+  MissionVerificationType get verificationType {
+    return confirmationMethod.verificationType;
+  }
+
+  MissionVerificationStatus get effectiveVerificationStatus {
+    if (verificationStatus != MissionVerificationStatus.idle ||
+        status == TodayMissionStatus.pending) {
+      return verificationStatus;
+    }
+    return missionVerificationStatusFromLegacyStatus(
+      status: status,
+      verificationType: verificationType,
+    );
+  }
+
+  TodayMissionStatus get effectiveStatus {
+    return effectiveVerificationStatus.legacyStatus;
+  }
+
+  TodayMission copyWith({
+    String? title,
+    MissionCategory? category,
+    MissionResetPeriod? resetPeriod,
+    MissionConfirmationMethod? confirmationMethod,
+    int? rewardMinutes,
+    String? description,
+    TodayMissionStatus? status,
+    MissionVerificationStatus? verificationStatus,
+    String? submittedAtText,
+  }) {
+    final MissionConfirmationMethod nextConfirmationMethod =
+        confirmationMethod ?? this.confirmationMethod;
+    final MissionVerificationStatus nextVerificationStatus =
+        verificationStatus ??
+        (status == null
+            ? this.verificationStatus
+            : missionVerificationStatusFromLegacyStatus(
+                status: status,
+                verificationType: nextConfirmationMethod.verificationType,
+              ));
+
+    return TodayMission(
+      title: title ?? this.title,
+      category: category ?? this.category,
+      resetPeriod: resetPeriod ?? this.resetPeriod,
+      confirmationMethod: nextConfirmationMethod,
+      rewardMinutes: rewardMinutes ?? this.rewardMinutes,
+      description: description ?? this.description,
+      status: status ?? nextVerificationStatus.legacyStatus,
+      verificationStatus: nextVerificationStatus,
+      submittedAtText: submittedAtText ?? this.submittedAtText,
+    );
+  }
+
+  String get rewardLabel {
+    final int hours = rewardMinutes ~/ 60;
+    final int minutes = rewardMinutes % 60;
+    if (hours > 0 && minutes > 0) {
+      return '$hours시간 $minutes분 지급';
+    }
+    if (hours > 0) {
+      return '$hours시간 지급';
+    }
+    return '$minutes분 지급';
+  }
+}
+
+extension MissionVerificationStatusX on MissionVerificationStatus {
+  TodayMissionStatus get legacyStatus {
+    switch (this) {
+      case MissionVerificationStatus.idle:
+        return TodayMissionStatus.pending;
+      case MissionVerificationStatus.waitingParentApproval:
+      case MissionVerificationStatus.waitingAiVerification:
+        return TodayMissionStatus.reviewing;
+      case MissionVerificationStatus.approved:
+        return TodayMissionStatus.completed;
+      case MissionVerificationStatus.rejected:
+        return TodayMissionStatus.rejected;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case MissionVerificationStatus.idle:
+        return '수행 대기';
+      case MissionVerificationStatus.waitingParentApproval:
+        return '부모 확인 대기중';
+      case MissionVerificationStatus.waitingAiVerification:
+        return 'AI 확인 대기중';
+      case MissionVerificationStatus.approved:
+        return '수행완료';
+      case MissionVerificationStatus.rejected:
+        return '반려';
+    }
+  }
+}
+
+MissionVerificationStatus missionVerificationStatusFromLegacyStatus({
+  required TodayMissionStatus status,
+  required MissionVerificationType verificationType,
+}) {
+  switch (status) {
+    case TodayMissionStatus.pending:
+      return MissionVerificationStatus.idle;
+    case TodayMissionStatus.reviewing:
+      return switch (verificationType) {
+        MissionVerificationType.parent =>
+          MissionVerificationStatus.waitingParentApproval,
+        MissionVerificationType.ai =>
+          MissionVerificationStatus.waitingAiVerification,
+        MissionVerificationType.self => MissionVerificationStatus.approved,
+      };
+    case TodayMissionStatus.completed:
+      return MissionVerificationStatus.approved;
+    case TodayMissionStatus.rejected:
+      return MissionVerificationStatus.rejected;
+  }
+}
+
+extension TodayMissionStatusLabel on TodayMissionStatus {
+  String get label {
+    switch (this) {
+      case TodayMissionStatus.pending:
+        return '수행전';
+      case TodayMissionStatus.reviewing:
+        return '확인중';
+      case TodayMissionStatus.completed:
+        return '수행완료';
+      case TodayMissionStatus.rejected:
+        return '반려';
+    }
+  }
 }
 
 extension MissionCategoryLabel on MissionCategory {
@@ -78,6 +228,17 @@ extension MissionConfirmationMethodLabel on MissionConfirmationMethod {
         return '자녀 확인';
       case MissionConfirmationMethod.parent:
         return '부모 확인';
+    }
+  }
+
+  MissionVerificationType get verificationType {
+    switch (this) {
+      case MissionConfirmationMethod.ai:
+        return MissionVerificationType.ai;
+      case MissionConfirmationMethod.child:
+        return MissionVerificationType.self;
+      case MissionConfirmationMethod.parent:
+        return MissionVerificationType.parent;
     }
   }
 }

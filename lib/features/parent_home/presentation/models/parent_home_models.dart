@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../today_mission/presentation/models/today_mission.dart';
 
-enum MissionStatus { completed, inProgress, pending }
+enum MissionStatus { pending, reviewing, completed, rejected }
 
 class ParentHomeChild {
   const ParentHomeChild({required this.name, required this.accentColor});
@@ -37,6 +38,21 @@ class MissionItem {
   final String reward;
   final MissionStatus status;
   final String iconAsset;
+
+  factory MissionItem.fromTodayMission(TodayMission mission) {
+    final MissionStatus status = switch (mission.effectiveStatus) {
+      TodayMissionStatus.pending => MissionStatus.pending,
+      TodayMissionStatus.reviewing => MissionStatus.reviewing,
+      TodayMissionStatus.completed => MissionStatus.completed,
+      TodayMissionStatus.rejected => MissionStatus.rejected,
+    };
+    return MissionItem(
+      title: mission.title,
+      reward: mission.rewardLabel,
+      status: status,
+      iconAsset: mission.category.iconAsset,
+    );
+  }
 }
 
 class ParentHomeData {
@@ -44,6 +60,8 @@ class ParentHomeData {
     required this.children,
     required this.hasUnreadNotification,
     this.timeSummary,
+    this.waitingForChildTimePlan = false,
+    this.hasChildTimePlan = false,
     this.missions = const <MissionItem>[],
     this.totalMissionCount,
   });
@@ -51,6 +69,8 @@ class ParentHomeData {
   final List<ParentHomeChild> children;
   final bool hasUnreadNotification;
   final TimeSummary? timeSummary;
+  final bool waitingForChildTimePlan;
+  final bool hasChildTimePlan;
   final List<MissionItem> missions;
   final int? totalMissionCount;
 
@@ -59,11 +79,22 @@ class ParentHomeData {
   bool get hasConfiguredMissions => missions.isNotEmpty;
 
   int get completedMissionCount => missions.where((MissionItem mission) {
-    return mission.status == MissionStatus.completed ||
-        mission.status == MissionStatus.inProgress;
+    return mission.status == MissionStatus.completed;
   }).length;
 
   int get missionCount => totalMissionCount ?? missions.length;
+
+  ParentHomeData copyWith({List<ParentHomeChild>? children}) {
+    return ParentHomeData(
+      children: children ?? this.children,
+      hasUnreadNotification: hasUnreadNotification,
+      timeSummary: timeSummary,
+      waitingForChildTimePlan: waitingForChildTimePlan,
+      hasChildTimePlan: hasChildTimePlan,
+      missions: missions,
+      totalMissionCount: totalMissionCount,
+    );
+  }
 
   factory ParentHomeData.empty() {
     return const ParentHomeData(
@@ -90,6 +121,31 @@ class ParentHomeData {
     );
   }
 
+  factory ParentHomeData.withLinkedChildren({
+    required List<String> names,
+    TimeSummary? timeSummary,
+    bool waitingForChildTimePlan = false,
+    bool hasChildTimePlan = false,
+    List<MissionItem> missions = const <MissionItem>[],
+    bool hasUnreadNotification = true,
+  }) {
+    return ParentHomeData(
+      children: <ParentHomeChild>[
+        for (int index = 0; index < names.length; index++)
+          ParentHomeChild(
+            name: names[index],
+            accentColor: index == 0 ? AppColors.primary : AppColors.gray200,
+          ),
+      ],
+      hasUnreadNotification: hasUnreadNotification,
+      timeSummary: timeSummary,
+      waitingForChildTimePlan: waitingForChildTimePlan,
+      hasChildTimePlan: hasChildTimePlan,
+      missions: missions,
+      totalMissionCount: missions.length,
+    );
+  }
+
   factory ParentHomeData.sampleFilled() {
     return ParentHomeData(
       children: const <ParentHomeChild>[
@@ -103,6 +159,7 @@ class ParentHomeData {
         basicProgress: 0.76,
         bonusProgress: 0.82,
       ),
+      hasChildTimePlan: true,
       missions: const <MissionItem>[
         MissionItem(
           title: '방청소 하기',
@@ -112,7 +169,7 @@ class ParentHomeData {
         MissionItem(
           title: '방청소 하기',
           reward: '1시간 지급',
-          status: MissionStatus.inProgress,
+          status: MissionStatus.reviewing,
         ),
         MissionItem(
           title: '방청소 하기',

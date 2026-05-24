@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/child/child_connection_store.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -36,7 +37,7 @@ abstract final class _ChildAddMetrics {
   static const double sheetPickerInset = 25.5;
   static const double sheetSelectionTop = 58.5;
   static const double sheetYearItemHeight = 50;
-  static const double sheetYearSuffixOffset = 77;
+  static const double sheetYearSuffixOffset = 88;
   static const double sheetButtonBottom = 63;
 }
 
@@ -146,7 +147,7 @@ class _ChildAddPageState extends State<ChildAddPage> {
     }
     if (!_isNameValid) {
       setState(() {
-        _nameErrorText = '이름은 2자 이상 50자 이내로 입력해주세요';
+        _nameErrorText = '이름은 2자 이상 10자 이내로 입력해주세요';
       });
       return;
     }
@@ -171,15 +172,26 @@ class _ChildAddPageState extends State<ChildAddPage> {
       return;
     }
 
-    await ChildConnectionStore.saveLinkedChild(
-      name: _nameController.text.trim(),
-      birthYear: _selectedBirthYear!,
-      code: childCode,
+    final String? parentId = await AuthSession.getCurrentParentId();
+    if (parentId == null || parentId.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      context.go('/login');
+      return;
+    }
+
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: _nameController.text.trim(),
+        childCode: childCode,
+      ),
     );
     if (!mounted) {
       return;
     }
-    context.go('/parent-home');
+    context.pop();
   }
 
   @override
@@ -660,7 +672,7 @@ class _ChildCodeTooltip extends StatelessWidget {
                 if (ChildConnectionStore.usesLocalTestValidator) ...[
                   const SizedBox(height: 8),
                   Text(
-                    '테스트 코드: ${ChildConnectionStore.testChildCode}',
+                    '테스트 코드: ${ChildConnectionStore.testChildCodes.join(', ')}',
                     style: AppTypography.captionBold.copyWith(
                       fontSize: 12,
                       height: 1.334,

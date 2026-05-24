@@ -20,6 +20,8 @@ class DailyTimeRuleList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool canAdd = !coversEveryWeekday(rules);
+
     return Column(
       children: [
         ...rules.asMap().entries.map((MapEntry<int, DailyTimeRule> entry) {
@@ -31,7 +33,7 @@ class DailyTimeRuleList extends StatelessWidget {
             ),
           );
         }),
-        TimeSetupAddButton(onTap: onAdd, muted: true),
+        TimeSetupAddButton(onTap: onAdd, muted: !canAdd, enabled: canAdd),
       ],
     );
   }

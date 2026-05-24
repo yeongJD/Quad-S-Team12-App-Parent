@@ -8,9 +8,14 @@ import '../styles/time_setup_tokens.dart';
 import 'time_setup_action_button.dart';
 
 class DailyTimeRuleSheet extends StatefulWidget {
-  const DailyTimeRuleSheet({super.key, this.initialRule});
+  const DailyTimeRuleSheet({
+    super.key,
+    this.initialRule,
+    this.unavailableDays = const <int>{},
+  });
 
   final DailyTimeRule? initialRule;
+  final Set<int> unavailableDays;
 
   @override
   State<DailyTimeRuleSheet> createState() => _DailyTimeRuleSheetState();
@@ -31,6 +36,9 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
   }
 
   void _toggleDay(int index) {
+    if (_isDayUnavailable(index)) {
+      return;
+    }
     setState(() {
       if (_selectedDays.contains(index)) {
         _selectedDays.remove(index);
@@ -38,6 +46,11 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
         _selectedDays.add(index);
       }
     });
+  }
+
+  bool _isDayUnavailable(int index) {
+    return widget.unavailableDays.contains(index) &&
+        !_selectedDays.contains(index);
   }
 
   Future<void> _openTimePicker() async {
@@ -70,10 +83,14 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    final double sheetHeight =
+        MediaQuery.sizeOf(context).height * TimeSetupSize.timeSheetHeightRatio;
+
     return SafeArea(
       top: false,
       child: Container(
-        height: TimeSetupSize.ruleSheetHeight,
+        height: sheetHeight + bottomInset,
         decoration: const BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.vertical(
@@ -103,6 +120,7 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
                           (MapEntry<int, String> day) => DayChip(
                             label: day.value,
                             selected: _selectedDays.contains(day.key),
+                            enabled: !_isDayUnavailable(day.key),
                             onTap: () => _toggleDay(day.key),
                           ),
                         )
@@ -121,7 +139,7 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
             Positioned(
               left: TimeSetupSpacing.sheetHorizontalPadding,
               right: TimeSetupSpacing.sheetHorizontalPadding,
-              bottom: TimeSetupSpacing.sheetButtonBottom,
+              bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
               child: SheetConfirmButton(enabled: _canConfirm, onTap: _confirm),
             ),
           ],
@@ -147,17 +165,19 @@ class DayChip extends StatelessWidget {
     super.key,
     required this.label,
     required this.selected,
+    this.enabled = true,
     required this.onTap,
   });
 
   final String label;
   final bool selected;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: TimeSetupSize.dayChip,
@@ -174,7 +194,11 @@ class DayChip extends StatelessWidget {
             fontSize: 16,
             height: 1.5,
             letterSpacing: 0,
-            color: selected ? AppColors.white : AppColors.gray600,
+            color: selected
+                ? AppColors.white
+                : enabled
+                ? AppColors.gray600
+                : AppColors.gray300,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -250,26 +274,39 @@ class TimeSelectorPart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          value,
-          style: TimeSetupTextStyles.timeNumber(
-            selected: selected,
-          ).copyWith(color: color),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: AppTypography.headlineRegular.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: 0,
-            color: const Color(0xFF050505),
+    final double groupWidth = label == '시간' ? 88 : 70;
+
+    return SizedBox(
+      width: groupWidth,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Baseline(
+            baseline: 20,
+            baselineType: TextBaseline.alphabetic,
+            child: Text(
+              value,
+              style: TimeSetupTextStyles.timeNumber(
+                selected: selected,
+              ).copyWith(color: color),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 15),
+          Baseline(
+            baseline: 20,
+            baselineType: TextBaseline.alphabetic,
+            child: Text(
+              label,
+              style: AppTypography.headlineRegular.copyWith(
+                fontSize: 18,
+                height: 1.445,
+                letterSpacing: 0,
+                color: const Color(0xFF050505),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -349,10 +386,14 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+    final double sheetHeight =
+        MediaQuery.sizeOf(context).height * TimeSetupSize.timeSheetHeightRatio;
+
     return SafeArea(
       top: false,
       child: Container(
-        height: TimeSetupSize.pickerSheetHeight,
+        height: sheetHeight + bottomInset,
         decoration: const BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.vertical(
@@ -371,7 +412,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
               left: TimeSetupSpacing.sheetHorizontalPadding,
               right: TimeSetupSpacing.sheetHorizontalPadding,
               top: TimeSetupSpacing.pickerHighlightTop,
-              height: TimeSetupSize.fieldHeight,
+              height: 44.954,
               child: const DecoratedBox(
                 decoration: BoxDecoration(
                   border: Border(
@@ -412,12 +453,17 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
                 ],
               ),
             ),
-            const Positioned(left: 143, top: 141, child: PickerUnitLabel('시간')),
-            const Positioned(right: 63, top: 141, child: PickerUnitLabel('분')),
+            const Positioned(
+              left: TimeSetupSpacing.sheetHorizontalPadding,
+              right: TimeSetupSpacing.sheetHorizontalPadding,
+              top: TimeSetupSpacing.pickerHighlightTop,
+              height: 44.954,
+              child: IgnorePointer(child: PickerSelectionUnits()),
+            ),
             Positioned(
               left: TimeSetupSpacing.sheetHorizontalPadding,
               right: TimeSetupSpacing.sheetHorizontalPadding,
-              bottom: TimeSetupSpacing.sheetButtonBottom,
+              bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
               child: SheetConfirmButton(enabled: true, onTap: _confirm),
             ),
           ],
@@ -473,20 +519,38 @@ class PickerColumn extends StatelessWidget {
   }
 }
 
-class PickerUnitLabel extends StatelessWidget {
-  const PickerUnitLabel(this.text, {super.key});
+class PickerSelectionUnits extends StatelessWidget {
+  const PickerSelectionUnits({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: const [
+        Positioned(left: 130, top: 9.5, child: _PickerUnitLabel('시간')),
+        Positioned(right: 47, top: 9.5, child: _PickerUnitLabel('분')),
+      ],
+    );
+  }
+}
+
+class _PickerUnitLabel extends StatelessWidget {
+  const _PickerUnitLabel(this.text);
 
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: AppTypography.headlineMedium.copyWith(
-        fontSize: 18,
-        height: 1.4,
-        letterSpacing: 0,
-        color: const Color(0xFF050505),
+    return Baseline(
+      baseline: 20,
+      baselineType: TextBaseline.alphabetic,
+      child: Text(
+        text,
+        style: AppTypography.headlineMedium.copyWith(
+          fontSize: 18,
+          height: 1.4,
+          letterSpacing: 0,
+          color: const Color(0xFF050505),
+        ),
       ),
     );
   }

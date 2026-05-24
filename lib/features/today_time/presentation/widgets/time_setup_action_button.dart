@@ -41,10 +41,12 @@ class TimeSetupAddButton extends StatelessWidget {
     super.key,
     required this.onTap,
     this.muted = false,
+    this.enabled = true,
   });
 
   final VoidCallback onTap;
   final bool muted;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +55,7 @@ class TimeSetupAddButton extends StatelessWidget {
       button: true,
       child: GestureDetector(
         key: const ValueKey<String>('daily-time-add-button'),
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         behavior: HitTestBehavior.opaque,
         child: Container(
           width: TimeSetupSize.addButton,

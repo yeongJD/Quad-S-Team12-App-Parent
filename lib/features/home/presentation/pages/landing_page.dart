@@ -3,12 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class LandingPage extends StatelessWidget {
+  const LandingPage({super.key});
 
   static const double _designWidth = 375;
   static const double _designHeight = 812;
@@ -22,49 +21,33 @@ class HomePage extends StatefulWidget {
   static const double _buttonHeight = 48.55;
 
   @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  @override
-  void initState() {
-    super.initState();
-    _redirectCachedLogin();
-  }
-
-  Future<void> _redirectCachedLogin() async {
-    final bool isLoggedIn = await AuthSession.isLoggedIn();
-    if (!mounted || !isLoggedIn) {
-      return;
-    }
-    context.go('/parent-home');
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.gray050,
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double xScale = constraints.maxWidth / HomePage._designWidth;
-          final double yScale = constraints.maxHeight / HomePage._designHeight;
+          final double xScale = constraints.maxWidth / LandingPage._designWidth;
+          final double yScale =
+              constraints.maxHeight / LandingPage._designHeight;
 
           return Stack(
             children: [
               Positioned(
-                top: HomePage._introTop * yScale,
+                top: LandingPage._introTop * yScale,
                 left:
-                    (constraints.maxWidth - (HomePage._introWidth * xScale)) /
+                    (constraints.maxWidth -
+                        (LandingPage._introWidth * xScale)) /
                     2,
-                width: HomePage._introWidth * xScale,
+                width: LandingPage._introWidth * xScale,
                 child: _IntroSection(xScale: xScale, yScale: yScale),
               ),
               Positioned(
                 left:
-                    (constraints.maxWidth - (HomePage._actionWidth * xScale)) /
+                    (constraints.maxWidth -
+                        (LandingPage._actionWidth * xScale)) /
                     2,
-                bottom: HomePage._actionBottom * yScale,
-                width: HomePage._actionWidth * xScale,
+                bottom: LandingPage._actionBottom * yScale,
+                width: LandingPage._actionWidth * xScale,
                 child: _ActionSection(xScale: xScale, yScale: yScale),
               ),
             ],
@@ -98,9 +81,9 @@ class _IntroSection extends StatelessWidget {
             letterSpacing: -0.698 * xScale,
           ),
         ),
-        SizedBox(height: HomePage._introGap * yScale),
+        SizedBox(height: LandingPage._introGap * yScale),
         _LogoIcon(scaleX: xScale, scaleY: yScale),
-        SizedBox(height: HomePage._introGap * yScale),
+        SizedBox(height: LandingPage._introGap * yScale),
         Text(
           '통제를 넘어 자율로,\n자기주도적 스마트폰 사용의 시작',
           textAlign: TextAlign.center,
@@ -124,7 +107,7 @@ class _LogoIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double iconSize = HomePage._iconSize * scaleX;
+    final double iconSize = LandingPage._iconSize * scaleX;
 
     return SizedBox(
       width: iconSize,
@@ -172,7 +155,7 @@ class _ActionSection extends StatelessWidget {
       children: [
         SizedBox(
           width: double.infinity,
-          height: HomePage._buttonHeight * yScale,
+          height: LandingPage._buttonHeight * yScale,
           child: FilledButton(
             onPressed: () => context.push('/signup'),
             style: FilledButton.styleFrom(
@@ -195,7 +178,7 @@ class _ActionSection extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: HomePage._actionGap * yScale),
+        SizedBox(height: LandingPage._actionGap * yScale),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [

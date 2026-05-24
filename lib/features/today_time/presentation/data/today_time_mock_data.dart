@@ -33,6 +33,17 @@ abstract final class TodayTimeMockData {
     );
   }
 
+  static TimePlanConfirmationData get parentOnlyConfirmation {
+    final _DateLabels labels = _DateLabels.current();
+    return TimePlanConfirmationData(
+      monthLabel: labels.monthLabel,
+      monthlyTotal: const TimeSelection(hour: 64, minute: 40),
+      weekLabel: labels.weekLabel,
+      childRevisionAllowed: false,
+      weeklyRules: <DailyTimeRule>[],
+    );
+  }
+
   static TimePlanConfirmationData get filledConfirmation {
     final _DateLabels labels = _DateLabels.current();
     return TimePlanConfirmationData(
@@ -64,9 +75,12 @@ abstract final class TodayTimeMockData {
         return allEmptyConfirmation;
       case 'child-empty':
         return childEmptyConfirmation;
+      case 'parent-only':
+        return parentOnlyConfirmation;
       case 'filled':
-      default:
         return filledConfirmation;
+      default:
+        return parentOnlyConfirmation;
     }
   }
 }
