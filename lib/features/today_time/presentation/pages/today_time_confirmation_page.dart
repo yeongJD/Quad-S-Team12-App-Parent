@@ -5,23 +5,28 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../data/child_weekly_time_plan_store.dart';
 import '../data/daily_time_rule_store.dart';
+import '../data/monthly_total_time_store.dart';
 import '../data/today_time_mock_data.dart';
+import '../data/whitelist_app_store.dart';
 import '../models/daily_time_rule.dart';
 import '../models/time_plan_confirmation.dart';
 import '../styles/time_setup_tokens.dart';
 import '../widgets/time_plan_confirmation_widgets.dart';
 import '../widgets/time_setup_top_bar.dart';
+import 'today_time_setup_page.dart';
 
 class TodayTimeConfirmationPage extends StatefulWidget {
   const TodayTimeConfirmationPage({
     super.key,
     this.parentId,
     this.childrenId,
+    this.demo,
     this.initialData,
   });
 
   final String? parentId;
   final String? childrenId;
+  final String? demo;
   final TimePlanConfirmationData? initialData;
 
   @override
@@ -38,6 +43,9 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     super.initState();
     _data = widget.initialData ?? TodayTimeMockData.parentOnlyConfirmation;
     _childRevisionAllowed = _data.childRevisionAllowed;
+    if (widget.demo == 'filled') {
+      return;
+    }
     _loadStoredTimePlan();
   }
 
@@ -64,6 +72,16 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
           parentId: parentId,
           childrenId: childrenId,
         );
+    final int calculatedMonthlyMinutes = _calculateMonthlyMinutes(parentRules);
+    final int? savedMonthlyMinutes = await MonthlyTotalTimeStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    final int monthlyTotalMinutes =
+        savedMonthlyMinutes == null ||
+            savedMonthlyMinutes < calculatedMonthlyMinutes
+        ? calculatedMonthlyMinutes
+        : savedMonthlyMinutes;
     if (!mounted) {
       return;
     }
@@ -72,18 +90,14 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     final TimePlanConfirmationData storedData = childWeeklyRules.isEmpty
         ? TimePlanConfirmationData(
             monthLabel: labels.monthLabel,
-            monthlyTotal: _timeFromMinutes(
-              _calculateMonthlyMinutes(parentRules),
-            ),
+            monthlyTotal: _timeFromMinutes(monthlyTotalMinutes),
             weekLabel: labels.weekLabel,
             weeklyRules: const <DailyTimeRule>[],
             childRevisionAllowed: false,
           )
         : TimePlanConfirmationData(
             monthLabel: labels.monthLabel,
-            monthlyTotal: _timeFromMinutes(
-              _calculateMonthlyMinutes(parentRules),
-            ),
+            monthlyTotal: _timeFromMinutes(monthlyTotalMinutes),
             weekLabel: labels.weekLabel,
             weeklyTotal: _timeFromMinutes(
               _calculateWeeklyMinutes(childWeeklyRules),
@@ -120,6 +134,26 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
             parentId: parentId,
             childrenId: childrenId,
           );
+    final Set<String> savedWhitelistAppIds =
+        parentId == null ||
+            parentId.isEmpty ||
+            childrenId == null ||
+            childrenId.isEmpty
+        ? <String>{}
+        : await WhitelistAppStore.load(
+            parentId: parentId,
+            childrenId: childrenId,
+          );
+    final int? savedMonthlyTotalMinutes =
+        parentId == null ||
+            parentId.isEmpty ||
+            childrenId == null ||
+            childrenId.isEmpty
+        ? null
+        : await MonthlyTotalTimeStore.load(
+            parentId: parentId,
+            childrenId: childrenId,
+          );
     if (!mounted) {
       return;
     }
@@ -134,7 +168,11 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
 
     context.push(
       _timeSetupLocation,
-      extra: List<DailyTimeRule>.from(rulesToEdit),
+      extra: TodayTimeSetupArgs(
+        rules: List<DailyTimeRule>.from(rulesToEdit),
+        monthlyTotalMinutes: savedMonthlyTotalMinutes,
+        whitelistAppIds: Set<String>.from(savedWhitelistAppIds),
+      ),
     );
   }
 

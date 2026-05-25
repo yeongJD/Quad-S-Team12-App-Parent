@@ -21,14 +21,30 @@ class TodayTimeSetupPage extends StatefulWidget {
     this.parentId,
     this.childrenId,
     this.initialRules = TodayTimeMockData.emptyDailyRules,
+    this.initialMonthlyTotalMinutes,
+    this.initialWhitelistAppIds,
   });
 
   final String? parentId;
   final String? childrenId;
   final List<DailyTimeRule> initialRules;
+  final int? initialMonthlyTotalMinutes;
+  final Set<String>? initialWhitelistAppIds;
 
   @override
   State<TodayTimeSetupPage> createState() => _TodayTimeSetupPageState();
+}
+
+class TodayTimeSetupArgs {
+  const TodayTimeSetupArgs({
+    required this.rules,
+    this.monthlyTotalMinutes,
+    this.whitelistAppIds,
+  });
+
+  final List<DailyTimeRule> rules;
+  final int? monthlyTotalMinutes;
+  final Set<String>? whitelistAppIds;
 }
 
 class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
@@ -158,6 +174,8 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
         parentId: parentId,
         childrenId: childrenId,
         rules: List<DailyTimeRule>.from(_rules),
+        initialMonthlyTotalMinutes: widget.initialMonthlyTotalMinutes,
+        initialSelectedAppIds: widget.initialWhitelistAppIds,
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../data/whitelist_app_store.dart';
 import '../data/whitelist_app_mock_data.dart';
 import '../models/daily_time_rule.dart';
 import '../models/whitelist_app.dart';
@@ -18,14 +19,14 @@ class WhitelistSetupArgs {
     required this.childrenId,
     required this.total,
     required this.rules,
-    this.initialSelectedAppIds = const <String>{},
+    this.initialSelectedAppIds,
   });
 
   final String? parentId;
   final String? childrenId;
   final TimeSelection total;
   final List<DailyTimeRule> rules;
-  final Set<String> initialSelectedAppIds;
+  final Set<String>? initialSelectedAppIds;
 }
 
 class WhitelistSetupPage extends StatefulWidget {
@@ -36,7 +37,7 @@ class WhitelistSetupPage extends StatefulWidget {
     required this.total,
     required this.rules,
     this.categories = WhitelistAppMockData.appleCategories,
-    this.initialSelectedAppIds = const <String>{},
+    this.initialSelectedAppIds,
   });
 
   final String? parentId;
@@ -44,7 +45,7 @@ class WhitelistSetupPage extends StatefulWidget {
   final TimeSelection total;
   final List<DailyTimeRule> rules;
   final List<WhitelistAppCategory> categories;
-  final Set<String> initialSelectedAppIds;
+  final Set<String>? initialSelectedAppIds;
 
   @override
   State<WhitelistSetupPage> createState() => _WhitelistSetupPageState();
@@ -61,7 +62,35 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
   @override
   void initState() {
     super.initState();
-    _selectedAppIds = <String>{...widget.initialSelectedAppIds};
+    _selectedAppIds = <String>{...?widget.initialSelectedAppIds};
+    _restoreSavedWhitelistIfNeeded();
+  }
+
+  Future<void> _restoreSavedWhitelistIfNeeded() async {
+    if (widget.initialSelectedAppIds != null) {
+      return;
+    }
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    if (parentId == null ||
+        parentId.isEmpty ||
+        childrenId == null ||
+        childrenId.isEmpty) {
+      return;
+    }
+
+    final Set<String> savedAppIds = await WhitelistAppStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    if (!mounted || savedAppIds.isEmpty) {
+      return;
+    }
+    setState(() {
+      _selectedAppIds
+        ..clear()
+        ..addAll(savedAppIds);
+    });
   }
 
   @override
@@ -165,7 +194,22 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
     });
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    if (parentId != null &&
+        parentId.isNotEmpty &&
+        childrenId != null &&
+        childrenId.isNotEmpty) {
+      await WhitelistAppStore.save(
+        parentId: parentId,
+        childrenId: childrenId,
+        appIds: Set<String>.from(_selectedAppIds),
+      );
+    }
+    if (!mounted) {
+      return;
+    }
     context.go(
       TodayTimeRoutes.complete,
       extra: TodayTimeCompleteData(

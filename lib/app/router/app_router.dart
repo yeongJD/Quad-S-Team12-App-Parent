@@ -84,6 +84,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => TodayTimeConfirmationPage(
         parentId: state.uri.queryParameters['parentId'],
         childrenId: state.uri.queryParameters['childrenId'],
+        demo: state.uri.queryParameters['demo'],
         initialData: TodayTimeMockData.confirmationForDemo(
           state.uri.queryParameters['demo'],
         ),
@@ -93,13 +94,20 @@ final GoRouter appRouter = GoRouter(
       path: TodayTimeRoutes.setup,
       builder: (context, state) {
         final Object? extra = state.extra;
-        final List<DailyTimeRule> initialRules = extra is List<DailyTimeRule>
+        final TodayTimeSetupArgs? args = extra is TodayTimeSetupArgs
             ? extra
-            : TodayTimeMockData.emptyDailyRules;
+            : null;
+        final List<DailyTimeRule> initialRules =
+            args?.rules ??
+            (extra is List<DailyTimeRule>
+                ? extra
+                : TodayTimeMockData.emptyDailyRules);
         return TodayTimeSetupPage(
           parentId: state.uri.queryParameters['parentId'],
           childrenId: state.uri.queryParameters['childrenId'],
           initialRules: initialRules,
+          initialMonthlyTotalMinutes: args?.monthlyTotalMinutes,
+          initialWhitelistAppIds: args?.whitelistAppIds,
         );
       },
     ),
@@ -112,6 +120,8 @@ final GoRouter appRouter = GoRouter(
             parentId: extra.parentId,
             childrenId: extra.childrenId,
             rules: extra.rules,
+            initialMonthlyTotalMinutes: extra.initialMonthlyTotalMinutes,
+            initialSelectedAppIds: extra.initialSelectedAppIds,
           );
         }
         final List<DailyTimeRule> rules = extra is List<DailyTimeRule>

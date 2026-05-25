@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../data/monthly_total_time_store.dart';
 import '../models/daily_time_rule.dart';
 import '../routes/today_time_routes.dart';
 import '../styles/time_setup_tokens.dart';
@@ -16,11 +17,15 @@ class MonthlyTimeSetupArgs {
     required this.parentId,
     required this.childrenId,
     required this.rules,
+    this.initialMonthlyTotalMinutes,
+    this.initialSelectedAppIds,
   });
 
   final String? parentId;
   final String? childrenId;
   final List<DailyTimeRule> rules;
+  final int? initialMonthlyTotalMinutes;
+  final Set<String>? initialSelectedAppIds;
 }
 
 class MonthlyTimeSetupPage extends StatefulWidget {
@@ -29,11 +34,15 @@ class MonthlyTimeSetupPage extends StatefulWidget {
     this.parentId,
     this.childrenId,
     required this.rules,
+    this.initialMonthlyTotalMinutes,
+    this.initialSelectedAppIds,
   });
 
   final String? parentId;
   final String? childrenId;
   final List<DailyTimeRule> rules;
+  final int? initialMonthlyTotalMinutes;
+  final Set<String>? initialSelectedAppIds;
 
   @override
   State<MonthlyTimeSetupPage> createState() => _MonthlyTimeSetupPageState();
@@ -47,7 +56,11 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
   void initState() {
     super.initState();
     _minimumTotalMinutes = _calculateMonthlyMinutes(widget.rules);
-    _selectedTotalMinutes = _minimumTotalMinutes;
+    _selectedTotalMinutes =
+        widget.initialMonthlyTotalMinutes == null ||
+            widget.initialMonthlyTotalMinutes! < _minimumTotalMinutes
+        ? _minimumTotalMinutes
+        : widget.initialMonthlyTotalMinutes!;
   }
 
   int _calculateMonthlyMinutes(List<DailyTimeRule> rules) {
@@ -102,6 +115,34 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
       return;
     }
     router.go(TodayTimeRoutes.setup);
+  }
+
+  Future<void> _continueToWhitelist(TimeSelection total) async {
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    if (parentId != null &&
+        parentId.isNotEmpty &&
+        childrenId != null &&
+        childrenId.isNotEmpty) {
+      await MonthlyTotalTimeStore.save(
+        parentId: parentId,
+        childrenId: childrenId,
+        totalMinutes: _selectedTotalMinutes,
+      );
+    }
+    if (!mounted) {
+      return;
+    }
+    context.go(
+      TodayTimeRoutes.whitelist,
+      extra: WhitelistSetupArgs(
+        parentId: parentId,
+        childrenId: childrenId,
+        total: total,
+        rules: List<DailyTimeRule>.from(widget.rules),
+        initialSelectedAppIds: widget.initialSelectedAppIds,
+      ),
+    );
   }
 
   @override
@@ -164,15 +205,7 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
                   child: TimeSetupActionButton(
                     label: '확인',
                     enabled: true,
-                    onTap: () => context.go(
-                      TodayTimeRoutes.whitelist,
-                      extra: WhitelistSetupArgs(
-                        parentId: widget.parentId,
-                        childrenId: widget.childrenId,
-                        total: total,
-                        rules: List<DailyTimeRule>.from(widget.rules),
-                      ),
-                    ),
+                    onTap: () => _continueToWhitelist(total),
                   ),
                 ),
               ],

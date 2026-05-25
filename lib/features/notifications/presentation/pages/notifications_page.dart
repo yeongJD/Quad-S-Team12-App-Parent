@@ -6,7 +6,6 @@ import '../../../../core/auth/auth_session.dart';
 import '../../../../core/child/child_connection_store.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../today_mission/presentation/data/today_mission_store.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
 import '../data/notification_store.dart';
@@ -89,54 +88,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<bool> _openMissionNotification(NotificationItem item) async {
-    final String? parentId = _parentId;
-    if (parentId == null || parentId.isEmpty) {
-      _showFallbackMessage();
-      context.push('/today-mission');
-      return true;
-    }
+    final String parentId = _parentId?.isNotEmpty == true
+        ? _parentId!
+        : 'mock-parent';
 
     final ConnectedChild? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
-    if (child == null) {
-      _showFallbackMessage();
-      context.push(_missionListLocation(parentId: parentId));
-      return true;
-    }
-
-    final int? missionIndex = _missionIndexFromPayload(item);
-    if (missionIndex == null) {
-      _showFallbackMessage();
-      context.push(
-        _missionListLocation(parentId: parentId, childrenId: child.childrenId),
-      );
-      return true;
-    }
-
-    final List<TodayMission> missions = await TodayMissionStore.load(
-      parentId: parentId,
-      childrenId: child.childrenId,
-    );
-    if (!mounted) {
-      return false;
-    }
-    if (missionIndex < 0 || missionIndex >= missions.length) {
-      _showFallbackMessage();
-      context.push(
-        _missionListLocation(parentId: parentId, childrenId: child.childrenId),
-      );
-      return true;
-    }
+    final String childrenId =
+        child?.childrenId ?? _childCodeFromPayload(item) ?? 'GDG12-1';
+    final int missionIndex = _missionIndexFromPayload(item) ?? 0;
 
     context.push(
       '/today-mission/check',
       extra: TodayMissionCheckArgs(
         parentId: parentId,
-        childrenId: child.childrenId,
+        childrenId: childrenId,
         index: missionIndex,
-        mission: missions[missionIndex],
+        mission: _missionMockForNotification(item.type),
         initialTab: MissionCheckTab.review,
       ),
     );
@@ -147,7 +117,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final String? parentId = _parentId;
     if (parentId == null || parentId.isEmpty) {
       _showFallbackMessage();
-      context.push('/today-time');
+      context.push('/today-time?demo=filled');
       return true;
     }
 
@@ -157,12 +127,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
     if (child == null) {
       _showFallbackMessage();
-      context.push(_timeLocation(parentId: parentId));
+      context.push(_timeLocation(parentId: parentId, demo: 'filled'));
       return true;
     }
 
     context.push(
-      _timeLocation(parentId: parentId, childrenId: child.childrenId),
+      _timeLocation(
+        parentId: parentId,
+        childrenId: child.childrenId,
+        demo: 'filled',
+      ),
     );
     return true;
   }
@@ -216,24 +190,62 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return null;
   }
 
-  String _missionListLocation({required String parentId, String? childrenId}) {
-    return Uri(
-      path: '/today-mission',
-      queryParameters: <String, String>{
-        'parentId': parentId,
-        if (childrenId != null && childrenId.isNotEmpty)
-          'childrenId': childrenId,
-      },
-    ).toString();
+  String? _childCodeFromPayload(NotificationItem item) {
+    final Object? childCode = item.payload?['childCode'];
+    return childCode is String && childCode.isNotEmpty ? childCode : null;
   }
 
-  String _timeLocation({required String parentId, String? childrenId}) {
+  TodayMission _missionMockForNotification(NotificationType type) {
+    switch (type) {
+      case NotificationType.missionCompleted:
+        return const TodayMission(
+          title: '숙제하기',
+          category: MissionCategory.study,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.child,
+          rewardMinutes: 15,
+          description: '오늘 숙제를 끝내고 완료 사진을 올리기',
+          status: TodayMissionStatus.completed,
+          verificationStatus: MissionVerificationStatus.approved,
+          submittedAtText: '2025.1.21 오후 7:01',
+        );
+      case NotificationType.missionConfirmationRequested:
+        return const TodayMission(
+          title: '숙제하기',
+          category: MissionCategory.study,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.parent,
+          rewardMinutes: 15,
+          description: '오늘 숙제를 끝내고 완료 사진을 올리기',
+          status: TodayMissionStatus.reviewing,
+          verificationStatus: MissionVerificationStatus.waitingParentApproval,
+          submittedAtText: '2025.1.21 오후 7:01',
+        );
+      case NotificationType.weeklyUsageReport:
+      case NotificationType.timeConfigured:
+        return const TodayMission(
+          title: '미션 확인',
+          category: MissionCategory.routine,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.child,
+          rewardMinutes: 0,
+          description: '',
+        );
+    }
+  }
+
+  String _timeLocation({
+    required String parentId,
+    String? childrenId,
+    String? demo,
+  }) {
     return Uri(
       path: '/today-time',
       queryParameters: <String, String>{
         'parentId': parentId,
         if (childrenId != null && childrenId.isNotEmpty)
           'childrenId': childrenId,
+        if (demo != null && demo.isNotEmpty) 'demo': demo,
       },
     ).toString();
   }

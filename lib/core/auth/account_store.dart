@@ -128,6 +128,8 @@ class AccountChildData {
     this.photoBase64,
     this.dailyRules = const <Map<String, Object?>>[],
     this.childWeeklyRules = const <Map<String, Object?>>[],
+    this.monthlyTotalMinutes,
+    this.whitelistAppIds = const <String>[],
     this.missions = const <Map<String, Object?>>[],
   });
 
@@ -137,6 +139,8 @@ class AccountChildData {
   final String? photoBase64;
   final List<Map<String, Object?>> dailyRules;
   final List<Map<String, Object?>> childWeeklyRules;
+  final int? monthlyTotalMinutes;
+  final List<String> whitelistAppIds;
   final List<Map<String, Object?>> missions;
 
   AccountChildData copyWith({
@@ -144,6 +148,8 @@ class AccountChildData {
     String? photoBase64,
     List<Map<String, Object?>>? dailyRules,
     List<Map<String, Object?>>? childWeeklyRules,
+    int? monthlyTotalMinutes,
+    List<String>? whitelistAppIds,
     List<Map<String, Object?>>? missions,
   }) {
     return AccountChildData(
@@ -153,6 +159,8 @@ class AccountChildData {
       photoBase64: photoBase64 ?? this.photoBase64,
       dailyRules: dailyRules ?? this.dailyRules,
       childWeeklyRules: childWeeklyRules ?? this.childWeeklyRules,
+      monthlyTotalMinutes: monthlyTotalMinutes ?? this.monthlyTotalMinutes,
+      whitelistAppIds: whitelistAppIds ?? this.whitelistAppIds,
       missions: missions ?? this.missions,
     );
   }
@@ -165,6 +173,9 @@ class AccountChildData {
       if (photoBase64 case final String photoBase64) 'photoBase64': photoBase64,
       'dailyRules': dailyRules,
       'childWeeklyRules': childWeeklyRules,
+      if (monthlyTotalMinutes case final int monthlyTotalMinutes)
+        'monthlyTotalMinutes': monthlyTotalMinutes,
+      'whitelistAppIds': whitelistAppIds,
       'missions': missions,
     };
   }
@@ -189,6 +200,10 @@ class AccountChildData {
       photoBase64: photoBase64 is String ? photoBase64 : null,
       dailyRules: _decodeMapList(json['dailyRules']),
       childWeeklyRules: _decodeMapList(json['childWeeklyRules']),
+      monthlyTotalMinutes: json['monthlyTotalMinutes'] is int
+          ? json['monthlyTotalMinutes'] as int
+          : null,
+      whitelistAppIds: _decodeStringList(json['whitelistAppIds']),
       missions: _decodeMapList(json['missions']),
     );
   }
@@ -198,6 +213,13 @@ class AccountChildData {
       return <Map<String, Object?>>[];
     }
     return value.whereType<Map<String, Object?>>().toList();
+  }
+
+  static List<String> _decodeStringList(Object? value) {
+    if (value is! List<Object?>) {
+      return <String>[];
+    }
+    return value.whereType<String>().toList();
   }
 }
 
