@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/repositories/mission_repository.dart';
 import '../data/today_mission_mock_data.dart';
-import '../data/today_mission_store.dart';
 import '../models/today_mission.dart';
 import 'today_mission_check_page.dart';
 import 'today_mission_edit_page.dart';
@@ -28,6 +29,8 @@ class TodayMissionListPage extends StatefulWidget {
 }
 
 class _TodayMissionListPageState extends State<TodayMissionListPage> {
+  final MissionRepository _missionRepository = createMissionRepository();
+
   List<TodayMission> _missions = <TodayMission>[];
   bool _isLoading = true;
   late bool _showDeleteDialog = widget.demo == 'dialog';
@@ -137,7 +140,7 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
           parentId.isNotEmpty &&
           childrenId != null &&
           childrenId.isNotEmpty) {
-        await TodayMissionStore.removeAt(
+        await _missionRepository.removeMissionAt(
           parentId: parentId,
           childrenId: childrenId,
           index: deleteIndex,
@@ -163,7 +166,12 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
         childrenId.isEmpty) {
       return <TodayMission>[];
     }
-    return TodayMissionStore.load(parentId: parentId, childrenId: childrenId);
+    final Result<List<TodayMission>> result = await _missionRepository
+        .loadMissions(parentId: parentId, childrenId: childrenId);
+    return switch (result) {
+      Success<List<TodayMission>>(:final data) => data,
+      Failure<List<TodayMission>>() => const <TodayMission>[],
+    };
   }
 
   String get _missionSetupLocation {

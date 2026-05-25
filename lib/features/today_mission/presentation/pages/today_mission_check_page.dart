@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/repositories/mission_repository.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
 import '../../../today_time/presentation/styles/time_setup_tokens.dart';
 import '../../../today_time/presentation/widgets/daily_time_rule_sheet.dart';
-import '../data/today_mission_store.dart';
 import '../models/today_mission.dart';
 import '../widgets/mission_top_bar.dart';
 
@@ -52,6 +52,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
   static const double _horizontalPadding = 24;
   static const String _fallbackSubmittedAt = '2025.1.21 오후 7:01';
 
+  final MissionRepository _missionRepository = createMissionRepository();
   late TodayMission? _mission = widget.initialMission;
   late int _selectedTabIndex = widget.initialTab.index;
 
@@ -84,12 +85,32 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
       verificationStatus: verificationStatus,
       submittedAtText: mission.submittedAtText ?? _fallbackSubmittedAt,
     );
-    await TodayMissionStore.updateAt(
-      parentId: parentId,
-      childrenId: childrenId,
-      index: missionIndex,
-      mission: updatedMission,
-    );
+    // Use dedicated approve/reject endpoints when the status transition is a
+    // verdict; fall back to a generic updateAt for the in-progress states
+    // (idle / waiting*).
+    switch (verificationStatus) {
+      case MissionVerificationStatus.approved:
+        await _missionRepository.approveMissionAt(
+          parentId: parentId,
+          childrenId: childrenId,
+          index: missionIndex,
+        );
+      case MissionVerificationStatus.rejected:
+        await _missionRepository.rejectMissionAt(
+          parentId: parentId,
+          childrenId: childrenId,
+          index: missionIndex,
+        );
+      case MissionVerificationStatus.idle:
+      case MissionVerificationStatus.waitingParentApproval:
+      case MissionVerificationStatus.waitingAiVerification:
+        await _missionRepository.updateMissionAt(
+          parentId: parentId,
+          childrenId: childrenId,
+          index: missionIndex,
+          mission: updatedMission,
+        );
+    }
     if (!mounted) {
       return;
     }

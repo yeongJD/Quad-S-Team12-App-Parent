@@ -6,9 +6,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
 import '../../../today_time/presentation/styles/time_setup_tokens.dart';
+import '../../../../data/repositories/mission_repository.dart';
 import '../../../today_time/presentation/widgets/daily_time_rule_sheet.dart';
 import '../../../today_time/presentation/widgets/time_setup_action_button.dart';
-import '../data/today_mission_store.dart';
 import '../models/today_mission.dart';
 import '../widgets/mission_top_bar.dart';
 
@@ -47,6 +47,7 @@ class TodayMissionEditPage extends StatefulWidget {
 class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
   static const double _contentHorizontalPadding = 24;
 
+  final MissionRepository _missionRepository = createMissionRepository();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   MissionCategory? _category;
@@ -156,13 +157,13 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
     }
 
     if (missionIndex == null) {
-      await TodayMissionStore.add(
+      await _missionRepository.addMission(
         parentId: parentId,
         childrenId: childrenId,
         mission: mission,
       );
     } else {
-      await TodayMissionStore.updateAt(
+      await _missionRepository.updateMissionAt(
         parentId: parentId,
         childrenId: childrenId,
         index: missionIndex,
