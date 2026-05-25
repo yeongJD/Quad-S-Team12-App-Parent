@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
 class DeleteAccountCompletePage extends StatefulWidget {
   const DeleteAccountCompletePage({super.key});
@@ -33,8 +34,15 @@ class _DeleteAccountCompletePageState extends State<DeleteAccountCompletePage> {
         throw StateError('Cannot delete account without an active session.');
       }
 
+      final AuthRepository authRepository = createAuthRepository();
+      final Result<void> result = await authRepository.deleteAccount(
+        parentId: parentId,
+      );
+      if (result is Failure<void>) {
+        throw StateError(result.message);
+      }
       await AuthSession.resetAllData();
-      await AccountStore.removeAccount(parentId);
+      await AuthSession.clearTokens();
       await AuthSession.logout();
 
       if (!mounted) {

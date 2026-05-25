@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
 enum _PasswordChangeErrorType { currentMismatch }
 
@@ -31,6 +33,8 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   final FocusNode _currentPasswordFocusNode = FocusNode();
   final FocusNode _newPasswordFocusNode = FocusNode();
   final FocusNode _confirmPasswordFocusNode = FocusNode();
+
+  final AuthRepository _authRepository = createAuthRepository();
 
   _PasswordChangeErrorType? _currentPasswordError;
   ParentAccount? _account;
@@ -156,14 +160,29 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     if (account == null) {
       return;
     }
-    await AccountStore.updatePassword(
+    final Result<void> result = await _authRepository.changePassword(
       parentId: account.parentId,
-      password: _newPassword,
+      currentPassword: _currentPassword,
+      newPassword: _newPassword,
     );
     if (!mounted) {
       return;
     }
-    context.pop();
+    switch (result) {
+      case Success<void>():
+        context.pop();
+      case Failure<void>(:final String message):
+        setState(() {
+          if (message == AuthFailureMessages.passwordMismatch) {
+            _currentPasswordError = _PasswordChangeErrorType.currentMismatch;
+          }
+        });
+        if (message != AuthFailureMessages.passwordMismatch) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
+    }
   }
 
   @override

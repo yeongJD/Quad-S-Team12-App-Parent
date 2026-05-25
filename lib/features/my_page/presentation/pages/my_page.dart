@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/parent_profile/parent_profile.dart';
+import '../../../../data/repositories/auth_repository.dart';
+import '../../../../data/repositories/parent_profile_repository.dart';
 import '../../../common/presentation/widgets/confirmation_dialog.dart';
 
 class MyPage extends StatefulWidget {
@@ -16,6 +19,10 @@ class MyPage extends StatefulWidget {
 }
 
 class _MyPageState extends State<MyPage> {
+  final ParentProfileRepository _profileRepository =
+      createParentProfileRepository();
+  final AuthRepository _authRepository = createAuthRepository();
+
   String _name = AuthSession.fallbackName;
   String _email = '';
 
@@ -27,15 +34,22 @@ class _MyPageState extends State<MyPage> {
 
   Future<void> _loadUsername() async {
     final String? parentId = await AuthSession.getCurrentParentId();
-    final ParentAccount? account = parentId == null
-        ? null
-        : await AccountStore.getAccountById(parentId);
+    ParentProfile? profile;
+    if (parentId != null && parentId.isNotEmpty) {
+      final Result<ParentProfile> result = await _profileRepository.getProfile(
+        parentId,
+      );
+      profile = switch (result) {
+        Success<ParentProfile>(:final data) => data,
+        Failure<ParentProfile>() => null,
+      };
+    }
     if (!mounted) {
       return;
     }
     setState(() {
-      _name = account?.name ?? AuthSession.fallbackName;
-      _email = account?.email ?? '';
+      _name = profile?.name ?? AuthSession.fallbackName;
+      _email = profile?.email ?? '';
     });
   }
 
@@ -60,6 +74,9 @@ class _MyPageState extends State<MyPage> {
       onConfirm: () async {
         final GoRouter router = GoRouter.of(context);
         context.pop();
+        final String? refresh = await AuthSession.refreshToken();
+        await _authRepository.logout(refreshToken: refresh);
+        await AuthSession.clearTokens();
         await AuthSession.logout();
         if (!mounted) {
           return;
