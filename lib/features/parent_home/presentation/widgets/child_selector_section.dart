@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -76,34 +78,53 @@ class _ChildCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isDeleteVisible ? onDeleteTap : onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ChildAvatar(
-            isSelected: isSelected || isDeleteVisible,
-            isDeleteVisible: isDeleteVisible,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            child.name,
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14.4,
-              height: 1.5,
-              letterSpacing: 0.08,
-              color: AppColors.gray700,
+    final Color feedbackColor = isDeleteVisible
+        ? AppColors.destructive
+        : isSelected
+        ? AppColors.primary
+        : AppColors.gray700;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: isDeleteVisible ? onDeleteTap : onTap,
+            hoverColor: feedbackColor.withValues(alpha: 0.06),
+            highlightColor: feedbackColor.withValues(alpha: 0.10),
+            splashColor: feedbackColor.withValues(alpha: 0.12),
+            customBorder: const CircleBorder(),
+            child: _ChildAvatar(
+              isSelected: isSelected || isDeleteVisible,
+              isDeleteVisible: isDeleteVisible,
+              photoBase64: child.photoBase64,
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          child.name,
+          style: AppTypography.labelMedium.copyWith(
+            fontSize: 14.4,
+            height: 1.5,
+            letterSpacing: 0.08,
+            color: AppColors.gray700,
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _ChildAvatar extends StatelessWidget {
-  const _ChildAvatar({required this.isSelected, required this.isDeleteVisible});
+  const _ChildAvatar({
+    required this.isSelected,
+    required this.isDeleteVisible,
+    this.photoBase64,
+  });
 
   static const double _childAvatarSize = 74;
   static const String _unselectedAsset = 'assets/icons/속성 1=미선택.png';
@@ -112,6 +133,7 @@ class _ChildAvatar extends StatelessWidget {
 
   final bool isSelected;
   final bool isDeleteVisible;
+  final String? photoBase64;
 
   String get _assetPath {
     if (isDeleteVisible) {
@@ -122,79 +144,147 @@ class _ChildAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Uint8List? photoBytes = _decodePhotoBytes();
+    if (!isDeleteVisible && photoBytes != null) {
+      return Container(
+        width: _childAvatarSize,
+        height: _childAvatarSize,
+        padding: EdgeInsets.all(isSelected ? 3 : 0),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: isSelected
+              ? Border.all(color: AppColors.primary, width: 3)
+              : null,
+        ),
+        child: ClipOval(
+          child: Image.memory(
+            photoBytes,
+            width: _childAvatarSize,
+            height: _childAvatarSize,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       width: _childAvatarSize,
       height: _childAvatarSize,
       child: Image.asset(_assetPath, fit: BoxFit.contain),
     );
   }
+
+  Uint8List? _decodePhotoBytes() {
+    final String? value = photoBase64;
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    try {
+      return base64Decode(value);
+    } on FormatException {
+      return null;
+    }
+  }
 }
 
-class _AddChildCard extends StatelessWidget {
+class _AddChildCard extends StatefulWidget {
   const _AddChildCard({required this.onTap, this.isEmptyState = false});
 
   final VoidCallback onTap;
   final bool isEmptyState;
 
   @override
+  State<_AddChildCard> createState() => _AddChildCardState();
+}
+
+class _AddChildCardState extends State<_AddChildCard> {
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final double size = isEmptyState ? 74 : 66.532;
-    final double innerSize = isEmptyState ? 64 : 57.541;
-    final Color dashColor = isEmptyState
+    final double size = widget.isEmptyState ? 74 : 66.532;
+    final double innerSize = widget.isEmptyState ? 64 : 57.541;
+    final Color dashColor = widget.isEmptyState
         ? const Color(0xFFC2DFFD)
         : AppColors.gray200;
-    final Color fillColor = isEmptyState
+    final Color fillColor = widget.isEmptyState
         ? const Color(0xFFEBF5FE)
         : const Color(0xFFF0F2F5);
-    final Color plusColor = isEmptyState
+    final Color feedbackColor = widget.isEmptyState
+        ? AppColors.primary
+        : AppColors.gray500;
+    final double overlayAlpha = _isPressed
+        ? 0.14
+        : _isHovered
+        ? 0.08
+        : 0;
+    final Color interactiveFillColor = Color.alphaBlend(
+      feedbackColor.withValues(alpha: overlayAlpha),
+      fillColor,
+    );
+    final Color plusColor = widget.isEmptyState
         ? AppColors.primary
         : AppColors.gray400;
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: size,
-            height: size,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CustomPaint(
-                  size: Size.square(size),
-                  painter: _DashedCirclePainter(
-                    color: dashColor,
-                    strokeWidth: 2,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: widget.onTap,
+            onHover: (bool isHovered) => setState(() => _isHovered = isHovered),
+            onHighlightChanged: (bool isPressed) =>
+                setState(() => _isPressed = isPressed),
+            hoverColor: feedbackColor.withValues(alpha: 0.04),
+            highlightColor: feedbackColor.withValues(alpha: 0.06),
+            splashColor: feedbackColor.withValues(alpha: 0.10),
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    size: Size.square(size),
+                    painter: _DashedCirclePainter(
+                      color: dashColor,
+                      strokeWidth: 2,
+                    ),
                   ),
-                ),
-                Container(
-                  width: innerSize,
-                  height: innerSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: fillColor,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    width: innerSize,
+                    height: innerSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: interactiveFillColor,
+                    ),
+                    child: Center(
+                      child: _PlusIcon(color: plusColor, size: 21.578),
+                    ),
                   ),
-                  child: Center(
-                    child: _PlusIcon(color: plusColor, size: 21.578),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '추가',
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: isEmptyState ? 16 : 14.4,
-              height: 1.5,
-              letterSpacing: isEmptyState ? 0.0912 : 0.08,
-              color: AppColors.gray400,
-            ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '추가',
+          style: AppTypography.labelMedium.copyWith(
+            fontSize: widget.isEmptyState ? 16 : 14.4,
+            height: 1.5,
+            letterSpacing: widget.isEmptyState ? 0.0912 : 0.08,
+            color: AppColors.gray400,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

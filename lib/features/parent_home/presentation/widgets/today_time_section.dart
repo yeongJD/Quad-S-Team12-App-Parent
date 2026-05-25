@@ -13,11 +13,13 @@ class TodayTimeSection extends StatelessWidget {
     required this.timeSummary,
     this.waitingForChildPlan = false,
     required this.onSetup,
+    required this.onAdd,
   });
 
   final TimeSummary? timeSummary;
   final bool waitingForChildPlan;
   final VoidCallback onSetup;
+  final VoidCallback onAdd;
 
   bool get _hasData => timeSummary != null;
 
@@ -46,7 +48,7 @@ class TodayTimeSection extends StatelessWidget {
               ? _TimeSummaryContent(summary: timeSummary!)
               : waitingForChildPlan
               ? const _WaitingTimePlanMessage()
-              : const Center(child: _PrimaryAddButton()),
+              : Center(child: _PrimaryAddButton(onTap: onAdd)),
         ),
       ],
     );
@@ -174,33 +176,68 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        GestureDetector(
-          onTap: onSettingsTap,
-          behavior: HitTestBehavior.opaque,
-          child: SvgPicture.asset(
-            'assets/icons/arrow button/Settings.svg',
-            width: 18,
-            height: 18,
-          ),
-        ),
+        _SettingsIconButton(onTap: onSettingsTap),
       ],
     );
   }
 }
 
-class _PrimaryAddButton extends StatelessWidget {
-  const _PrimaryAddButton();
+class _SettingsIconButton extends StatelessWidget {
+  const _SettingsIconButton({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color(0xFFEBF5FE),
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+        highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+        splashColor: AppColors.gray800.withValues(alpha: 0.12),
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/icons/arrow button/Settings.svg',
+              width: 18,
+              height: 18,
+            ),
+          ),
+        ),
       ),
-      child: const Center(child: _AddIcon(size: 24, color: AppColors.primary)),
+    );
+  }
+}
+
+class _PrimaryAddButton extends StatelessWidget {
+  const _PrimaryAddButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFEBF5FE),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.primary.withValues(alpha: 0.08),
+        highlightColor: AppColors.primary.withValues(alpha: 0.12),
+        splashColor: AppColors.primary.withValues(alpha: 0.16),
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 40,
+          height: 40,
+          child: Center(child: _AddIcon(size: 24, color: AppColors.primary)),
+        ),
+      ),
     );
   }
 }

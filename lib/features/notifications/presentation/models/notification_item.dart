@@ -13,6 +13,7 @@ class NotificationItem {
     required this.message,
     required this.timeAgo,
     this.actionLabel = '확인하러 가기',
+    this.isRead = false,
     this.payload,
   });
 
@@ -22,6 +23,7 @@ class NotificationItem {
   final String message;
   final String timeAgo;
   final String actionLabel;
+  final bool isRead;
   final Map<String, Object?>? payload;
 
   NotificationItem copyWith({
@@ -31,6 +33,7 @@ class NotificationItem {
     String? message,
     String? timeAgo,
     String? actionLabel,
+    bool? isRead,
     Map<String, Object?>? payload,
   }) {
     return NotificationItem(
@@ -40,6 +43,7 @@ class NotificationItem {
       message: message ?? this.message,
       timeAgo: timeAgo ?? this.timeAgo,
       actionLabel: actionLabel ?? this.actionLabel,
+      isRead: isRead ?? this.isRead,
       payload: payload ?? this.payload,
     );
   }
@@ -52,6 +56,7 @@ class NotificationItem {
       'message': message,
       'timeAgo': timeAgo,
       'actionLabel': actionLabel,
+      'isRead': isRead,
       if (payload case final Map<String, Object?> payload) 'payload': payload,
     };
   }
@@ -67,6 +72,7 @@ class NotificationItem {
     final Object? message = json['message'];
     final Object? timeAgo = json['timeAgo'];
     final Object? actionLabel = json['actionLabel'];
+    final Object? isRead = json['isRead'];
     final Object? payload = json['payload'];
     if (id is! String ||
         type is! String ||
@@ -74,6 +80,7 @@ class NotificationItem {
         message is! String ||
         timeAgo is! String ||
         (actionLabel != null && actionLabel is! String) ||
+        (isRead != null && isRead is! bool) ||
         (payload != null && payload is! Map<String, Object?>)) {
       return null;
     }
@@ -90,6 +97,7 @@ class NotificationItem {
       message: message,
       timeAgo: timeAgo,
       actionLabel: actionLabel is String ? actionLabel : '확인하러 가기',
+      isRead: isRead is bool ? isRead : false,
       payload: payload is Map<String, Object?> ? payload : null,
     );
   }

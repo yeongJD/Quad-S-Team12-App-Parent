@@ -281,11 +281,7 @@ class _MissionListContent extends StatelessWidget {
             if (index != missions.length - 1) const SizedBox(height: 13.486),
           ],
           const SizedBox(height: 17.98),
-          GestureDetector(
-            onTap: onAdd,
-            behavior: HitTestBehavior.opaque,
-            child: const _MissionAddButton(),
-          ),
+          _MissionAddButton(onTap: onAdd),
         ],
       ),
     );
@@ -469,23 +465,45 @@ class _MissionCardSurface extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          GestureDetector(
-            onTap: onEdit,
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: SvgPicture.asset(
-                'assets/icons/arrow button/Settings.svg',
-                width: 17.982,
-                height: 17.982,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.gray300,
-                  BlendMode.srcIn,
-                ),
+          _MissionSettingsButton(onTap: onEdit),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissionSettingsButton extends StatelessWidget {
+  const _MissionSettingsButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.gray300.withValues(alpha: 0.08),
+        highlightColor: AppColors.gray300.withValues(alpha: 0.12),
+        splashColor: AppColors.gray300.withValues(alpha: 0.16),
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/icons/arrow button/Settings.svg',
+              width: 17.982,
+              height: 17.982,
+              colorFilter: const ColorFilter.mode(
+                AppColors.gray300,
+                BlendMode.srcIn,
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -509,18 +527,28 @@ class _DeleteActionButton extends StatelessWidget {
 }
 
 class _MissionAddButton extends StatelessWidget {
-  const _MissionAddButton();
+  const _MissionAddButton({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 35.963,
-      height: 35.963,
-      decoration: const BoxDecoration(
-        color: Color(0xFFEBF5FE),
-        shape: BoxShape.circle,
+    return Material(
+      color: const Color(0xFFEBF5FE),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.primary.withValues(alpha: 0.08),
+        highlightColor: AppColors.primary.withValues(alpha: 0.12),
+        splashColor: AppColors.primary.withValues(alpha: 0.16),
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 35.963,
+          height: 35.963,
+          child: Icon(Icons.add_rounded, size: 28, color: AppColors.primary),
+        ),
       ),
-      child: const Icon(Icons.add_rounded, size: 28, color: AppColors.primary),
     );
   }
 }

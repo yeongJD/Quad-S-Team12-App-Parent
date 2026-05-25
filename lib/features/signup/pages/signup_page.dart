@@ -216,6 +216,27 @@ class _SignupPageState extends State<SignupPage> {
     setState(() {
       _activeError = null;
     });
+
+    final ParentAccount? existingAccount = await AccountStore.getAccountByEmail(
+      _email,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (existingAccount != null) {
+      context.go(
+        Uri(
+          path: '/login',
+          queryParameters: <String, String>{
+            'name': existingAccount.name,
+            'email': existingAccount.email,
+            'notice': 'existing-account',
+          },
+        ).toString(),
+      );
+      return;
+    }
+
     final ParentAccount account = ParentAccount(
       parentId: AccountStore.parentIdFromEmail(_email),
       email: _email.trim(),
@@ -370,16 +391,26 @@ class _SignupTopBar extends StatelessWidget {
           Positioned(
             left: 0,
             top: 14,
-            width: 24,
-            height: 24,
-            child: GestureDetector(
-              onTap: onBack,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: SvgPicture.asset(
-                  'assets/icons/cmp/btn/back.svg',
-                  fit: BoxFit.contain,
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onBack,
+                hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+                highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+                splashColor: AppColors.gray800.withValues(alpha: 0.12),
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: SvgPicture.asset(
+                      'assets/icons/cmp/btn/back.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
             ),

@@ -11,7 +11,16 @@ import '../../../../core/theme/app_typography.dart';
 enum _LoginErrorType { missingName, missingEmail, wrongPassword }
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({
+    super.key,
+    this.initialName,
+    this.initialEmail,
+    this.showExistingAccountNotice = false,
+  });
+
+  final String? initialName;
+  final String? initialEmail;
+  final bool showExistingAccountNotice;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -29,6 +38,23 @@ class _LoginPageState extends State<LoginPage> {
   String get _password => _passwordController.text;
   bool get _canSubmit =>
       _name.isNotEmpty && _email.isNotEmpty && _password.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.text = widget.initialName ?? '';
+    _emailController.text = widget.initialEmail ?? '';
+    if (widget.showExistingAccountNotice) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('이미 가입된 계정입니다. 로그인해주세요.')));
+      });
+    }
+  }
 
   String? get _errorMessage {
     switch (_activeError) {
@@ -250,16 +276,26 @@ class _LoginTopBar extends StatelessWidget {
           Positioned(
             left: 0,
             top: 14,
-            width: 24,
-            height: 24,
-            child: GestureDetector(
-              onTap: onBack,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: SvgPicture.asset(
-                  'assets/icons/cmp/btn/back.svg',
-                  fit: BoxFit.contain,
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onBack,
+                hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+                highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+                splashColor: AppColors.gray800.withValues(alpha: 0.12),
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: SvgPicture.asset(
+                      'assets/icons/cmp/btn/back.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
             ),

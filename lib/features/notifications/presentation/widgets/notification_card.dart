@@ -205,25 +205,29 @@ class _NotificationActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 24,
-        padding: const EdgeInsets.symmetric(horizontal: 9),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.gray100,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          '$label →',
-          style: AppTypography.captionBold.copyWith(
-            fontSize: 11,
-            height: 1.334,
-            letterSpacing: 0,
-            color: AppColors.gray500,
-            decoration: TextDecoration.none,
+    return Material(
+      color: AppColors.gray100,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.gray500.withValues(alpha: 0.08),
+        highlightColor: AppColors.gray500.withValues(alpha: 0.12),
+        splashColor: AppColors.gray500.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 24,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          alignment: Alignment.center,
+          child: Text(
+            '$label →',
+            style: AppTypography.captionBold.copyWith(
+              fontSize: 11,
+              height: 1.334,
+              letterSpacing: 0,
+              color: AppColors.gray500,
+              decoration: TextDecoration.none,
+            ),
           ),
         ),
       ),

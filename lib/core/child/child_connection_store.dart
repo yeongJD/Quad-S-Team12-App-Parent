@@ -9,17 +9,20 @@ class ConnectedChild {
     required this.childrenId,
     required this.childCode,
     required this.name,
+    this.photoBase64,
   });
 
   final String childrenId;
   final String childCode;
   final String name;
+  final String? photoBase64;
 
   factory ConnectedChild.fromAccountChild(AccountChildData child) {
     return ConnectedChild(
       childrenId: child.childrenId,
       childCode: child.childCode,
       name: child.name,
+      photoBase64: child.photoBase64,
     );
   }
 
@@ -28,6 +31,7 @@ class ConnectedChild {
       childrenId: childrenId,
       childCode: childCode,
       name: name,
+      photoBase64: photoBase64,
     );
   }
 }
@@ -94,12 +98,14 @@ abstract final class ChildConnectionStore {
   static ConnectedChild childFromCode({
     required String name,
     required String childCode,
+    String? photoBase64,
   }) {
     final String normalizedCode = _normalizeCode(childCode);
     return ConnectedChild(
       childrenId: normalizedCode,
       childCode: normalizedCode,
       name: name.trim(),
+      photoBase64: photoBase64,
     );
   }
 

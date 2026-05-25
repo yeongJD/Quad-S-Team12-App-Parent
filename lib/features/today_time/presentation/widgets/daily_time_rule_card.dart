@@ -95,13 +95,25 @@ class DailyTimeRuleCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          GestureDetector(
-            onTap: onEdit,
-            behavior: HitTestBehavior.opaque,
-            child: const Icon(
-              Icons.edit_outlined,
-              size: 24,
-              color: AppColors.gray800,
+          Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onEdit,
+              hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+              highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+              splashColor: AppColors.gray800.withValues(alpha: 0.12),
+              customBorder: const CircleBorder(),
+              child: const SizedBox(
+                width: 32,
+                height: 32,
+                child: Icon(
+                  Icons.edit_outlined,
+                  size: 24,
+                  color: AppColors.gray800,
+                ),
+              ),
             ),
           ),
         ],

@@ -20,6 +20,7 @@ import '../../features/today_time/presentation/pages/today_time_setup_page.dart'
 import '../../features/today_mission/presentation/pages/today_mission_check_page.dart';
 import '../../features/today_mission/presentation/pages/today_mission_edit_page.dart';
 import '../../features/today_mission/presentation/pages/today_mission_list_page.dart';
+import '../../features/usage_report/presentation/pages/weekly_usage_report_page.dart';
 
 final GoRouter appRouter = GoRouter(
   routes: <RouteBase>[
@@ -28,7 +29,15 @@ final GoRouter appRouter = GoRouter(
       path: '/signup/complete',
       builder: (context, state) => const SignupCompletePage(),
     ),
-    GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => LoginPage(
+        initialName: state.uri.queryParameters['name'],
+        initialEmail: state.uri.queryParameters['email'],
+        showExistingAccountNotice:
+            state.uri.queryParameters['notice'] == 'existing-account',
+      ),
+    ),
     GoRoute(
       path: '/login/complete',
       builder: (context, state) => const LoginCompletePage(),
@@ -55,6 +64,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/notifications',
       builder: (context, state) => const NotificationsPage(),
+    ),
+    GoRoute(
+      path: '/usage-report',
+      builder: (context, state) => WeeklyUsageReportPage(
+        parentId: state.uri.queryParameters['parentId'],
+        childrenId: state.uri.queryParameters['childrenId'],
+      ),
     ),
     GoRoute(
       path: '/child/add',

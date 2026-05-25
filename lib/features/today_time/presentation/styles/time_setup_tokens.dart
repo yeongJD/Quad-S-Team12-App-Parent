@@ -20,6 +20,7 @@ abstract final class TimeSetupSpacing {
   static const double pickerTitleTop = 27;
   static const double pickerHighlightTop = 128;
   static const double pickerTop = 80;
+  static const double pickerHorizontalInset = 62;
 }
 
 abstract final class TimeSetupSize {

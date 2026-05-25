@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
@@ -186,6 +187,7 @@ class _ChildAddPageState extends State<ChildAddPage> {
       child: ChildConnectionStore.childFromCode(
         name: _nameController.text.trim(),
         childCode: childCode,
+        photoBase64: _photoBytes == null ? null : base64Encode(_photoBytes!),
       ),
     );
     if (!mounted) {
@@ -346,15 +348,23 @@ class _ChildAddTopBar extends StatelessWidget {
           Positioned(
             left: _ChildAddMetrics.horizontalPadding,
             top: 14,
-            child: GestureDetector(
-              onTap: onBack,
-              behavior: HitTestBehavior.opaque,
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: SvgPicture.asset('assets/icons/cmp/btn/back.svg'),
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onBack,
+                hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+                highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+                splashColor: AppColors.gray800.withValues(alpha: 0.12),
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: SvgPicture.asset('assets/icons/cmp/btn/back.svg'),
+                  ),
                 ),
               ),
             ),
@@ -729,117 +739,113 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: _ChildAddMetrics.sheetHeight,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(_ChildAddMetrics.sheetRadius),
-          ),
+    final double bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    return Container(
+      height: _ChildAddMetrics.sheetHeight + bottomInset,
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(_ChildAddMetrics.sheetRadius),
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: _ChildAddMetrics.sheetTitleTop,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Text(
-                  '출생연도',
-                  style: AppTypography.headlineMedium.copyWith(
-                    fontSize: 18,
-                    height: 1.445,
-                    letterSpacing: 0,
-                    color: const Color(0xFF050505),
-                  ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: _ChildAddMetrics.sheetTitleTop,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                '출생연도',
+                style: AppTypography.headlineMedium.copyWith(
+                  fontSize: 18,
+                  height: 1.445,
+                  letterSpacing: 0,
+                  color: const Color(0xFF050505),
                 ),
               ),
             ),
-            Positioned(
-              top: _ChildAddMetrics.sheetPickerTop,
-              left: 0,
-              right: 0,
-              height: _ChildAddMetrics.sheetPickerHeight,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned(
-                    left: _ChildAddMetrics.sheetPickerInset,
-                    right: _ChildAddMetrics.sheetPickerInset,
-                    top: _ChildAddMetrics.sheetSelectionTop,
-                    child: Container(
-                      height: _ChildAddMetrics.fieldHeight,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: AppColors.primary, width: 2),
-                          bottom: BorderSide(
-                            color: AppColors.primary,
-                            width: 2,
-                          ),
-                        ),
+          ),
+          Positioned(
+            top: _ChildAddMetrics.sheetPickerTop,
+            left: 0,
+            right: 0,
+            height: _ChildAddMetrics.sheetPickerHeight,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  left: _ChildAddMetrics.sheetPickerInset,
+                  right: _ChildAddMetrics.sheetPickerInset,
+                  top: _ChildAddMetrics.sheetSelectionTop,
+                  child: Container(
+                    height: _ChildAddMetrics.fieldHeight,
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: AppColors.primary, width: 2),
+                        bottom: BorderSide(color: AppColors.primary, width: 2),
                       ),
                     ),
                   ),
-                  CupertinoPicker(
-                    scrollController: _scrollController,
-                    itemExtent: _ChildAddMetrics.sheetYearItemHeight,
-                    diameterRatio: 10,
-                    squeeze: 1,
-                    selectionOverlay: const SizedBox.shrink(),
-                    onSelectedItemChanged: (int index) {
-                      setState(() {
-                        _selectedIndex = index;
-                      });
-                      widget.onChanged(widget.years[index]);
-                    },
-                    children: [
-                      for (int index = 0; index < widget.years.length; index++)
-                        Center(
-                          child: Text(
-                            widget.years[index].toString(),
-                            style: AppTypography.headlineMedium.copyWith(
-                              fontSize: 24,
-                              height: 1.445,
-                              letterSpacing: 0,
-                              color: index == _selectedIndex
-                                  ? const Color(0xFF050505)
-                                  : AppColors.gray200,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  IgnorePointer(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          left: _ChildAddMetrics.sheetYearSuffixOffset,
-                        ),
+                ),
+                CupertinoPicker(
+                  scrollController: _scrollController,
+                  itemExtent: _ChildAddMetrics.sheetYearItemHeight,
+                  diameterRatio: 10,
+                  squeeze: 1,
+                  selectionOverlay: const SizedBox.shrink(),
+                  onSelectedItemChanged: (int index) {
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                    widget.onChanged(widget.years[index]);
+                  },
+                  children: [
+                    for (int index = 0; index < widget.years.length; index++)
+                      Center(
                         child: Text(
-                          '년',
+                          widget.years[index].toString(),
                           style: AppTypography.headlineMedium.copyWith(
                             fontSize: 24,
                             height: 1.445,
                             letterSpacing: 0,
-                            color: const Color(0xFF050505),
+                            color: index == _selectedIndex
+                                ? const Color(0xFF050505)
+                                : AppColors.gray200,
                           ),
+                        ),
+                      ),
+                  ],
+                ),
+                IgnorePointer(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: _ChildAddMetrics.sheetYearSuffixOffset,
+                      ),
+                      child: Text(
+                        '년',
+                        style: AppTypography.headlineMedium.copyWith(
+                          fontSize: 24,
+                          height: 1.445,
+                          letterSpacing: 0,
+                          color: const Color(0xFF050505),
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Positioned(
-              left: _ChildAddMetrics.horizontalPadding,
-              right: _ChildAddMetrics.horizontalPadding,
-              bottom: _ChildAddMetrics.sheetButtonBottom,
-              child: _BottomSheetConfirmButton(onTap: widget.onConfirm),
-            ),
-          ],
-        ),
+          ),
+          Positioned(
+            left: _ChildAddMetrics.horizontalPadding,
+            right: _ChildAddMetrics.horizontalPadding,
+            bottom: _ChildAddMetrics.sheetButtonBottom + bottomInset,
+            child: _BottomSheetConfirmButton(onTap: widget.onConfirm),
+          ),
+        ],
       ),
     );
   }
@@ -852,23 +858,28 @@ class _BottomSheetConfirmButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: _ChildAddMetrics.buttonHeight,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          '확인',
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: 0,
-            color: AppColors.white,
+    return Material(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.primary.withValues(alpha: 0.12),
+        highlightColor: AppColors.primary.withValues(alpha: 0.18),
+        splashColor: AppColors.primary.withValues(alpha: 0.20),
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          height: _ChildAddMetrics.buttonHeight,
+          child: Center(
+            child: Text(
+              '확인',
+              style: AppTypography.headlineMedium.copyWith(
+                fontSize: 18,
+                height: 1.445,
+                letterSpacing: 0,
+                color: AppColors.white,
+              ),
+            ),
           ),
         ),
       ),
@@ -898,26 +909,42 @@ class _RegisterButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
+  void _handleDisabledTap(BuildContext context) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('자녀 코드를 먼저 입력해주세요.')));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: double.infinity,
-        height: _ChildAddMetrics.buttonHeight,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: enabled ? AppColors.primary : AppColors.gray200,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          '등록',
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: 0,
-            color: enabled ? AppColors.white : AppColors.gray300,
+    final Color backgroundColor = enabled
+        ? AppColors.primary
+        : AppColors.gray200;
+    final Color feedbackColor = enabled ? AppColors.primary : AppColors.gray400;
+
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: enabled ? onTap : () => _handleDisabledTap(context),
+        hoverColor: feedbackColor.withValues(alpha: enabled ? 0.12 : 0.06),
+        highlightColor: feedbackColor.withValues(alpha: enabled ? 0.18 : 0.08),
+        splashColor: feedbackColor.withValues(alpha: enabled ? 0.20 : 0.10),
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          height: _ChildAddMetrics.buttonHeight,
+          width: double.infinity,
+          child: Center(
+            child: Text(
+              '등록',
+              style: AppTypography.headlineMedium.copyWith(
+                fontSize: 18,
+                height: 1.445,
+                letterSpacing: 0,
+                color: enabled ? AppColors.white : AppColors.gray300,
+              ),
+            ),
           ),
         ),
       ),

@@ -10,6 +10,7 @@ import '../../../today_mission/presentation/pages/today_mission_check_page.dart'
 import '../../../today_time/presentation/data/daily_time_rule_store.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
 import '../../../notifications/presentation/data/notification_store.dart';
+import '../../../common/presentation/widgets/confirmation_dialog.dart';
 import '../models/parent_home_models.dart';
 import '../widgets/child_selector_section.dart';
 import '../widgets/parent_home_header.dart';
@@ -174,6 +175,9 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return _StoredParentHomeData(
       data: ParentHomeData.withLinkedChildren(
         names: children.map((ConnectedChild child) => child.name).toList(),
+        photoBase64Values: children
+            .map((ConnectedChild child) => child.photoBase64)
+            .toList(),
         timeSummary: timeSummary,
         hasChildTimePlan: timeSummary != null,
         missions: missions,
@@ -250,6 +254,18 @@ class _ParentHomePageState extends State<ParentHomePage> {
     await _loadParentHomeData();
   }
 
+  Future<void> _openTimeSetup() async {
+    if (!_ensureSelectedChild()) {
+      return;
+    }
+
+    await context.push(_withChildCode('/today-time/setup'));
+    if (!mounted) {
+      return;
+    }
+    await _loadParentHomeData();
+  }
+
   Future<void> _openMissionSetup() async {
     if (!_ensureSelectedChild()) {
       return;
@@ -274,7 +290,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
     await _loadParentHomeData();
   }
 
-  Future<void> _openMissionCheck(int index) async {
+  Future<void> _openMissionCheck(int index, {bool goToReview = false}) async {
     if (!_ensureSelectedChild()) {
       return;
     }
@@ -293,6 +309,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
         childrenId: selectedChild!.childrenId,
         index: index,
         mission: _savedMissions[index],
+        initialTab: goToReview ? MissionCheckTab.review : MissionCheckTab.info,
       ),
     );
     if (!mounted) {
@@ -344,6 +361,29 @@ class _ParentHomePageState extends State<ParentHomePage> {
         : _selectedChildIndex.clamp(0, children.length - 1);
     _deleteChildIndex = null;
     await _loadParentHomeData();
+  }
+
+  Future<void> _showDeleteChildDialog(int index) async {
+    bool didConfirm = false;
+    await showAppConfirmationDialog(
+      context: context,
+      barrierLabel: 'delete-child-dialog',
+      message: '자녀를 삭제하시겠습니까?',
+      onConfirm: () {
+        didConfirm = true;
+        context.pop();
+        _deleteChild(index);
+      },
+    );
+
+    if (didConfirm || !mounted || _deleteChildIndex != index) {
+      return;
+    }
+
+    setState(() {
+      _selectedChildIndex = index;
+      _deleteChildIndex = null;
+    });
   }
 
   void _clearDeleteChildStateIfNeeded(PointerDownEvent event) {
@@ -457,7 +497,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                               selectedIndex: _selectedChildIndex,
                               deleteIndex: _deleteChildIndex,
                               onChildTap: _handleChildTap,
-                              onChildDelete: _deleteChild,
+                              onChildDelete: _showDeleteChildDialog,
                               onAddChildTap: () async {
                                 await context.push('/child/add');
                                 if (!mounted) {
@@ -472,6 +512,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                             timeSummary: _data.timeSummary,
                             waitingForChildPlan: _data.waitingForChildTimePlan,
                             onSetup: _openTimeSettingsEntry,
+                            onAdd: _openTimeSetup,
                           ),
                           const SizedBox(height: 36),
                           TodayMissionSection(

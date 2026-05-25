@@ -36,17 +36,31 @@ class PlaceholderPage extends StatelessWidget {
                         Positioned(
                           left: 0,
                           top: 4,
-                          child: GestureDetector(
-                            onTap: context.pop,
-                            behavior: HitTestBehavior.opaque,
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: Padding(
-                                padding: const EdgeInsets.all(2),
-                                child: SvgPicture.asset(
-                                  'assets/icons/cmp/btn/back.svg',
-                                  fit: BoxFit.contain,
+                          child: Material(
+                            color: Colors.transparent,
+                            shape: const CircleBorder(),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: context.pop,
+                              hoverColor: AppColors.gray800.withValues(
+                                alpha: 0.06,
+                              ),
+                              highlightColor: AppColors.gray800.withValues(
+                                alpha: 0.10,
+                              ),
+                              splashColor: AppColors.gray800.withValues(
+                                alpha: 0.12,
+                              ),
+                              customBorder: const CircleBorder(),
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: SvgPicture.asset(
+                                    'assets/icons/cmp/btn/back.svg',
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
                               ),
                             ),

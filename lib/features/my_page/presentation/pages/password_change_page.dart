@@ -19,7 +19,7 @@ class PasswordChangePage extends StatefulWidget {
 
 class _PasswordChangePageState extends State<PasswordChangePage> {
   static final RegExp _passwordPattern = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{12,15}$',
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{8,15}$',
   );
 
   final TextEditingController _currentPasswordController =
@@ -73,7 +73,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       return '새 비밀번호는 기존 비밀번호와 달라야 합니다.';
     }
     if (_showNewPasswordRuleError) {
-      return '영문 대문자, 소문자, 숫자, 특수문자 모두 혼합 (12~15자)';
+      return '영문 대/소문자, 숫자, 특수문자 혼합 8자 / 빈칸, 공백 불가';
     }
     return null;
   }
@@ -290,16 +290,26 @@ class _PasswordChangeTopBar extends StatelessWidget {
           Positioned(
             left: 0,
             top: 14,
-            width: 24,
-            height: 24,
-            child: GestureDetector(
-              onTap: onBack,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: SvgPicture.asset(
-                  'assets/icons/cmp/btn/back.svg',
-                  fit: BoxFit.contain,
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onBack,
+                hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+                highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+                splashColor: AppColors.gray800.withValues(alpha: 0.12),
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
+                    child: SvgPicture.asset(
+                      'assets/icons/cmp/btn/back.svg',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
               ),
             ),

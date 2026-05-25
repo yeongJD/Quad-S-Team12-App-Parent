@@ -191,40 +191,48 @@ class _MonthlyTotalField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 56.642,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.789),
-          border: Border.all(color: AppColors.gray200, width: 1.798),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TimeSelectorPart(
-              value: time.hour.toString(),
-              label: '시간',
-              color: AppColors.primary,
-              selected: true,
-            ),
-            const SizedBox(width: 25.174),
-            TimeSelectorPart(
-              value: time.minute.toString().padLeft(2, '0'),
-              label: '분',
-              color: AppColors.primary,
-              selected: true,
-            ),
-            const SizedBox(width: 34),
-            const Icon(
-              Icons.edit_outlined,
-              size: 21.578,
-              color: AppColors.gray800,
-            ),
-          ],
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(TimeSetupRadius.field),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.primary.withValues(alpha: 0.06),
+        highlightColor: AppColors.primary.withValues(alpha: 0.10),
+        splashColor: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(TimeSetupRadius.field),
+        child: Container(
+          height: 56.642,
+          width: double.infinity,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10.789),
+            border: Border.all(color: AppColors.gray200, width: 1.798),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TimeSelectorPart(
+                value: time.hour.toString(),
+                label: '시간',
+                color: AppColors.primary,
+                selected: true,
+              ),
+              const SizedBox(width: 25.174),
+              TimeSelectorPart(
+                value: time.minute.toString().padLeft(2, '0'),
+                label: '분',
+                color: AppColors.primary,
+                selected: true,
+              ),
+              const SizedBox(width: 34),
+              const Icon(
+                Icons.edit_outlined,
+                size: 21.578,
+                color: AppColors.gray800,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -396,86 +404,83 @@ class _MonthlyTimePickerSheetState extends State<_MonthlyTimePickerSheet> {
     final double sheetHeight =
         MediaQuery.sizeOf(context).height * TimeSetupSize.timeSheetHeightRatio;
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: sheetHeight + bottomInset,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(TimeSetupRadius.sheet),
-          ),
+    return Container(
+      height: sheetHeight + bottomInset,
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(TimeSetupRadius.sheet),
         ),
-        child: Stack(
-          children: [
-            const Positioned(
-              top: TimeSetupSpacing.pickerTitleTop,
-              left: 0,
-              right: 0,
-              child: Center(child: SheetLabel('시간 수정')),
-            ),
-            Positioned(
-              left: TimeSetupSpacing.sheetHorizontalPadding,
-              right: TimeSetupSpacing.sheetHorizontalPadding,
-              top: TimeSetupSpacing.pickerHighlightTop,
-              height: TimeSetupSize.fieldHeight,
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: AppColors.primary, width: 2),
-                    bottom: BorderSide(color: AppColors.primary, width: 2),
-                  ),
+      ),
+      child: Stack(
+        children: [
+          const Positioned(
+            top: TimeSetupSpacing.pickerTitleTop,
+            left: 0,
+            right: 0,
+            child: Center(child: SheetLabel('시간 수정')),
+          ),
+          Positioned(
+            left: TimeSetupSpacing.sheetHorizontalPadding,
+            right: TimeSetupSpacing.sheetHorizontalPadding,
+            top: TimeSetupSpacing.pickerHighlightTop,
+            height: TimeSetupSize.fieldHeight,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppColors.primary, width: 2),
+                  bottom: BorderSide(color: AppColors.primary, width: 2),
                 ),
               ),
             ),
-            Positioned(
-              top: TimeSetupSpacing.pickerTop,
-              left: 62,
-              right: 62,
-              height: TimeSetupSize.pickerHeight,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  PickerColumn(
-                    controller: _hourController,
-                    values: _hours,
-                    selectedIndex: _selectedHourIndex,
-                    onSelectedItemChanged: (int index) {
-                      setState(() {
-                        _selectedHourIndex = index;
-                        _clampIfNeeded();
-                      });
-                    },
-                  ),
-                  PickerColumn(
-                    controller: _minuteController,
-                    values: _minutes,
-                    selectedIndex: _selectedMinuteIndex,
-                    onSelectedItemChanged: (int index) {
-                      setState(() {
-                        _selectedMinuteIndex = index;
-                        _clampIfNeeded();
-                      });
-                    },
-                  ),
-                ],
-              ),
+          ),
+          Positioned(
+            top: TimeSetupSpacing.pickerTop,
+            left: TimeSetupSpacing.pickerHorizontalInset,
+            right: TimeSetupSpacing.pickerHorizontalInset,
+            height: TimeSetupSize.pickerHeight,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                PickerColumn(
+                  controller: _hourController,
+                  values: _hours,
+                  selectedIndex: _selectedHourIndex,
+                  onSelectedItemChanged: (int index) {
+                    setState(() {
+                      _selectedHourIndex = index;
+                      _clampIfNeeded();
+                    });
+                  },
+                ),
+                PickerColumn(
+                  controller: _minuteController,
+                  values: _minutes,
+                  selectedIndex: _selectedMinuteIndex,
+                  onSelectedItemChanged: (int index) {
+                    setState(() {
+                      _selectedMinuteIndex = index;
+                      _clampIfNeeded();
+                    });
+                  },
+                ),
+              ],
             ),
-            const Positioned(
-              left: TimeSetupSpacing.sheetHorizontalPadding,
-              right: TimeSetupSpacing.sheetHorizontalPadding,
-              top: TimeSetupSpacing.pickerHighlightTop,
-              height: 44.954,
-              child: IgnorePointer(child: PickerSelectionUnits()),
-            ),
-            Positioned(
-              left: TimeSetupSpacing.sheetHorizontalPadding,
-              right: TimeSetupSpacing.sheetHorizontalPadding,
-              bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
-              child: SheetConfirmButton(enabled: true, onTap: _confirm),
-            ),
-          ],
-        ),
+          ),
+          const Positioned(
+            left: TimeSetupSpacing.sheetHorizontalPadding,
+            right: TimeSetupSpacing.sheetHorizontalPadding,
+            top: TimeSetupSpacing.pickerHighlightTop,
+            height: 44.954,
+            child: IgnorePointer(child: PickerSelectionUnits()),
+          ),
+          Positioned(
+            left: TimeSetupSpacing.sheetHorizontalPadding,
+            right: TimeSetupSpacing.sheetHorizontalPadding,
+            bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
+            child: SheetConfirmButton(enabled: true, onTap: _confirm),
+          ),
+        ],
       ),
     );
   }

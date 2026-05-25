@@ -87,63 +87,57 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
     final double sheetHeight =
         MediaQuery.sizeOf(context).height * TimeSetupSize.timeSheetHeightRatio;
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: sheetHeight + bottomInset,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(TimeSetupRadius.sheet),
+    return Container(
+      height: sheetHeight + bottomInset,
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(TimeSetupRadius.sheet),
+        ),
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              TimeSetupSpacing.sheetHorizontalPadding,
+              TimeSetupSpacing.sheetTopPadding,
+              TimeSetupSpacing.sheetHorizontalPadding,
+              0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SheetLabel('요일 선택'),
+                const SizedBox(height: TimeSetupSpacing.sheetLabelGap),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: weekdayLabels
+                      .asMap()
+                      .entries
+                      .map(
+                        (MapEntry<int, String> day) => DayChip(
+                          label: day.value,
+                          selected: _selectedDays.contains(day.key),
+                          enabled: !_isDayUnavailable(day.key),
+                          onTap: () => _toggleDay(day.key),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: TimeSetupSpacing.sheetSectionGap),
+                const SheetLabel('시간 선택'),
+                const SizedBox(height: TimeSetupSpacing.sheetLabelGap),
+                TimeSelectorField(time: _selectedTime, onTap: _openTimePicker),
+              ],
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                TimeSetupSpacing.sheetHorizontalPadding,
-                TimeSetupSpacing.sheetTopPadding,
-                TimeSetupSpacing.sheetHorizontalPadding,
-                0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SheetLabel('요일 선택'),
-                  const SizedBox(height: TimeSetupSpacing.sheetLabelGap),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: weekdayLabels
-                        .asMap()
-                        .entries
-                        .map(
-                          (MapEntry<int, String> day) => DayChip(
-                            label: day.value,
-                            selected: _selectedDays.contains(day.key),
-                            enabled: !_isDayUnavailable(day.key),
-                            onTap: () => _toggleDay(day.key),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: TimeSetupSpacing.sheetSectionGap),
-                  const SheetLabel('시간 선택'),
-                  const SizedBox(height: TimeSetupSpacing.sheetLabelGap),
-                  TimeSelectorField(
-                    time: _selectedTime,
-                    onTap: _openTimePicker,
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              left: TimeSetupSpacing.sheetHorizontalPadding,
-              right: TimeSetupSpacing.sheetHorizontalPadding,
-              bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
-              child: SheetConfirmButton(enabled: _canConfirm, onTap: _confirm),
-            ),
-          ],
-        ),
+          Positioned(
+            left: TimeSetupSpacing.sheetHorizontalPadding,
+            right: TimeSetupSpacing.sheetHorizontalPadding,
+            bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
+            child: SheetConfirmButton(enabled: _canConfirm, onTap: _confirm),
+          ),
+        ],
       ),
     );
   }
@@ -390,84 +384,81 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
     final double sheetHeight =
         MediaQuery.sizeOf(context).height * TimeSetupSize.timeSheetHeightRatio;
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: sheetHeight + bottomInset,
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(TimeSetupRadius.sheet),
-          ),
+    return Container(
+      height: sheetHeight + bottomInset,
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(TimeSetupRadius.sheet),
         ),
-        child: Stack(
-          children: [
-            const Positioned(
-              top: TimeSetupSpacing.pickerTitleTop,
-              left: 0,
-              right: 0,
-              child: Center(child: SheetLabel('시간 선택')),
-            ),
-            Positioned(
-              left: TimeSetupSpacing.sheetHorizontalPadding,
-              right: TimeSetupSpacing.sheetHorizontalPadding,
-              top: TimeSetupSpacing.pickerHighlightTop,
-              height: 44.954,
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: AppColors.primary, width: 2),
-                    bottom: BorderSide(color: AppColors.primary, width: 2),
-                  ),
+      ),
+      child: Stack(
+        children: [
+          const Positioned(
+            top: TimeSetupSpacing.pickerTitleTop,
+            left: 0,
+            right: 0,
+            child: Center(child: SheetLabel('시간 선택')),
+          ),
+          Positioned(
+            left: TimeSetupSpacing.sheetHorizontalPadding,
+            right: TimeSetupSpacing.sheetHorizontalPadding,
+            top: TimeSetupSpacing.pickerHighlightTop,
+            height: 44.954,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppColors.primary, width: 2),
+                  bottom: BorderSide(color: AppColors.primary, width: 2),
                 ),
               ),
             ),
-            Positioned(
-              top: TimeSetupSpacing.pickerTop,
-              left: 62,
-              right: 62,
-              height: TimeSetupSize.pickerHeight,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  PickerColumn(
-                    controller: _hourController,
-                    values: _hours,
-                    selectedIndex: _selectedHourIndex,
-                    onSelectedItemChanged: (int index) {
-                      setState(() {
-                        _selectedHourIndex = index;
-                      });
-                    },
-                  ),
-                  PickerColumn(
-                    controller: _minuteController,
-                    values: _minutes,
-                    selectedIndex: _selectedMinuteIndex,
-                    onSelectedItemChanged: (int index) {
-                      setState(() {
-                        _selectedMinuteIndex = index;
-                      });
-                    },
-                  ),
-                ],
-              ),
+          ),
+          Positioned(
+            top: TimeSetupSpacing.pickerTop,
+            left: TimeSetupSpacing.pickerHorizontalInset,
+            right: TimeSetupSpacing.pickerHorizontalInset,
+            height: TimeSetupSize.pickerHeight,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                PickerColumn(
+                  controller: _hourController,
+                  values: _hours,
+                  selectedIndex: _selectedHourIndex,
+                  onSelectedItemChanged: (int index) {
+                    setState(() {
+                      _selectedHourIndex = index;
+                    });
+                  },
+                ),
+                PickerColumn(
+                  controller: _minuteController,
+                  values: _minutes,
+                  selectedIndex: _selectedMinuteIndex,
+                  onSelectedItemChanged: (int index) {
+                    setState(() {
+                      _selectedMinuteIndex = index;
+                    });
+                  },
+                ),
+              ],
             ),
-            const Positioned(
-              left: TimeSetupSpacing.sheetHorizontalPadding,
-              right: TimeSetupSpacing.sheetHorizontalPadding,
-              top: TimeSetupSpacing.pickerHighlightTop,
-              height: 44.954,
-              child: IgnorePointer(child: PickerSelectionUnits()),
-            ),
-            Positioned(
-              left: TimeSetupSpacing.sheetHorizontalPadding,
-              right: TimeSetupSpacing.sheetHorizontalPadding,
-              bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
-              child: SheetConfirmButton(enabled: true, onTap: _confirm),
-            ),
-          ],
-        ),
+          ),
+          const Positioned(
+            left: TimeSetupSpacing.sheetHorizontalPadding,
+            right: TimeSetupSpacing.sheetHorizontalPadding,
+            top: TimeSetupSpacing.pickerHighlightTop,
+            height: 44.954,
+            child: IgnorePointer(child: PickerSelectionUnits()),
+          ),
+          Positioned(
+            left: TimeSetupSpacing.sheetHorizontalPadding,
+            right: TimeSetupSpacing.sheetHorizontalPadding,
+            bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
+            child: SheetConfirmButton(enabled: true, onTap: _confirm),
+          ),
+        ],
       ),
     );
   }
@@ -522,13 +513,35 @@ class PickerColumn extends StatelessWidget {
 class PickerSelectionUnits extends StatelessWidget {
   const PickerSelectionUnits({super.key});
 
+  static const double _numberToUnitGap = 10;
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: const [
-        Positioned(left: 130, top: 9.5, child: _PickerUnitLabel('시간')),
-        Positioned(right: 47, top: 9.5, child: _PickerUnitLabel('분')),
-      ],
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double pickerInset =
+            TimeSetupSpacing.pickerHorizontalInset -
+            TimeSetupSpacing.sheetHorizontalPadding;
+        final double unitOffset =
+            pickerInset + TimeSetupSize.pickerColumnWidth + _numberToUnitGap;
+
+        return Stack(
+          children: [
+            Positioned(
+              left: unitOffset,
+              top: 0,
+              bottom: 0,
+              child: const Center(child: _PickerUnitLabel('시간')),
+            ),
+            Positioned(
+              left: constraints.maxWidth - pickerInset + _numberToUnitGap,
+              top: 0,
+              bottom: 0,
+              child: const Center(child: _PickerUnitLabel('분')),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -540,17 +553,13 @@ class _PickerUnitLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Baseline(
-      baseline: 20,
-      baselineType: TextBaseline.alphabetic,
-      child: Text(
-        text,
-        style: AppTypography.headlineMedium.copyWith(
-          fontSize: 18,
-          height: 1.4,
-          letterSpacing: 0,
-          color: const Color(0xFF050505),
-        ),
+    return Text(
+      text,
+      style: AppTypography.headlineMedium.copyWith(
+        fontSize: 18,
+        height: 1.4,
+        letterSpacing: 0,
+        color: const Color(0xFF050505),
       ),
     );
   }

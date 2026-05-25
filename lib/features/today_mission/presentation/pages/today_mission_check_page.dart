@@ -113,7 +113,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
     final bool isInfoTab = _selectedTabIndex == 0;
 
     return Scaffold(
-      backgroundColor: isInfoTab ? AppColors.white : AppColors.gray100,
+      backgroundColor: AppColors.gray100,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -124,7 +124,6 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
                 : Column(
                     children: [
                       MissionTopBar(title: mission.title, onBack: _handleBack),
-                      const SizedBox(height: 42),
                       _MissionCheckTabs(
                         selectedIndex: _selectedTabIndex,
                         onSelected: (int index) {
@@ -230,27 +229,40 @@ class _MissionCheckTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7.193, vertical: 5.394),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: selected ? AppColors.black : Colors.transparent,
-              width: 1.259,
+    final Color feedbackColor = selected ? AppColors.black : AppColors.gray400;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(6),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: feedbackColor.withValues(alpha: 0.06),
+        highlightColor: feedbackColor.withValues(alpha: 0.10),
+        splashColor: feedbackColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 7.193,
+            vertical: 5.394,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: selected ? AppColors.black : Colors.transparent,
+                width: 1.259,
+              ),
             ),
           ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 14.385,
-            height: 1.5,
-            letterSpacing: 0.082,
-            color: selected ? AppColors.black : AppColors.gray400,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+          child: Text(
+            label,
+            style: AppTypography.labelMedium.copyWith(
+              fontSize: 14.385,
+              height: 1.5,
+              letterSpacing: 0.082,
+              color: selected ? AppColors.black : AppColors.gray400,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -283,15 +295,6 @@ class _MissionInfoContent extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(
                     _contentHorizontalPadding,
                     18,
-                    _contentHorizontalPadding,
-                    0,
-                  ),
-                  child: _ReadOnlyMissionTitleField(title: mission.title),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    _contentHorizontalPadding,
-                    38,
                     _contentHorizontalPadding,
                     0,
                   ),
@@ -380,37 +383,6 @@ class _MissionInfoContent extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _ReadOnlyMissionTitleField extends StatelessWidget {
-  const _ReadOnlyMissionTitleField({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 76,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gray200),
-      ),
-      child: Text(
-        title,
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.heading1Bold.copyWith(
-          fontSize: 24,
-          height: 1.364,
-          letterSpacing: 0,
-          color: AppColors.gray800,
-        ),
-      ),
     );
   }
 }
@@ -579,7 +551,7 @@ class _ReadOnlyMissionDescriptionField extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
       alignment: Alignment.topLeft,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.gray100,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.gray200),
       ),
@@ -605,7 +577,7 @@ class _SectionDivider extends StatelessWidget {
       width: double.infinity,
       height: 6,
       margin: const EdgeInsets.symmetric(vertical: 26),
-      color: AppColors.gray100,
+      color: const Color(0xFFEDEEF1),
     );
   }
 }

@@ -23,36 +23,51 @@ class ParentHomeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: onMyTap,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 33,
-              height: 24,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: AppColors.gray800, width: 1.8),
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onMyTap,
+              hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+              highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+              splashColor: AppColors.gray800.withValues(alpha: 0.12),
+              child: Container(
+                width: 33,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: AppColors.gray800, width: 1.8),
+                  ),
                 ),
-              ),
-              child: Text(
-                'my',
-                style: AppTypography.labelBold.copyWith(
-                  fontSize: 12.6,
-                  height: 1.429,
-                  letterSpacing: 0.18,
-                  color: AppColors.gray800,
+                child: Text(
+                  'my',
+                  style: AppTypography.labelBold.copyWith(
+                    fontSize: 12.6,
+                    height: 1.429,
+                    letterSpacing: 0.18,
+                    color: AppColors.gray800,
+                  ),
                 ),
               ),
             ),
           ),
-          GestureDetector(
-            onTap: onNotificationTap,
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: 32,
-              height: 32,
-              child: _NotificationIcon(hasUnread: hasUnreadNotification),
+          Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onNotificationTap,
+              hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+              highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+              splashColor: AppColors.gray800.withValues(alpha: 0.12),
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: _NotificationIcon(hasUnread: hasUnreadNotification),
+              ),
             ),
           ),
         ],

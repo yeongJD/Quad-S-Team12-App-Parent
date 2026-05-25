@@ -15,21 +15,37 @@ class TimeSetupActionButton extends StatelessWidget {
   final bool enabled;
   final VoidCallback onTap;
 
+  void _handleDisabledTap(BuildContext context) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('필수 항목을 먼저 입력해주세요.')));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: TimeSetupSize.bottomButtonHeight,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: enabled ? AppColors.primary : TimeSetupPalette.disabledButton,
-          borderRadius: BorderRadius.circular(TimeSetupRadius.control),
-        ),
-        child: Text(
-          label,
-          style: TimeSetupTextStyles.confirmLabel(enabled: enabled),
+    final Color backgroundColor = enabled
+        ? AppColors.primary
+        : TimeSetupPalette.disabledButton;
+    final Color feedbackColor = enabled ? AppColors.white : AppColors.gray500;
+
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(TimeSetupRadius.control),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: enabled ? onTap : () => _handleDisabledTap(context),
+        hoverColor: feedbackColor.withValues(alpha: enabled ? 0.18 : 0.10),
+        highlightColor: feedbackColor.withValues(alpha: enabled ? 0.24 : 0.14),
+        splashColor: feedbackColor.withValues(alpha: enabled ? 0.28 : 0.16),
+        borderRadius: BorderRadius.circular(TimeSetupRadius.control),
+        child: SizedBox(
+          height: TimeSetupSize.bottomButtonHeight,
+          child: Center(
+            child: Text(
+              label,
+              style: TimeSetupTextStyles.confirmLabel(enabled: enabled),
+            ),
+          ),
         ),
       ),
     );

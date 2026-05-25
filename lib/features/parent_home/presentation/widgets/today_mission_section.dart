@@ -23,7 +23,7 @@ class TodayMissionSection extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onSetup;
   final VoidCallback onAdd;
-  final ValueChanged<int> onMissionTap;
+  final void Function(int index, {bool goToReview}) onMissionTap;
 
   bool get _hasData => missions.isNotEmpty;
 
@@ -35,29 +35,29 @@ class TodayMissionSection extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            GestureDetector(
-              onTap: _hasData ? onOpen : onSetup,
-              behavior: HitTestBehavior.opaque,
-              child: Text(
-                '오늘의 미션',
-                style: AppTypography.headlineBold.copyWith(
-                  fontSize: 18,
-                  height: 1.4,
-                  letterSpacing: -0.22,
-                  color: AppColors.black,
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: _hasData ? onOpen : onSetup,
+                hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+                highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+                splashColor: AppColors.gray800.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+                child: Text(
+                  '오늘의 미션',
+                  style: AppTypography.headlineBold.copyWith(
+                    fontSize: 18,
+                    height: 1.4,
+                    letterSpacing: -0.22,
+                    color: AppColors.black,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 6),
-            GestureDetector(
-              onTap: onSetup,
-              behavior: HitTestBehavior.opaque,
-              child: SvgPicture.asset(
-                'assets/icons/arrow button/Settings.svg',
-                width: 18,
-                height: 18,
-              ),
-            ),
+            _SettingsIconButton(onTap: onSetup),
             const Spacer(),
             Text(
               '$completedCount개 완료',
@@ -89,29 +89,20 @@ class TodayMissionSection extends StatelessWidget {
               for (int index = 0; index < missions.length; index++) ...[
                 _MissionCard(
                   item: missions[index],
-                  onTitleTap: () => onMissionTap(index),
+                  onTap: (bool goToReview) =>
+                      onMissionTap(index, goToReview: goToReview),
                 ),
                 if (index != missions.length - 1) const SizedBox(height: 11),
               ],
             ],
           ),
           const SizedBox(height: 18),
-          Center(
-            child: GestureDetector(
-              onTap: onAdd,
-              behavior: HitTestBehavior.opaque,
-              child: const _MissionAddButton(),
-            ),
-          ),
+          Center(child: _MissionAddButton(onTap: onAdd)),
         ] else
           Center(
             child: Padding(
               padding: const EdgeInsets.only(top: 43, bottom: 40),
-              child: GestureDetector(
-                onTap: onAdd,
-                behavior: HitTestBehavior.opaque,
-                child: const _MissionAddButton(),
-              ),
+              child: _MissionAddButton(onTap: onAdd),
             ),
           ),
       ],
@@ -119,11 +110,44 @@ class TodayMissionSection extends StatelessWidget {
   }
 }
 
+class _SettingsIconButton extends StatelessWidget {
+  const _SettingsIconButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.gray800.withValues(alpha: 0.06),
+        highlightColor: AppColors.gray800.withValues(alpha: 0.10),
+        splashColor: AppColors.gray800.withValues(alpha: 0.12),
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/icons/arrow button/Settings.svg',
+              width: 18,
+              height: 18,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MissionCard extends StatelessWidget {
-  const _MissionCard({required this.item, required this.onTitleTap});
+  const _MissionCard({required this.item, required this.onTap});
 
   final MissionItem item;
-  final VoidCallback onTitleTap;
+  final void Function(bool goToReview) onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +155,9 @@ class _MissionCard extends StatelessWidget {
     final TextDecoration? lineThrough = isCompleted
         ? TextDecoration.lineThrough
         : null;
+    final Color feedbackColor = isCompleted
+        ? AppColors.gray500
+        : AppColors.gray800;
 
     return Container(
       width: double.infinity,
@@ -154,20 +181,34 @@ class _MissionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTap: onTitleTap,
-                  behavior: HitTestBehavior.opaque,
-                  child: Text(
-                    item.title,
-                    style: AppTypography.labelMedium.copyWith(
-                      fontSize: isCompleted ? 16 : 14.39,
-                      height: 1.5,
-                      letterSpacing: isCompleted ? 0.0912 : 0.082,
-                      color: isCompleted
-                          ? AppColors.gray300
-                          : AppColors.gray800,
-                      decoration: lineThrough,
-                      decorationColor: isCompleted ? AppColors.gray300 : null,
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: isCompleted
+                        ? () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('이미 완료된 미션이에요.')),
+                            );
+                          }
+                        : () => onTap(false),
+                    hoverColor: feedbackColor.withValues(alpha: 0.06),
+                    highlightColor: feedbackColor.withValues(alpha: 0.10),
+                    splashColor: feedbackColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Text(
+                      item.title,
+                      style: AppTypography.labelMedium.copyWith(
+                        fontSize: isCompleted ? 16 : 14.39,
+                        height: 1.5,
+                        letterSpacing: isCompleted ? 0.0912 : 0.082,
+                        color: isCompleted
+                            ? AppColors.gray300
+                            : AppColors.gray800,
+                        decoration: lineThrough,
+                        decorationColor: isCompleted ? AppColors.gray300 : null,
+                      ),
                     ),
                   ),
                 ),
@@ -187,7 +228,22 @@ class _MissionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          _MissionStatusIcon(status: item.status),
+          Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => onTap(true),
+              hoverColor: feedbackColor.withValues(alpha: 0.06),
+              highlightColor: feedbackColor.withValues(alpha: 0.10),
+              splashColor: feedbackColor.withValues(alpha: 0.12),
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: _MissionStatusIcon(status: item.status),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -197,88 +253,47 @@ class _MissionCard extends StatelessWidget {
 class _MissionStatusIcon extends StatelessWidget {
   const _MissionStatusIcon({required this.status});
 
+  static const double _iconSize = 21.578;
+
   final MissionStatus status;
 
   @override
   Widget build(BuildContext context) {
-    switch (status) {
-      case MissionStatus.completed:
-        return const _StatusCircle(
-          backgroundColor: AppColors.positive,
-          icon: Icons.check_rounded,
-          iconColor: AppColors.white,
-        );
-      case MissionStatus.reviewing:
-        return const _ProgressStatusCircle();
-      case MissionStatus.pending:
-        return const _StatusCircle(
-          backgroundColor: AppColors.gray200,
-          icon: Icons.radio_button_unchecked_rounded,
-          iconColor: AppColors.gray400,
-        );
-      case MissionStatus.rejected:
-        return const _StatusCircle(
-          backgroundColor: AppColors.destructive,
-          icon: Icons.close_rounded,
-          iconColor: AppColors.white,
-        );
-    }
-  }
-}
+    final String assetPath = switch (status) {
+      MissionStatus.completed => 'assets/icons/속성1=완료.svg',
+      MissionStatus.reviewing => 'assets/icons/로딩.svg',
+      MissionStatus.rejected => 'assets/icons/반려.svg',
+      MissionStatus.pending => 'assets/icons/속성1=미완료.svg',
+    };
 
-class _ProgressStatusCircle extends StatelessWidget {
-  const _ProgressStatusCircle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 21.578,
-      height: 21.578,
-      decoration: const BoxDecoration(
-        color: AppColors.cautionary,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(Icons.sync_rounded, size: 13, color: AppColors.white),
-    );
-  }
-}
-
-class _StatusCircle extends StatelessWidget {
-  const _StatusCircle({
-    required this.backgroundColor,
-    required this.icon,
-    required this.iconColor,
-  });
-
-  final Color backgroundColor;
-  final IconData icon;
-  final Color iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 21.578,
-      height: 21.578,
-      decoration: BoxDecoration(color: backgroundColor, shape: BoxShape.circle),
-      child: Icon(icon, size: 13, color: iconColor),
-    );
+    return SvgPicture.asset(assetPath, width: _iconSize, height: _iconSize);
   }
 }
 
 class _MissionAddButton extends StatelessWidget {
-  const _MissionAddButton();
+  const _MissionAddButton({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 35.963,
-      height: 35.963,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color(0xFFEBF5FE),
-      ),
-      child: const Center(
-        child: _AddIcon(color: AppColors.primary, size: 21.578),
+    return Material(
+      color: const Color(0xFFEBF5FE),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.primary.withValues(alpha: 0.08),
+        highlightColor: AppColors.primary.withValues(alpha: 0.12),
+        splashColor: AppColors.primary.withValues(alpha: 0.16),
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 35.963,
+          height: 35.963,
+          child: Center(
+            child: _AddIcon(color: AppColors.primary, size: 21.578),
+          ),
+        ),
       ),
     );
   }

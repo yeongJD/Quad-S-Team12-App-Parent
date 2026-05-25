@@ -109,14 +109,12 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
             child: Column(
               children: [
                 TimeSetupTopBar(
-                  title: '시간설정',
+                  title: '시간 확인',
                   onBack: () => _handleBack(context),
                 ),
                 Expanded(
-                  child: Stack(
-                    children: [
-                      if (monthlyTotal == null)
-                        const Center(
+                  child: monthlyTotal == null
+                      ? const Center(
                           child: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 21.58),
                             child: _EmptyNotice(
@@ -124,9 +122,8 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                             ),
                           ),
                         )
-                      else
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.only(bottom: 112),
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.only(bottom: 32),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -171,23 +168,6 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                             ],
                           ),
                         ),
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 44),
-                          child: Text(
-                            '확인',
-                            style: AppTypography.headlineMedium.copyWith(
-                              fontSize: 18,
-                              height: 1.445,
-                              letterSpacing: -0.0036,
-                              color: AppColors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

@@ -6,10 +6,15 @@ import '../../../today_mission/presentation/models/today_mission.dart';
 enum MissionStatus { pending, reviewing, completed, rejected }
 
 class ParentHomeChild {
-  const ParentHomeChild({required this.name, required this.accentColor});
+  const ParentHomeChild({
+    required this.name,
+    required this.accentColor,
+    this.photoBase64,
+  });
 
   final String name;
   final Color accentColor;
+  final String? photoBase64;
 }
 
 class TimeSummary {
@@ -123,6 +128,7 @@ class ParentHomeData {
 
   factory ParentHomeData.withLinkedChildren({
     required List<String> names,
+    List<String?> photoBase64Values = const <String?>[],
     TimeSummary? timeSummary,
     bool waitingForChildTimePlan = false,
     bool hasChildTimePlan = false,
@@ -135,6 +141,9 @@ class ParentHomeData {
           ParentHomeChild(
             name: names[index],
             accentColor: index == 0 ? AppColors.primary : AppColors.gray200,
+            photoBase64: index < photoBase64Values.length
+                ? photoBase64Values[index]
+                : null,
           ),
       ],
       hasUnreadNotification: hasUnreadNotification,

@@ -104,31 +104,41 @@ class EditTimeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.8),
-        decoration: BoxDecoration(
-          color: TimeSetupPalette.tipBackground,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.edit_rounded, size: 17, color: AppColors.primary),
-            const SizedBox(width: 6.3),
-            Text(
-              '수정하기',
-              style: AppTypography.labelMedium.copyWith(
-                fontSize: 12.59,
-                height: 1.429,
-                letterSpacing: 0.183,
-                color: AppColors.primary,
-              ),
+    return Material(
+      color: TimeSetupPalette.tipBackground,
+      borderRadius: BorderRadius.circular(7),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: AppColors.primary.withValues(alpha: 0.08),
+        highlightColor: AppColors.primary.withValues(alpha: 0.12),
+        splashColor: AppColors.primary.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(7),
+        child: SizedBox(
+          height: 28,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.edit_rounded,
+                  size: 17,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 6.3),
+                Text(
+                  '수정하기',
+                  style: AppTypography.labelMedium.copyWith(
+                    fontSize: 12.59,
+                    height: 1.429,
+                    letterSpacing: 0.183,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

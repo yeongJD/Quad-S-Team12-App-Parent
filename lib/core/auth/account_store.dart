@@ -28,6 +28,7 @@ class ParentAccount {
     required this.passwordHash,
     this.status = AccountStatus.active,
     this.hiddenNotificationIds = const <String>[],
+    this.readNotificationIds = const <String>[],
     this.children = const <AccountChildData>[],
   });
 
@@ -37,6 +38,7 @@ class ParentAccount {
   final String passwordHash;
   final AccountStatus status;
   final List<String> hiddenNotificationIds;
+  final List<String> readNotificationIds;
   final List<AccountChildData> children;
 
   ParentAccount copyWith({
@@ -44,6 +46,7 @@ class ParentAccount {
     String? passwordHash,
     AccountStatus? status,
     List<String>? hiddenNotificationIds,
+    List<String>? readNotificationIds,
     List<AccountChildData>? children,
   }) {
     return ParentAccount(
@@ -54,6 +57,7 @@ class ParentAccount {
       status: status ?? this.status,
       hiddenNotificationIds:
           hiddenNotificationIds ?? this.hiddenNotificationIds,
+      readNotificationIds: readNotificationIds ?? this.readNotificationIds,
       children: children ?? this.children,
     );
   }
@@ -66,6 +70,7 @@ class ParentAccount {
       'passwordHash': passwordHash,
       'status': status.jsonValue,
       'hiddenNotificationIds': hiddenNotificationIds,
+      'readNotificationIds': readNotificationIds,
       'children': children
           .map((AccountChildData child) => child.toJson())
           .toList(),
@@ -82,6 +87,7 @@ class ParentAccount {
     final Object? name = json['name'];
     final Object? passwordHash = json['passwordHash'];
     final Object? hiddenNotificationIdsValue = json['hiddenNotificationIds'];
+    final Object? readNotificationIdsValue = json['readNotificationIds'];
     final Object? childrenValue = json['children'];
     if (parentId is! String ||
         email is! String ||
@@ -106,6 +112,9 @@ class ParentAccount {
       hiddenNotificationIds: hiddenNotificationIdsValue is List<Object?>
           ? hiddenNotificationIdsValue.whereType<String>().toList()
           : const <String>[],
+      readNotificationIds: readNotificationIdsValue is List<Object?>
+          ? readNotificationIdsValue.whereType<String>().toList()
+          : const <String>[],
       children: children,
     );
   }
@@ -116,6 +125,7 @@ class AccountChildData {
     required this.childrenId,
     required this.childCode,
     required this.name,
+    this.photoBase64,
     this.dailyRules = const <Map<String, Object?>>[],
     this.missions = const <Map<String, Object?>>[],
   });
@@ -123,11 +133,13 @@ class AccountChildData {
   final String childrenId;
   final String childCode;
   final String name;
+  final String? photoBase64;
   final List<Map<String, Object?>> dailyRules;
   final List<Map<String, Object?>> missions;
 
   AccountChildData copyWith({
     String? name,
+    String? photoBase64,
     List<Map<String, Object?>>? dailyRules,
     List<Map<String, Object?>>? missions,
   }) {
@@ -135,6 +147,7 @@ class AccountChildData {
       childrenId: childrenId,
       childCode: childCode,
       name: name ?? this.name,
+      photoBase64: photoBase64 ?? this.photoBase64,
       dailyRules: dailyRules ?? this.dailyRules,
       missions: missions ?? this.missions,
     );
@@ -145,6 +158,7 @@ class AccountChildData {
       'childrenId': childrenId,
       'childCode': childCode,
       'name': name,
+      if (photoBase64 case final String photoBase64) 'photoBase64': photoBase64,
       'dailyRules': dailyRules,
       'missions': missions,
     };
@@ -158,6 +172,7 @@ class AccountChildData {
     final Object? childrenId = json['childrenId'];
     final Object? childCode = json['childCode'];
     final Object? name = json['name'];
+    final Object? photoBase64 = json['photoBase64'];
     if (childrenId is! String || childCode is! String || name is! String) {
       return null;
     }
@@ -166,6 +181,7 @@ class AccountChildData {
       childrenId: childrenId,
       childCode: childCode,
       name: name,
+      photoBase64: photoBase64 is String ? photoBase64 : null,
       dailyRules: _decodeMapList(json['dailyRules']),
       missions: _decodeMapList(json['missions']),
     );

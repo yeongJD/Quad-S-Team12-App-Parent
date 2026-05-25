@@ -179,7 +179,7 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.gray100,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -217,7 +217,7 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   _contentHorizontalPadding,
-                                  38,
+                                  18,
                                   _contentHorizontalPadding,
                                   0,
                                 ),
@@ -600,7 +600,7 @@ class _MissionDescriptionField extends StatelessWidget {
           ),
           contentPadding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
           filled: true,
-          fillColor: AppColors.white,
+          fillColor: AppColors.gray100,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: const BorderSide(color: AppColors.gray200),
@@ -870,7 +870,7 @@ class _SectionDivider extends StatelessWidget {
       width: double.infinity,
       height: 6,
       margin: const EdgeInsets.symmetric(vertical: 26),
-      color: AppColors.gray100,
+      color: const Color(0xFFEDEEF1),
     );
   }
 }
