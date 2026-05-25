@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../data/child_weekly_time_plan_store.dart';
 import '../data/daily_time_rule_store.dart';
 import '../data/today_time_mock_data.dart';
 import '../models/daily_time_rule.dart';
@@ -29,7 +30,7 @@ class TodayTimeConfirmationPage extends StatefulWidget {
 }
 
 class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
-  late final TimePlanConfirmationData _data;
+  late TimePlanConfirmationData _data;
   late bool _childRevisionAllowed;
 
   @override
@@ -37,6 +38,64 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     super.initState();
     _data = widget.initialData ?? TodayTimeMockData.parentOnlyConfirmation;
     _childRevisionAllowed = _data.childRevisionAllowed;
+    _loadStoredTimePlan();
+  }
+
+  Future<void> _loadStoredTimePlan() async {
+    final String? parentId = widget.parentId;
+    final String? childrenId = widget.childrenId;
+    if (parentId == null ||
+        parentId.isEmpty ||
+        childrenId == null ||
+        childrenId.isEmpty) {
+      return;
+    }
+
+    final List<DailyTimeRule> parentRules = await DailyTimeRuleStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    if (parentRules.isEmpty) {
+      return;
+    }
+
+    final List<DailyTimeRule> childWeeklyRules =
+        await ChildWeeklyTimePlanStore.load(
+          parentId: parentId,
+          childrenId: childrenId,
+        );
+    if (!mounted) {
+      return;
+    }
+
+    final _DateLabels labels = _DateLabels.current();
+    final TimePlanConfirmationData storedData = childWeeklyRules.isEmpty
+        ? TimePlanConfirmationData(
+            monthLabel: labels.monthLabel,
+            monthlyTotal: _timeFromMinutes(
+              _calculateMonthlyMinutes(parentRules),
+            ),
+            weekLabel: labels.weekLabel,
+            weeklyRules: const <DailyTimeRule>[],
+            childRevisionAllowed: false,
+          )
+        : TimePlanConfirmationData(
+            monthLabel: labels.monthLabel,
+            monthlyTotal: _timeFromMinutes(
+              _calculateMonthlyMinutes(parentRules),
+            ),
+            weekLabel: labels.weekLabel,
+            weeklyTotal: _timeFromMinutes(
+              _calculateWeeklyMinutes(childWeeklyRules),
+            ),
+            weeklyRules: childWeeklyRules,
+            childRevisionAllowed: true,
+          );
+
+    setState(() {
+      _data = storedData;
+      _childRevisionAllowed = storedData.childRevisionAllowed;
+    });
   }
 
   void _handleBack(BuildContext context) {
@@ -90,6 +149,41 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
           'childrenId': childrenId,
       },
     ).toString();
+  }
+
+  int _calculateMonthlyMinutes(List<DailyTimeRule> rules) {
+    final DateTime now = DateTime.now();
+    final int lastDay = DateTime(now.year, now.month + 1, 0).day;
+    final List<int> weekdayCounts = List<int>.filled(DateTime.daysPerWeek, 0);
+    for (int day = 1; day <= lastDay; day++) {
+      final int weekdayIndex = DateTime(now.year, now.month, day).weekday - 1;
+      weekdayCounts[weekdayIndex]++;
+    }
+
+    int total = 0;
+    for (final DailyTimeRule rule in rules) {
+      final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
+      for (final int dayIndex in rule.days) {
+        if (dayIndex < 0 || dayIndex >= weekdayCounts.length) {
+          continue;
+        }
+        total += dailyMinutes * weekdayCounts[dayIndex];
+      }
+    }
+    return total;
+  }
+
+  int _calculateWeeklyMinutes(List<DailyTimeRule> rules) {
+    int total = 0;
+    for (final DailyTimeRule rule in rules) {
+      final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
+      total += dailyMinutes * rule.days.length;
+    }
+    return total;
+  }
+
+  TimeSelection _timeFromMinutes(int minutes) {
+    return TimeSelection(hour: minutes ~/ 60, minute: minutes % 60);
   }
 
   @override
@@ -265,5 +359,28 @@ class _EmptyNotice extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+final class _DateLabels {
+  const _DateLabels({required this.monthLabel, required this.weekLabel});
+
+  factory _DateLabels.current() {
+    final DateTime now = DateTime.now();
+    final int weekOfMonth = _weekOfMonth(now);
+    return _DateLabels(
+      monthLabel: '${now.month}월달 총 시간',
+      weekLabel: '${now.month}월 $weekOfMonth주 자녀의 사용 계획',
+    );
+  }
+
+  final String monthLabel;
+  final String weekLabel;
+
+  static int _weekOfMonth(DateTime date) {
+    final DateTime firstDayOfMonth = DateTime(date.year, date.month);
+    final int leadingDays =
+        (firstDayOfMonth.weekday - DateTime.monday) % DateTime.daysPerWeek;
+    return ((date.day + leadingDays - 1) ~/ DateTime.daysPerWeek) + 1;
   }
 }

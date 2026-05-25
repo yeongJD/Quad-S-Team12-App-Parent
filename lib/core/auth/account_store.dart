@@ -127,6 +127,7 @@ class AccountChildData {
     required this.name,
     this.photoBase64,
     this.dailyRules = const <Map<String, Object?>>[],
+    this.childWeeklyRules = const <Map<String, Object?>>[],
     this.missions = const <Map<String, Object?>>[],
   });
 
@@ -135,12 +136,14 @@ class AccountChildData {
   final String name;
   final String? photoBase64;
   final List<Map<String, Object?>> dailyRules;
+  final List<Map<String, Object?>> childWeeklyRules;
   final List<Map<String, Object?>> missions;
 
   AccountChildData copyWith({
     String? name,
     String? photoBase64,
     List<Map<String, Object?>>? dailyRules,
+    List<Map<String, Object?>>? childWeeklyRules,
     List<Map<String, Object?>>? missions,
   }) {
     return AccountChildData(
@@ -149,6 +152,7 @@ class AccountChildData {
       name: name ?? this.name,
       photoBase64: photoBase64 ?? this.photoBase64,
       dailyRules: dailyRules ?? this.dailyRules,
+      childWeeklyRules: childWeeklyRules ?? this.childWeeklyRules,
       missions: missions ?? this.missions,
     );
   }
@@ -160,6 +164,7 @@ class AccountChildData {
       'name': name,
       if (photoBase64 case final String photoBase64) 'photoBase64': photoBase64,
       'dailyRules': dailyRules,
+      'childWeeklyRules': childWeeklyRules,
       'missions': missions,
     };
   }
@@ -183,6 +188,7 @@ class AccountChildData {
       name: name,
       photoBase64: photoBase64 is String ? photoBase64 : null,
       dailyRules: _decodeMapList(json['dailyRules']),
+      childWeeklyRules: _decodeMapList(json['childWeeklyRules']),
       missions: _decodeMapList(json['missions']),
     );
   }

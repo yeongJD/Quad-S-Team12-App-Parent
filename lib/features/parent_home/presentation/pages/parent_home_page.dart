@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../today_mission/presentation/data/today_mission_store.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
+import '../../../today_time/presentation/data/child_weekly_time_plan_store.dart';
 import '../../../today_time/presentation/data/daily_time_rule_store.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
 import '../../../notifications/presentation/data/notification_store.dart';
@@ -163,16 +164,21 @@ class _ParentHomePageState extends State<ParentHomePage> {
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
+    final List<DailyTimeRule> childWeeklyRules =
+        await ChildWeeklyTimePlanStore.load(
+          parentId: parentId,
+          childrenId: selectedChild.childrenId,
+        );
     final List<TodayMission> savedMissions = await TodayMissionStore.load(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
 
     final bool hasParentRules = savedTimeRules.isNotEmpty;
-    final bool childDataReceived = _hasReceivedChildTimePlan(selectedChild);
+    final bool hasChildTimePlan = childWeeklyRules.isNotEmpty;
 
-    final TimeSummary? timeSummary = childDataReceived
-        ? _timeSummaryFromRules(savedTimeRules)
+    final TimeSummary? timeSummary = hasChildTimePlan
+        ? _timeSummaryFromRules(childWeeklyRules)
         : null;
 
     final List<MissionItem> missions = savedMissions
@@ -186,19 +192,14 @@ class _ParentHomePageState extends State<ParentHomePage> {
             .map((ConnectedChild child) => child.photoBase64)
             .toList(),
         timeSummary: timeSummary,
-        waitingForChildTimePlan: hasParentRules && !childDataReceived,
-        hasChildTimePlan: childDataReceived,
+        waitingForChildTimePlan: hasParentRules && !hasChildTimePlan,
+        hasChildTimePlan: hasChildTimePlan,
         missions: missions,
         hasUnreadNotification: hasUnreadNotification,
       ),
       missions: savedMissions,
       children: children,
     );
-  }
-
-  bool _hasReceivedChildTimePlan(ConnectedChild child) {
-    // TODO: Replace with the child app's monthly distribution completion state.
-    return false;
   }
 
   TimeSummary? _timeSummaryFromRules(List<DailyTimeRule> rules) {
@@ -516,6 +517,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                           const SizedBox(height: 36),
                           TodayTimeSection(
                             timeSummary: _data.timeSummary,
+                            waitingForChildPlan: _data.waitingForChildTimePlan,
                             onSetup: _openTimeSettingsEntry,
                             onAdd: _openTimeSetup,
                           ),

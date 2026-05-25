@@ -91,7 +91,7 @@ class TodayTimeCompletePage extends StatelessWidget {
                           child: const Icon(
                             Icons.check_rounded,
                             color: AppColors.white,
-                            size: 72,
+                            size: 52,
                           ),
                         ),
                         const SizedBox(height: 76),

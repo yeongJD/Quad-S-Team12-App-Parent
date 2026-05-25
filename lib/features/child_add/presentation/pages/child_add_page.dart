@@ -375,57 +375,147 @@ class _ChildAddTopBar extends StatelessWidget {
   }
 }
 
-class _PhotoPicker extends StatelessWidget {
+class _PhotoPicker extends StatefulWidget {
   const _PhotoPicker({required this.photoBytes, required this.onTap});
 
   final Uint8List? photoBytes;
   final VoidCallback onTap;
 
   @override
+  State<_PhotoPicker> createState() => _PhotoPickerState();
+}
+
+class _PhotoPickerState extends State<_PhotoPicker> {
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  bool get _isActive => _isHovered || _isPressed;
+
+  void _setHovered(bool value) {
+    if (_isHovered == value) {
+      return;
+    }
+    setState(() {
+      _isHovered = value;
+      if (!value) {
+        _isPressed = false;
+      }
+    });
+  }
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+    setState(() {
+      _isPressed = value;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        children: [
-          Container(
-            width: _ChildAddMetrics.photoSize,
-            height: _ChildAddMetrics.photoSize,
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.gray200, width: 2),
-            ),
-            child: ClipOval(
-              child: photoBytes == null
-                  ? Container(
-                      color: const Color(0xFFE1E4E9),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.image_outlined,
-                        size: 24,
-                        color: AppColors.white,
-                      ),
-                    )
-                  : Image.memory(
-                      photoBytes!,
-                      fit: BoxFit.cover,
-                      width: _ChildAddMetrics.photoInnerSize,
-                      height: _ChildAddMetrics.photoInnerSize,
-                    ),
-            ),
+    final Color borderColor = _isActive
+        ? AppColors.gray400.withValues(alpha: _isPressed ? 0.72 : 0.55)
+        : AppColors.gray200;
+    final Color photoBackground = _isPressed
+        ? AppColors.gray300
+        : _isHovered
+        ? AppColors.gray200
+        : const Color(0xFFE1E4E9);
+    final Color iconColor = _isActive ? AppColors.gray700 : AppColors.white;
+    final Color labelColor = _isActive ? AppColors.gray800 : AppColors.gray600;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.97 : 1,
+          duration: const Duration(milliseconds: 90),
+          curve: Curves.easeOut,
+          child: Column(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                curve: Curves.easeOut,
+                width: _ChildAddMetrics.photoSize,
+                height: _ChildAddMetrics.photoSize,
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: borderColor, width: 2),
+                  boxShadow: _isActive
+                      ? <BoxShadow>[
+                          BoxShadow(
+                            color: AppColors.gray500.withValues(alpha: 0.14),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: ClipOval(
+                  child: widget.photoBytes == null
+                      ? AnimatedContainer(
+                          duration: const Duration(milliseconds: 120),
+                          curve: Curves.easeOut,
+                          color: photoBackground,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 24,
+                            color: iconColor,
+                          ),
+                        )
+                      : Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.memory(
+                              widget.photoBytes!,
+                              fit: BoxFit.cover,
+                              width: _ChildAddMetrics.photoInnerSize,
+                              height: _ChildAddMetrics.photoInnerSize,
+                            ),
+                            if (_isActive)
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: AppColors.gray700.withValues(
+                                    alpha: _isPressed ? 0.24 : 0.14,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 24,
+                                  color: AppColors.white.withValues(
+                                    alpha: 0.92,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(height: _ChildAddMetrics.photoLabelGap),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 120),
+                curve: Curves.easeOut,
+                style: AppTypography.bodyMedium.copyWith(
+                  fontSize: 16,
+                  height: 1.5,
+                  letterSpacing: 0,
+                  color: labelColor,
+                ),
+                child: const Text('사진등록'),
+              ),
+            ],
           ),
-          const SizedBox(height: _ChildAddMetrics.photoLabelGap),
-          Text(
-            '사진등록',
-            style: AppTypography.bodyMedium.copyWith(
-              fontSize: 16,
-              height: 1.5,
-              letterSpacing: 0,
-              color: AppColors.gray600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

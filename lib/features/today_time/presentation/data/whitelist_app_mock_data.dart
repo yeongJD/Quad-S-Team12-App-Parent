@@ -6,10 +6,16 @@ abstract final class WhitelistAppMockData {
         WhitelistAppCategory(
           id: 'all',
           name: '모든 앱 및 카테고리',
+          apps: <WhitelistApp>[],
+        ),
+        WhitelistAppCategory(
+          id: 'essentials',
+          name: '필수앱',
           apps: <WhitelistApp>[
             WhitelistApp(id: 'phone', name: '전화'),
-            WhitelistApp(id: 'messages', name: '메시지'),
-            WhitelistApp(id: 'facetime', name: 'FaceTime'),
+            WhitelistApp(id: 'messages', name: '문자'),
+            WhitelistApp(id: 'contacts', name: '연락처'),
+            WhitelistApp(id: 'calendar', name: '캘린더'),
             WhitelistApp(id: 'memo', name: '메모'),
           ],
         ),

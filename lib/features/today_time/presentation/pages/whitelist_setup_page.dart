@@ -51,17 +51,17 @@ class WhitelistSetupPage extends StatefulWidget {
 }
 
 class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
+  static const String _allCategoryId = 'all';
+
   final TextEditingController _searchController = TextEditingController();
-  final Set<String> _expandedCategoryIds = <String>{'social'};
+  final Set<String> _expandedCategoryIds = <String>{};
   late final Set<String> _selectedAppIds;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _selectedAppIds = widget.initialSelectedAppIds.isEmpty
-        ? <String>{'facetime', 'kakaotalk', 'messages'}
-        : <String>{...widget.initialSelectedAppIds};
+    _selectedAppIds = <String>{...widget.initialSelectedAppIds};
   }
 
   @override
@@ -73,10 +73,10 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
   List<WhitelistAppCategory> get _filteredCategories {
     final String query = _query.trim().toLowerCase();
     if (query.isEmpty) {
-      return widget.categories;
+      return _resolvedCategories;
     }
 
-    return widget.categories
+    return _resolvedCategories
         .map((WhitelistAppCategory category) {
           final List<WhitelistApp> apps = category.apps
               .where(
@@ -91,6 +91,35 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
         })
         .where((WhitelistAppCategory category) => category.apps.isNotEmpty)
         .toList();
+  }
+
+  List<WhitelistAppCategory> get _resolvedCategories {
+    return widget.categories.map((WhitelistAppCategory category) {
+      if (category.id != _allCategoryId) {
+        return category;
+      }
+      return WhitelistAppCategory(
+        id: category.id,
+        name: category.name,
+        apps: _allDescendantApps,
+      );
+    }).toList();
+  }
+
+  List<WhitelistApp> get _allDescendantApps {
+    final Set<String> seenIds = <String>{};
+    final List<WhitelistApp> apps = <WhitelistApp>[];
+    for (final WhitelistAppCategory category in widget.categories) {
+      if (category.id == _allCategoryId) {
+        continue;
+      }
+      for (final WhitelistApp app in category.apps) {
+        if (seenIds.add(app.id)) {
+          apps.add(app);
+        }
+      }
+    }
+    return apps;
   }
 
   void _handleBack(BuildContext context) {
@@ -114,6 +143,24 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
     setState(() {
       if (!_selectedAppIds.add(appId)) {
         _selectedAppIds.remove(appId);
+      }
+    });
+  }
+
+  void _toggleCategoryApps(WhitelistAppCategory category) {
+    if (category.apps.isEmpty) {
+      return;
+    }
+    setState(() {
+      final bool allSelected = category.apps.every(
+        (WhitelistApp app) => _selectedAppIds.contains(app.id),
+      );
+      for (final WhitelistApp app in category.apps) {
+        if (allSelected) {
+          _selectedAppIds.remove(app.id);
+        } else {
+          _selectedAppIds.add(app.id);
+        }
       }
     });
   }
@@ -195,6 +242,8 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
                             selectedAppIds: _selectedAppIds,
                             onExpandTap: () => _toggleCategoryOpen(category.id),
                             onAppTap: _toggleApp,
+                            onCategoryCheckTap: () =>
+                                _toggleCategoryApps(category),
                           ),
                     ],
                   ),
@@ -279,6 +328,7 @@ class _WhitelistCategoryTile extends StatelessWidget {
     required this.selectedAppIds,
     required this.onExpandTap,
     required this.onAppTap,
+    required this.onCategoryCheckTap,
   });
 
   final WhitelistAppCategory category;
@@ -286,9 +336,13 @@ class _WhitelistCategoryTile extends StatelessWidget {
   final Set<String> selectedAppIds;
   final VoidCallback onExpandTap;
   final ValueChanged<String> onAppTap;
+  final VoidCallback onCategoryCheckTap;
 
   bool get _hasSelectedApps =>
-      category.apps.any((WhitelistApp app) => selectedAppIds.contains(app.id));
+      category.apps.isNotEmpty &&
+      category.apps.every(
+        (WhitelistApp app) => selectedAppIds.contains(app.id),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -319,17 +373,7 @@ class _WhitelistCategoryTile extends StatelessWidget {
                 const SizedBox(width: 52),
                 _WhitelistCheckButton(
                   selected: _hasSelectedApps,
-                  onTap: () {
-                    if (category.apps.isEmpty) {
-                      return;
-                    }
-                    final bool shouldSelectAll = !_hasSelectedApps;
-                    for (final WhitelistApp app in category.apps) {
-                      if (shouldSelectAll != selectedAppIds.contains(app.id)) {
-                        onAppTap(app.id);
-                      }
-                    }
-                  },
+                  onTap: onCategoryCheckTap,
                 ),
               ],
             ),
