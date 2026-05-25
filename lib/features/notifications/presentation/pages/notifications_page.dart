@@ -3,12 +3,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
-import '../../../../core/child/child_connection_store.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/child/child_summary.dart';
+import '../../../../data/repositories/child_repository.dart';
+import '../../../../data/repositories/notification_repository.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
-import '../data/notification_store.dart';
 import '../models/notification_item.dart';
 import '../widgets/notification_card.dart';
 
@@ -20,6 +22,10 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
+  final NotificationRepository _notificationRepository =
+      createNotificationRepository();
+  final ChildRepository _childRepository = createChildRepository();
+
   List<NotificationItem> _notifications = <NotificationItem>[];
   bool _isLoading = true;
   bool _isPastNotificationsExpanded = false;
@@ -33,16 +39,30 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _loadNotifications() async {
     final String? parentId = await AuthSession.getCurrentParentId();
-    final List<NotificationItem> notifications = await NotificationStore.load(
-      parentId,
-    );
+    if (parentId == null || parentId.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _parentId = parentId;
+        _notifications = <NotificationItem>[];
+        _isLoading = false;
+      });
+      return;
+    }
+    final Result<List<NotificationItem>> result =
+        await _notificationRepository.loadInbox(parentId);
     if (!mounted) {
       return;
     }
 
+    final List<NotificationItem> items = switch (result) {
+      Success<List<NotificationItem>>(:final data) => data,
+      Failure<List<NotificationItem>>() => const <NotificationItem>[],
+    };
     setState(() {
       _parentId = parentId;
-      _notifications = notifications;
+      _notifications = items;
       _isLoading = false;
     });
   }
@@ -67,7 +87,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Future<void> _markNotificationRead(NotificationItem item) async {
     final String? parentId = _parentId;
     if (parentId != null && parentId.isNotEmpty) {
-      await NotificationStore.markRead(
+      await _notificationRepository.markRead(
         parentId: parentId,
         notificationId: item.id,
       );
@@ -92,7 +112,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ? _parentId!
         : 'mock-parent';
 
-    final ConnectedChild? child = await _childFromPayload(item);
+    final ChildSummary? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
@@ -121,7 +141,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       return true;
     }
 
-    final ConnectedChild? child = await _childFromPayload(item);
+    final ChildSummary? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
@@ -149,7 +169,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       return true;
     }
 
-    final ConnectedChild? child = await _childFromPayload(item);
+    final ChildSummary? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
@@ -165,16 +185,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return true;
   }
 
-  Future<ConnectedChild?> _childFromPayload(NotificationItem item) async {
+  Future<ChildSummary?> _childFromPayload(NotificationItem item) async {
     final String? parentId = _parentId;
     final Object? childCode = item.payload?['childCode'];
     if (parentId == null || parentId.isEmpty || childCode is! String) {
       return null;
     }
 
-    final List<ConnectedChild> children =
-        await ChildConnectionStore.loadChildren(parentId);
-    for (final ConnectedChild child in children) {
+    final Result<List<ChildSummary>> result =
+        await _childRepository.loadChildren(parentId);
+    final List<ChildSummary> children = switch (result) {
+      Success<List<ChildSummary>>(:final data) => data,
+      Failure<List<ChildSummary>>() => const <ChildSummary>[],
+    };
+    for (final ChildSummary child in children) {
       if (child.childCode == childCode || child.childrenId == childCode) {
         return child;
       }
@@ -293,7 +317,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       });
                       context.pop();
                       if (parentId != null && parentId.isNotEmpty) {
-                        await NotificationStore.hide(
+                        await _notificationRepository.hide(
                           parentId: parentId,
                           notificationId: item.id,
                         );

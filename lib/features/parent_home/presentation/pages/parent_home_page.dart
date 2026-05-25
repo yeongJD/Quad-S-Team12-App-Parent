@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
-import '../../../../core/child/child_connection_store.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../today_mission/presentation/data/today_mission_store.dart';
+import '../../../../data/models/child/child_summary.dart';
+import '../../../../data/repositories/child_repository.dart';
+import '../../../../data/repositories/mission_repository.dart';
+import '../../../../data/repositories/notification_repository.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
-import '../../../today_time/presentation/data/child_weekly_time_plan_store.dart';
-import '../../../today_time/presentation/data/daily_time_rule_store.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
-import '../../../notifications/presentation/data/notification_store.dart';
 import '../../../common/presentation/widgets/confirmation_dialog.dart';
 import '../models/parent_home_models.dart';
 import '../widgets/child_selector_section.dart';
@@ -27,7 +28,7 @@ class _StoredParentHomeData {
 
   final ParentHomeData data;
   final List<TodayMission> missions;
-  final List<ConnectedChild> children;
+  final List<ChildSummary> children;
 }
 
 class ParentHomePage extends StatefulWidget {
@@ -47,16 +48,22 @@ class ParentHomePage extends StatefulWidget {
 }
 
 class _ParentHomePageState extends State<ParentHomePage> {
+  final ChildRepository _childRepository = createChildRepository();
+  final MissionRepository _missionRepository = createMissionRepository();
+  final NotificationRepository _notificationRepository =
+      createNotificationRepository();
+  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
+
   ParentHomeData _data = ParentHomeData.empty();
   bool _isLoading = true;
   int _selectedChildIndex = 0;
   int? _deleteChildIndex;
-  List<ConnectedChild> _connectedChildren = <ConnectedChild>[];
+  List<ChildSummary> _connectedChildren = <ChildSummary>[];
   List<TodayMission> _savedMissions = <TodayMission>[];
   String? _parentId;
   final GlobalKey _childSelectorKey = GlobalKey();
 
-  ConnectedChild? get _selectedChild {
+  ChildSummary? get _selectedChild {
     if (_selectedChildIndex < 0 ||
         _selectedChildIndex >= _connectedChildren.length) {
       return null;
@@ -76,13 +83,13 @@ class _ParentHomePageState extends State<ParentHomePage> {
     if (widget.showFilledPreview) {
       data = ParentHomeData.sampleFilled();
       savedMissions = <TodayMission>[];
-      _connectedChildren = const <ConnectedChild>[
-        ConnectedChild(
+      _connectedChildren = const <ChildSummary>[
+        ChildSummary(
           childrenId: 'GDG12-1',
           name: '박진아',
           childCode: 'GDG12-1',
         ),
-        ConnectedChild(
+        ChildSummary(
           childrenId: 'GDG12-2',
           name: '박진아',
           childCode: 'GDG12-2',
@@ -91,8 +98,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
     } else if (widget.showTimeEmptyPreview) {
       data = ParentHomeData.sampleTimeEmpty();
       savedMissions = <TodayMission>[];
-      _connectedChildren = const <ConnectedChild>[
-        ConnectedChild(
+      _connectedChildren = const <ChildSummary>[
+        ChildSummary(
           childrenId: 'GDG12-1',
           name: '박진아',
           childCode: 'GDG12-1',
@@ -101,8 +108,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
     } else if (widget.showLinkedChildPreview) {
       data = ParentHomeData.withLinkedChild(name: '홍길동');
       savedMissions = <TodayMission>[];
-      _connectedChildren = const <ConnectedChild>[
-        ConnectedChild(
+      _connectedChildren = const <ChildSummary>[
+        ChildSummary(
           childrenId: 'GDG12-1',
           name: '홍길동',
           childCode: 'GDG12-1',
@@ -137,15 +144,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
           hasUnreadNotification: false,
         ),
         missions: <TodayMission>[],
-        children: <ConnectedChild>[],
+        children: <ChildSummary>[],
       );
     }
 
-    final bool hasUnreadNotification = await NotificationStore.hasUnread(
-      parentId,
-    );
-    final List<ConnectedChild> children =
-        await ChildConnectionStore.loadChildren(parentId);
+    final bool hasUnreadNotification = await _unreadNotificationCount(parentId);
+    final List<ChildSummary> children = await _loadChildSummaries(parentId);
     if (children.isEmpty) {
       _selectedChildIndex = 0;
       return _StoredParentHomeData(
@@ -159,17 +163,18 @@ class _ParentHomePageState extends State<ParentHomePage> {
     }
 
     _selectedChildIndex = _selectedChildIndex.clamp(0, children.length - 1);
-    final ConnectedChild selectedChild = children[_selectedChildIndex];
-    final List<DailyTimeRule> savedTimeRules = await DailyTimeRuleStore.load(
+    final ChildSummary selectedChild = children[_selectedChildIndex];
+    final List<DailyTimeRule> savedTimeRules = await _loadRuleList(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
+      loader: _timePlanRepository.loadDailyRules,
     );
-    final List<DailyTimeRule> childWeeklyRules =
-        await ChildWeeklyTimePlanStore.load(
-          parentId: parentId,
-          childrenId: selectedChild.childrenId,
-        );
-    final List<TodayMission> savedMissions = await TodayMissionStore.load(
+    final List<DailyTimeRule> childWeeklyRules = await _loadRuleList(
+      parentId: parentId,
+      childrenId: selectedChild.childrenId,
+      loader: _timePlanRepository.loadChildWeeklyRules,
+    );
+    final List<TodayMission> savedMissions = await _loadMissions(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
@@ -187,9 +192,9 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
     return _StoredParentHomeData(
       data: ParentHomeData.withLinkedChildren(
-        names: children.map((ConnectedChild child) => child.name).toList(),
+        names: children.map((ChildSummary child) => child.name).toList(),
         photoBase64Values: children
-            .map((ConnectedChild child) => child.photoBase64)
+            .map((ChildSummary child) => child.photoBase64)
             .toList(),
         timeSummary: timeSummary,
         waitingForChildTimePlan: hasParentRules && !hasChildTimePlan,
@@ -200,6 +205,55 @@ class _ParentHomePageState extends State<ParentHomePage> {
       missions: savedMissions,
       children: children,
     );
+  }
+
+  Future<bool> _unreadNotificationCount(String parentId) async {
+    final Result<bool> result = await _notificationRepository.hasUnread(
+      parentId,
+    );
+    return switch (result) {
+      Success<bool>(:final data) => data,
+      Failure<bool>() => false,
+    };
+  }
+
+  Future<List<ChildSummary>> _loadChildSummaries(String parentId) async {
+    final Result<List<ChildSummary>> result = await _childRepository
+        .loadChildren(parentId);
+    return switch (result) {
+      Success<List<ChildSummary>>(:final data) => data,
+      Failure<List<ChildSummary>>() => const <ChildSummary>[],
+    };
+  }
+
+  Future<List<DailyTimeRule>> _loadRuleList({
+    required String parentId,
+    required String childrenId,
+    required Future<Result<List<DailyTimeRule>>> Function({
+      required String parentId,
+      required String childrenId,
+    }) loader,
+  }) async {
+    final Result<List<DailyTimeRule>> result = await loader(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return switch (result) {
+      Success<List<DailyTimeRule>>(:final data) => data,
+      Failure<List<DailyTimeRule>>() => const <DailyTimeRule>[],
+    };
+  }
+
+  Future<List<TodayMission>> _loadMissions({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    final Result<List<TodayMission>> result = await _missionRepository
+        .loadMissions(parentId: parentId, childrenId: childrenId);
+    return switch (result) {
+      Success<List<TodayMission>>(:final data) => data,
+      Failure<List<TodayMission>>() => const <TodayMission>[],
+    };
   }
 
   TimeSummary? _timeSummaryFromRules(List<DailyTimeRule> rules) {
@@ -303,7 +357,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
     }
 
     final String? parentId = _parentId;
-    final ConnectedChild? selectedChild = _selectedChild;
+    final ChildSummary? selectedChild = _selectedChild;
     if (index < 0 || index >= _savedMissions.length) {
       await _openMissionList();
       return;
@@ -349,13 +403,13 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
     children.removeAt(index);
     final String? parentId = _parentId;
-    final ConnectedChild? selectedChild = index < _connectedChildren.length
+    final ChildSummary? selectedChild = index < _connectedChildren.length
         ? _connectedChildren[index]
         : null;
     if (parentId == null || selectedChild == null) {
       return;
     }
-    await ChildConnectionStore.removeChild(
+    await _childRepository.removeChild(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
@@ -446,7 +500,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
   String _withChildCode(String path, {String? demo}) {
     final String? parentId = _parentId;
-    final ConnectedChild? selectedChild = _selectedChild;
+    final ChildSummary? selectedChild = _selectedChild;
     final Map<String, String> queryParameters = <String, String>{};
     if (parentId != null && parentId.isNotEmpty) {
       queryParameters['parentId'] = parentId;
