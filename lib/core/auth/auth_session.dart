@@ -8,6 +8,9 @@ abstract final class AuthSession {
   static const String currentEmailKey = 'bridge_p.current_email';
   static const String fallbackName = 'parent';
 
+  static const String _accessTokenKey = 'bridge_p.access_token';
+  static const String _refreshTokenKey = 'bridge_p.refresh_token';
+
   static Future<void> login({
     required String parentId,
     required String email,
@@ -35,6 +38,41 @@ abstract final class AuthSession {
     final SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove(currentParentIdKey);
     await preferences.remove(currentEmailKey);
+  }
+
+  /// Persist an [accessToken] (and optional [refreshToken]) in
+  /// SharedPreferences. Tokens are stored alongside — not in place of —
+  /// the existing parentId/email session keys, so a logged-in session can
+  /// remain valid across token rotations.
+  static Future<void> saveTokens({
+    required String accessToken,
+    String? refreshToken,
+  }) async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_accessTokenKey, accessToken);
+    if (refreshToken != null) {
+      await preferences.setString(_refreshTokenKey, refreshToken);
+    }
+  }
+
+  /// Returns the stored access token, or `null` if none is present.
+  static Future<String?> accessToken() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_accessTokenKey);
+  }
+
+  /// Returns the stored refresh token, or `null` if none is present.
+  static Future<String?> refreshToken() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_refreshTokenKey);
+  }
+
+  /// Removes only token entries — kept separate from [logout] so that the
+  /// auth flow can iterate on the two concerns independently.
+  static Future<void> clearTokens() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_accessTokenKey);
+    await preferences.remove(_refreshTokenKey);
   }
 
   static Future<void> resetAllData() async {
