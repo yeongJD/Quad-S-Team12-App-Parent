@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../models/daily_time_rule.dart';
+import '../routes/today_time_routes.dart';
 import '../styles/time_setup_tokens.dart';
 import '../widgets/time_setup_action_button.dart';
 import '../widgets/time_setup_top_bar.dart';
+import 'whitelist_setup_page.dart';
 
 class TodayTimeCompleteData {
   const TodayTimeCompleteData({
@@ -14,18 +16,38 @@ class TodayTimeCompleteData {
     required this.rules,
     this.parentId,
     this.childrenId,
+    this.whitelistAppIds = const <String>{},
   });
 
   final String? parentId;
   final String? childrenId;
   final TimeSelection total;
   final List<DailyTimeRule> rules;
+  final Set<String> whitelistAppIds;
 }
 
 class TodayTimeCompletePage extends StatelessWidget {
   const TodayTimeCompletePage({super.key, this.data});
 
   final TodayTimeCompleteData? data;
+
+  void _handleBack(BuildContext context) {
+    final TodayTimeCompleteData? completeData = data;
+    if (completeData == null) {
+      context.go(TodayTimeRoutes.whitelist);
+      return;
+    }
+    context.go(
+      TodayTimeRoutes.whitelist,
+      extra: WhitelistSetupArgs(
+        parentId: completeData.parentId,
+        childrenId: completeData.childrenId,
+        total: completeData.total,
+        rules: completeData.rules,
+        initialSelectedAppIds: completeData.whitelistAppIds,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +63,7 @@ class TodayTimeCompletePage extends StatelessWidget {
               children: [
                 TimeSetupTopBar(
                   title: '시간설정',
-                  onBack: () => context.go('/today-time/monthly'),
+                  onBack: () => _handleBack(context),
                 ),
                 Expanded(
                   child: Padding(

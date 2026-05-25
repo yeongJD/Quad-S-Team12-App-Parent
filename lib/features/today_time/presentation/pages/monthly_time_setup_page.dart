@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../models/daily_time_rule.dart';
+import '../routes/today_time_routes.dart';
 import '../styles/time_setup_tokens.dart';
 import '../widgets/daily_time_rule_sheet.dart';
 import '../widgets/time_setup_action_button.dart';
 import '../widgets/time_setup_top_bar.dart';
-import 'today_time_complete_page.dart';
+import 'whitelist_setup_page.dart';
 
 class MonthlyTimeSetupArgs {
   const MonthlyTimeSetupArgs({
@@ -100,7 +101,7 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
       router.pop();
       return;
     }
-    router.go('/today-time/setup');
+    router.go(TodayTimeRoutes.setup);
   }
 
   @override
@@ -164,8 +165,8 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
                     label: '확인',
                     enabled: true,
                     onTap: () => context.go(
-                      '/today-time/complete',
-                      extra: TodayTimeCompleteData(
+                      TodayTimeRoutes.whitelist,
+                      extra: WhitelistSetupArgs(
                         parentId: widget.parentId,
                         childrenId: widget.childrenId,
                         total: total,

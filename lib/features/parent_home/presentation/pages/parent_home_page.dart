@@ -167,7 +167,14 @@ class _ParentHomePageState extends State<ParentHomePage> {
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
-    final TimeSummary? timeSummary = _timeSummaryFromRules(savedTimeRules);
+
+    final bool hasParentRules = savedTimeRules.isNotEmpty;
+    final bool childDataReceived = _hasReceivedChildTimePlan(selectedChild);
+
+    final TimeSummary? timeSummary = childDataReceived
+        ? _timeSummaryFromRules(savedTimeRules)
+        : null;
+
     final List<MissionItem> missions = savedMissions
         .map(MissionItem.fromTodayMission)
         .toList();
@@ -179,7 +186,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
             .map((ConnectedChild child) => child.photoBase64)
             .toList(),
         timeSummary: timeSummary,
-        hasChildTimePlan: timeSummary != null,
+        waitingForChildTimePlan: hasParentRules && !childDataReceived,
+        hasChildTimePlan: childDataReceived,
         missions: missions,
         hasUnreadNotification: hasUnreadNotification,
       ),
@@ -188,44 +196,42 @@ class _ParentHomePageState extends State<ParentHomePage> {
     );
   }
 
+  bool _hasReceivedChildTimePlan(ConnectedChild child) {
+    // TODO: Replace with the child app's monthly distribution completion state.
+    return false;
+  }
+
   TimeSummary? _timeSummaryFromRules(List<DailyTimeRule> rules) {
     if (rules.isEmpty) {
       return null;
     }
 
-    final int totalMinutes = _calculateMonthlyMinutes(rules);
-    if (totalMinutes <= 0) {
+    final DateTime now = DateTime.now();
+    final int weekdayIndex = now.weekday - 1; // 0 for Monday, 6 for Sunday
+
+    DailyTimeRule? todayRule;
+    for (final DailyTimeRule rule in rules) {
+      if (rule.days.contains(weekdayIndex)) {
+        todayRule = rule;
+        break;
+      }
+    }
+
+    if (todayRule == null) {
+      return null;
+    }
+
+    final int minutes = todayRule.time.hour * 60 + todayRule.time.minute;
+    if (minutes <= 0) {
       return null;
     }
 
     return TimeSummary(
-      basicTime: _formatTime(totalMinutes),
+      basicTime: _formatTime(minutes),
       bonusTime: _formatTime(0),
-      basicProgress: 1,
-      bonusProgress: 0,
+      basicProgress: 1.0,
+      bonusProgress: 0.0,
     );
-  }
-
-  int _calculateMonthlyMinutes(List<DailyTimeRule> rules) {
-    final DateTime now = DateTime.now();
-    final int lastDay = DateTime(now.year, now.month + 1, 0).day;
-    final List<int> weekdayCounts = List<int>.filled(DateTime.daysPerWeek, 0);
-    for (int day = 1; day <= lastDay; day++) {
-      final int weekdayIndex = DateTime(now.year, now.month, day).weekday - 1;
-      weekdayCounts[weekdayIndex]++;
-    }
-
-    int total = 0;
-    for (final DailyTimeRule rule in rules) {
-      final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
-      for (final int dayIndex in rule.days) {
-        if (dayIndex < 0 || dayIndex >= weekdayCounts.length) {
-          continue;
-        }
-        total += dailyMinutes * weekdayCounts[dayIndex];
-      }
-    }
-    return total;
   }
 
   String _formatTime(int totalMinutes) {
@@ -510,7 +516,6 @@ class _ParentHomePageState extends State<ParentHomePage> {
                           const SizedBox(height: 36),
                           TodayTimeSection(
                             timeSummary: _data.timeSummary,
-                            waitingForChildPlan: _data.waitingForChildTimePlan,
                             onSetup: _openTimeSettingsEntry,
                             onAdd: _openTimeSetup,
                           ),

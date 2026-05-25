@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../data/daily_time_rule_store.dart';
 import '../data/today_time_mock_data.dart';
 import '../models/daily_time_rule.dart';
+import '../routes/today_time_routes.dart';
 import '../styles/time_setup_tokens.dart';
 import '../widgets/daily_time_rule_card.dart';
 import '../widgets/daily_time_rule_sheet.dart';
@@ -152,7 +153,7 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
       return;
     }
     context.push(
-      '/today-time/monthly',
+      TodayTimeRoutes.monthly,
       extra: MonthlyTimeSetupArgs(
         parentId: parentId,
         childrenId: childrenId,
