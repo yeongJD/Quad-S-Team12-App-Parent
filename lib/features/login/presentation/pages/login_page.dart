@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/auth/auth_token.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
 enum _LoginErrorType { missingName, missingEmail, wrongPassword }
 
@@ -30,8 +32,10 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthRepository _authRepository = createAuthRepository();
 
   _LoginErrorType? _activeError;
+  bool _submitting = false;
 
   String get _name => _nameController.text;
   String get _email => _emailController.text;
@@ -114,6 +118,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
+    if (_submitting) {
+      return;
+    }
+
     if (_name.trim().isEmpty) {
       setState(() {
         _activeError = _LoginErrorType.missingName;
@@ -121,40 +129,61 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    final ParentAccount? account = await AccountStore.getAccountByEmail(_email);
-    if (account == null) {
-      setState(() {
-        _activeError = _LoginErrorType.missingEmail;
-      });
-      return;
-    }
-
-    if (account.name != _name || _name.trim().isEmpty) {
-      setState(() {
-        _activeError = _LoginErrorType.missingName;
-      });
-      return;
-    }
-
-    final bool isValidLogin = await AccountStore.validateLogin(
+    setState(() {
+      _submitting = true;
+    });
+    final Result<AuthToken> result = await _authRepository.login(
       email: _email,
       password: _password,
     );
-    if (!isValidLogin) {
-      setState(() {
-        _activeError = _LoginErrorType.wrongPassword;
-      });
-      return;
-    }
-
-    setState(() {
-      _activeError = null;
-    });
-    await AuthSession.login(parentId: account.parentId, email: account.email);
     if (!mounted) {
       return;
     }
-    context.go('/login/complete');
+
+    switch (result) {
+      case Success<AuthToken>(:final AuthToken data):
+        if (data.name != _name) {
+          setState(() {
+            _submitting = false;
+            _activeError = _LoginErrorType.missingName;
+          });
+          return;
+        }
+        await AuthSession.login(parentId: data.parentId, email: data.email);
+        final String? refresh = data.refreshToken;
+        await AuthSession.saveTokens(
+          accessToken: data.accessToken,
+          refreshToken: refresh,
+        );
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _submitting = false;
+          _activeError = null;
+        });
+        context.go('/login/complete');
+      case Failure<AuthToken>(:final String message):
+        setState(() {
+          _submitting = false;
+          _activeError = _mapLoginFailure(message);
+        });
+        if (_activeError == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
+    }
+  }
+
+  _LoginErrorType? _mapLoginFailure(String message) {
+    if (message == AuthFailureMessages.unknownEmail) {
+      return _LoginErrorType.missingEmail;
+    }
+    if (message == AuthFailureMessages.wrongPassword) {
+      return _LoginErrorType.wrongPassword;
+    }
+    return null;
   }
 
   @override
@@ -243,8 +272,10 @@ class _LoginPageState extends State<LoginPage> {
                             ],
                             _LoginButton(
                               label: '로그인',
-                              enabled: _canSubmit,
-                              onPressed: _canSubmit ? _submit : null,
+                              enabled: _canSubmit && !_submitting,
+                              onPressed: (_canSubmit && !_submitting)
+                                  ? _submit
+                                  : null,
                             ),
                             const SizedBox(height: 29),
                           ],

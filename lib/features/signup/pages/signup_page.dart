@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/auth/auth_token.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
 enum _SignupErrorType {
   invalidName,
@@ -35,8 +37,10 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController =
       TextEditingController();
+  final AuthRepository _authRepository = createAuthRepository();
 
   _SignupErrorType? _activeError;
+  bool _submitting = false;
 
   String get _name => _nameController.text;
   String get _email => _emailController.text;
@@ -185,6 +189,10 @@ class _SignupPageState extends State<SignupPage> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
+    if (_submitting) {
+      return;
+    }
+
     if (!_isNameValid) {
       setState(() {
         _activeError = _SignupErrorType.invalidName;
@@ -215,40 +223,54 @@ class _SignupPageState extends State<SignupPage> {
 
     setState(() {
       _activeError = null;
+      _submitting = true;
     });
 
-    final ParentAccount? existingAccount = await AccountStore.getAccountByEmail(
-      _email,
+    final Result<AuthToken> result = await _authRepository.signup(
+      email: _email.trim(),
+      name: _name.trim(),
+      password: _password,
     );
     if (!mounted) {
-      return;
-    }
-    if (existingAccount != null) {
-      context.go(
-        Uri(
-          path: '/login',
-          queryParameters: <String, String>{
-            'name': existingAccount.name,
-            'email': existingAccount.email,
-            'notice': 'existing-account',
-          },
-        ).toString(),
-      );
       return;
     }
 
-    final ParentAccount account = ParentAccount(
-      parentId: AccountStore.parentIdFromEmail(_email),
-      email: _email.trim(),
-      name: _name.trim(),
-      passwordHash: AccountStore.passwordHashForLocalMock(_password),
-    );
-    await AccountStore.saveAccount(account);
-    await AuthSession.login(parentId: account.parentId, email: account.email);
-    if (!mounted) {
-      return;
+    switch (result) {
+      case Success<AuthToken>(:final AuthToken data):
+        await AuthSession.login(parentId: data.parentId, email: data.email);
+        final String? refresh = data.refreshToken;
+        await AuthSession.saveTokens(
+          accessToken: data.accessToken,
+          refreshToken: refresh,
+        );
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _submitting = false;
+        });
+        context.go('/signup/complete');
+      case Failure<AuthToken>(:final String message):
+        setState(() {
+          _submitting = false;
+        });
+        if (message == AuthFailureMessages.duplicatedEmail) {
+          context.go(
+            Uri(
+              path: '/login',
+              queryParameters: <String, String>{
+                'name': _name.trim(),
+                'email': _email.trim(),
+                'notice': 'existing-account',
+              },
+            ).toString(),
+          );
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
     }
-    context.go('/signup/complete');
   }
 
   @override
@@ -358,8 +380,10 @@ class _SignupPageState extends State<SignupPage> {
                             ],
                             _SignupButton(
                               label: '확인',
-                              enabled: _canSubmit,
-                              onPressed: _canSubmit ? _submit : null,
+                              enabled: _canSubmit && !_submitting,
+                              onPressed: (_canSubmit && !_submitting)
+                                  ? _submit
+                                  : null,
                             ),
                             const SizedBox(height: 29),
                           ],

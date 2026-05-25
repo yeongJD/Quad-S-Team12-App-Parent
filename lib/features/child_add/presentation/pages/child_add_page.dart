@@ -9,8 +9,11 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/child/child_connection_store.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/child/child_summary.dart';
+import '../../../../data/repositories/child_repository.dart';
 
 abstract final class _ChildAddMetrics {
   static const double screenMaxWidth = 375;
@@ -63,6 +66,7 @@ class _ChildAddPageState extends State<ChildAddPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _childCodeController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
+  final ChildRepository _childRepository = createChildRepository();
 
   Uint8List? _photoBytes;
   int? _selectedBirthYear;
@@ -158,21 +162,6 @@ class _ChildAddPageState extends State<ChildAddPage> {
       _childCodeErrorText = null;
     });
 
-    final String childCode = _childCodeController.text.trim();
-    final bool isValidCode = await ChildConnectionStore.validateChildCode(
-      childCode,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (!isValidCode) {
-      setState(() {
-        _isSubmitting = false;
-        _childCodeErrorText = '유효하지 않은 자녀코드입니다';
-      });
-      return;
-    }
-
     final String? parentId = await AuthSession.getCurrentParentId();
     if (parentId == null || parentId.isEmpty) {
       if (!mounted) {
@@ -182,18 +171,39 @@ class _ChildAddPageState extends State<ChildAddPage> {
       return;
     }
 
-    await ChildConnectionStore.addChild(
+    final Result<ChildSummary> result = await _childRepository.addChild(
       parentId: parentId,
-      child: ChildConnectionStore.childFromCode(
-        name: _nameController.text.trim(),
-        childCode: childCode,
-        photoBase64: _photoBytes == null ? null : base64Encode(_photoBytes!),
-      ),
+      childCode: _childCodeController.text.trim(),
+      name: _nameController.text.trim(),
+      photoBase64: _photoBytes == null ? null : base64Encode(_photoBytes!),
     );
     if (!mounted) {
       return;
     }
-    context.pop();
+    switch (result) {
+      case Success<ChildSummary>():
+        context.pop();
+      case Failure<ChildSummary>(:final String message):
+        setState(() {
+          _isSubmitting = false;
+          _childCodeErrorText = _mapAddChildFailure(message);
+        });
+        if (_childCodeErrorText == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
+    }
+  }
+
+  String? _mapAddChildFailure(String message) {
+    if (message == ChildFailureMessages.invalidCode) {
+      return '유효하지 않은 자녀코드입니다';
+    }
+    if (message == ChildFailureMessages.duplicateChild) {
+      return '이미 등록된 자녀예요';
+    }
+    return null;
   }
 
   @override
