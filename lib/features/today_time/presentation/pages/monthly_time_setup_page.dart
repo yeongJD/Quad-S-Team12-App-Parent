@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../data/monthly_total_time_store.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../models/daily_time_rule.dart';
 import '../routes/today_time_routes.dart';
 import '../styles/time_setup_tokens.dart';
@@ -49,6 +49,7 @@ class MonthlyTimeSetupPage extends StatefulWidget {
 }
 
 class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
+  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
   late int _minimumTotalMinutes;
   late int _selectedTotalMinutes;
 
@@ -124,7 +125,7 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
         parentId.isNotEmpty &&
         childrenId != null &&
         childrenId.isNotEmpty) {
-      await MonthlyTotalTimeStore.save(
+      await _timePlanRepository.saveMonthlyTotal(
         parentId: parentId,
         childrenId: childrenId,
         totalMinutes: _selectedTotalMinutes,

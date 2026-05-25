@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../data/child_weekly_time_plan_store.dart';
-import '../data/daily_time_rule_store.dart';
-import '../data/monthly_total_time_store.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../data/today_time_mock_data.dart';
-import '../data/whitelist_app_store.dart';
 import '../models/daily_time_rule.dart';
 import '../models/time_plan_confirmation.dart';
 import '../styles/time_setup_tokens.dart';
@@ -35,8 +33,55 @@ class TodayTimeConfirmationPage extends StatefulWidget {
 }
 
 class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
+  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
   late TimePlanConfirmationData _data;
   late bool _childRevisionAllowed;
+
+  Future<List<DailyTimeRule>> _loadRules({
+    required String parentId,
+    required String childrenId,
+    required Future<Result<List<DailyTimeRule>>> Function({
+      required String parentId,
+      required String childrenId,
+    }) loader,
+  }) async {
+    final Result<List<DailyTimeRule>> result = await loader(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return switch (result) {
+      Success<List<DailyTimeRule>>(:final data) => data,
+      Failure<List<DailyTimeRule>>() => const <DailyTimeRule>[],
+    };
+  }
+
+  Future<int?> _loadMonthlyTotal({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    final Result<int?> result = await _timePlanRepository.loadMonthlyTotal(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return switch (result) {
+      Success<int?>(:final data) => data,
+      Failure<int?>() => null,
+    };
+  }
+
+  Future<Set<String>> _loadWhitelist({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    final Result<Set<String>> result = await _timePlanRepository.loadWhitelist(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return switch (result) {
+      Success<Set<String>>(:final data) => data,
+      Failure<Set<String>>() => const <String>{},
+    };
+  }
 
   @override
   void initState() {
@@ -59,21 +104,22 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
       return;
     }
 
-    final List<DailyTimeRule> parentRules = await DailyTimeRuleStore.load(
+    final List<DailyTimeRule> parentRules = await _loadRules(
       parentId: parentId,
       childrenId: childrenId,
+      loader: _timePlanRepository.loadDailyRules,
     );
     if (parentRules.isEmpty) {
       return;
     }
 
-    final List<DailyTimeRule> childWeeklyRules =
-        await ChildWeeklyTimePlanStore.load(
-          parentId: parentId,
-          childrenId: childrenId,
-        );
+    final List<DailyTimeRule> childWeeklyRules = await _loadRules(
+      parentId: parentId,
+      childrenId: childrenId,
+      loader: _timePlanRepository.loadChildWeeklyRules,
+    );
     final int calculatedMonthlyMinutes = _calculateMonthlyMinutes(parentRules);
-    final int? savedMonthlyMinutes = await MonthlyTotalTimeStore.load(
+    final int? savedMonthlyMinutes = await _loadMonthlyTotal(
       parentId: parentId,
       childrenId: childrenId,
     );
@@ -124,36 +170,24 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
   Future<void> _openEditFlow() async {
     final String? parentId = widget.parentId;
     final String? childrenId = widget.childrenId;
-    final List<DailyTimeRule> savedRules =
+    final bool missingIds =
         parentId == null ||
-            parentId.isEmpty ||
-            childrenId == null ||
-            childrenId.isEmpty
+        parentId.isEmpty ||
+        childrenId == null ||
+        childrenId.isEmpty;
+    final List<DailyTimeRule> savedRules = missingIds
         ? <DailyTimeRule>[]
-        : await DailyTimeRuleStore.load(
+        : await _loadRules(
             parentId: parentId,
             childrenId: childrenId,
+            loader: _timePlanRepository.loadDailyRules,
           );
-    final Set<String> savedWhitelistAppIds =
-        parentId == null ||
-            parentId.isEmpty ||
-            childrenId == null ||
-            childrenId.isEmpty
+    final Set<String> savedWhitelistAppIds = missingIds
         ? <String>{}
-        : await WhitelistAppStore.load(
-            parentId: parentId,
-            childrenId: childrenId,
-          );
-    final int? savedMonthlyTotalMinutes =
-        parentId == null ||
-            parentId.isEmpty ||
-            childrenId == null ||
-            childrenId.isEmpty
+        : await _loadWhitelist(parentId: parentId, childrenId: childrenId);
+    final int? savedMonthlyTotalMinutes = missingIds
         ? null
-        : await MonthlyTotalTimeStore.load(
-            parentId: parentId,
-            childrenId: childrenId,
-          );
+        : await _loadMonthlyTotal(parentId: parentId, childrenId: childrenId);
     if (!mounted) {
       return;
     }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../data/whitelist_app_store.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../data/whitelist_app_mock_data.dart';
 import '../models/daily_time_rule.dart';
 import '../models/whitelist_app.dart';
@@ -56,6 +57,7 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
 
   final TextEditingController _searchController = TextEditingController();
   final Set<String> _expandedCategoryIds = <String>{};
+  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
   late final Set<String> _selectedAppIds;
   String _query = '';
 
@@ -79,11 +81,18 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
       return;
     }
 
-    final Set<String> savedAppIds = await WhitelistAppStore.load(
+    final Result<Set<String>> result = await _timePlanRepository.loadWhitelist(
       parentId: parentId,
       childrenId: childrenId,
     );
-    if (!mounted || savedAppIds.isEmpty) {
+    if (!mounted) {
+      return;
+    }
+    final Set<String> savedAppIds = switch (result) {
+      Success<Set<String>>(:final data) => data,
+      Failure<Set<String>>() => const <String>{},
+    };
+    if (savedAppIds.isEmpty) {
       return;
     }
     setState(() {
@@ -201,7 +210,7 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
         parentId.isNotEmpty &&
         childrenId != null &&
         childrenId.isNotEmpty) {
-      await WhitelistAppStore.save(
+      await _timePlanRepository.saveWhitelist(
         parentId: parentId,
         childrenId: childrenId,
         appIds: Set<String>.from(_selectedAppIds),

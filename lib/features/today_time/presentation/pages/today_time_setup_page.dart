@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../data/daily_time_rule_store.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../data/today_time_mock_data.dart';
 import '../models/daily_time_rule.dart';
 import '../routes/today_time_routes.dart';
@@ -48,6 +49,7 @@ class TodayTimeSetupArgs {
 }
 
 class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
+  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
   late final List<DailyTimeRule> _rules;
 
   bool _showTip = false;
@@ -76,11 +78,16 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
       return;
     }
 
-    final List<DailyTimeRule> savedRules = await DailyTimeRuleStore.load(
-      parentId: parentId,
-      childrenId: childrenId,
-    );
-    if (!mounted || savedRules.isEmpty) {
+    final Result<List<DailyTimeRule>> result = await _timePlanRepository
+        .loadDailyRules(parentId: parentId, childrenId: childrenId);
+    if (!mounted) {
+      return;
+    }
+    final List<DailyTimeRule> savedRules = switch (result) {
+      Success<List<DailyTimeRule>>(:final data) => data,
+      Failure<List<DailyTimeRule>>() => const <DailyTimeRule>[],
+    };
+    if (savedRules.isEmpty) {
       return;
     }
 
@@ -159,7 +166,7 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
         parentId.isNotEmpty &&
         childrenId != null &&
         childrenId.isNotEmpty) {
-      await DailyTimeRuleStore.save(
+      await _timePlanRepository.saveDailyRules(
         parentId: parentId,
         childrenId: childrenId,
         rules: List<DailyTimeRule>.from(_rules),
