@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "413976862252",
+    "project_id": "bridge-31f49",
+    "storage_bucket": "bridge-31f49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:413976862252:android:5ef4fbf36549bea09dbb89",
+        "android_client_info": {
+          "package_name": "com.gdg.bridge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDedWEyHOfp9ls-c9V4ggKC3m9_r8-PFE4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:413976862252:android:90a03068c0e77b759dbb89",
+        "android_client_info": {
+          "package_name": "com.gdg.bridge_k"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDedWEyHOfp9ls-c9V4ggKC3m9_r8-PFE4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

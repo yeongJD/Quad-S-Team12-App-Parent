@@ -1,4 +1,4 @@
-package com.example.bridge_p
+package com.gdg.bridge
 
 import io.flutter.embedding.android.FlutterActivity
 
