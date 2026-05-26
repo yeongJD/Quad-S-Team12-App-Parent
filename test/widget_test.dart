@@ -463,6 +463,12 @@ void main() {
     await tester.tap(find.text('로그아웃'));
     await tester.pumpAndSettle();
 
+    // The logout button opens an AppConfirmationDialog; the user has to
+    // confirm before AuthSession.logout() runs.
+    expect(find.text('로그아웃하시겠습니까?'), findsOneWidget);
+    await tester.tap(find.text('확인'));
+    await tester.pumpAndSettle();
+
     expect(await AuthSession.isLoggedIn(), isFalse);
     expect(find.text('Bridge'), findsOneWidget);
   });
@@ -616,10 +622,7 @@ void main() {
 
     final Iterable<Widget> disabledButtons = tester.widgetList(
       find.byWidgetPredicate((Widget widget) {
-        return widget is Container &&
-            widget.decoration is BoxDecoration &&
-            (widget.decoration! as BoxDecoration).color ==
-                const Color(0xFFD5D8DE);
+        return widget is Material && widget.color == const Color(0xFFD5D8DE);
       }),
     );
     expect(disabledButtons, isNotEmpty);
@@ -639,10 +642,7 @@ void main() {
 
     final Iterable<Widget> enabledButtons = tester.widgetList(
       find.byWidgetPredicate((Widget widget) {
-        return widget is Container &&
-            widget.decoration is BoxDecoration &&
-            (widget.decoration! as BoxDecoration).color ==
-                const Color(0xFF3A99F8);
+        return widget is Material && widget.color == const Color(0xFF3A99F8);
       }),
     );
     expect(enabledButtons, isNotEmpty);
