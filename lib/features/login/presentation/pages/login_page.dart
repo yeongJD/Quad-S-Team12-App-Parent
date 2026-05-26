@@ -133,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
       _submitting = true;
     });
     final Result<AuthToken> result = await _authRepository.login(
-      email: _email,
+      email: _email.trim(),
       password: _password,
     );
     if (!mounted) {
@@ -142,13 +142,11 @@ class _LoginPageState extends State<LoginPage> {
 
     switch (result) {
       case Success<AuthToken>(:final AuthToken data):
-        if (data.name != _name) {
-          setState(() {
-            _submitting = false;
-            _activeError = _LoginErrorType.missingName;
-          });
-          return;
-        }
+        // Backend authenticates on email + password only. The "name" input
+        // is a UX helper (the user types their own name to feel anchored)
+        // — comparing it against the server-returned name fails as soon as
+        // the response omits or normalises the field, so we don't gate the
+        // happy path on it. Pre-submit empty-name check above still applies.
         await AuthSession.login(parentId: data.parentId, email: data.email);
         final String? refresh = data.refreshToken;
         await AuthSession.saveTokens(

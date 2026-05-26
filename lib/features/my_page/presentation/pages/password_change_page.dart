@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -37,33 +36,36 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   final AuthRepository _authRepository = createAuthRepository();
 
   _PasswordChangeErrorType? _currentPasswordError;
-  ParentAccount? _account;
+  String? _parentId;
   bool _showNewPasswordRuleError = false;
   bool _showSameAsCurrentError = false;
   bool _showConfirmMismatchError = false;
+  bool _submitting = false;
 
   String get _currentPassword => _currentPasswordController.text;
   String get _newPassword => _newPasswordController.text;
   String get _confirmPassword => _confirmPasswordController.text;
 
-  bool get _isCurrentPasswordValid =>
-      _account?.passwordHash ==
-      AccountStore.passwordHashForLocalMock(_currentPassword);
+  bool get _isCurrentPasswordEntered => _currentPassword.isNotEmpty;
   bool get _isNewPasswordValid => _passwordPattern.hasMatch(_newPassword);
+  // Plain-text compare — backend never returns the current password, and the
+  // mock-only hash check we used to do here broke the screen under
+  // `useMocks: false` because `_account` was always null in that mode.
   bool get _isSameAsCurrentPassword =>
       _newPassword.isNotEmpty &&
-      _account?.passwordHash ==
-          AccountStore.passwordHashForLocalMock(_newPassword);
+      _currentPassword.isNotEmpty &&
+      _newPassword == _currentPassword;
   bool get _isConfirmMatched =>
       _newPassword.isNotEmpty &&
       _confirmPassword.isNotEmpty &&
       _newPassword == _confirmPassword;
 
   bool get _canSubmit =>
-      _isCurrentPasswordValid &&
+      _isCurrentPasswordEntered &&
       _isNewPasswordValid &&
       !_isSameAsCurrentPassword &&
-      _isConfirmMatched;
+      _isConfirmMatched &&
+      !_submitting;
 
   String? get _currentPasswordHelperText {
     if (_currentPasswordError != _PasswordChangeErrorType.currentMismatch) {
@@ -92,19 +94,16 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   @override
   void initState() {
     super.initState();
-    _loadAccount();
+    _loadParentId();
   }
 
-  Future<void> _loadAccount() async {
+  Future<void> _loadParentId() async {
     final String? parentId = await AuthSession.getCurrentParentId();
-    final ParentAccount? account = parentId == null
-        ? null
-        : await AccountStore.getAccountById(parentId);
     if (!mounted) {
       return;
     }
     setState(() {
-      _account = account;
+      _parentId = parentId;
     });
   }
 
@@ -141,9 +140,6 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     FocusScope.of(context).unfocus();
 
     setState(() {
-      _currentPasswordError = _isCurrentPasswordValid
-          ? null
-          : _PasswordChangeErrorType.currentMismatch;
       _showNewPasswordRuleError =
           _newPassword.isNotEmpty && !_isNewPasswordValid;
       _showSameAsCurrentError =
@@ -156,12 +152,16 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       return;
     }
 
-    final ParentAccount? account = _account;
-    if (account == null) {
+    final String? parentId = _parentId;
+    if (parentId == null || parentId.isEmpty) {
       return;
     }
+
+    setState(() {
+      _submitting = true;
+    });
     final Result<void> result = await _authRepository.changePassword(
-      parentId: account.parentId,
+      parentId: parentId,
       currentPassword: _currentPassword,
       newPassword: _newPassword,
     );
@@ -173,6 +173,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
         context.pop();
       case Failure<void>(:final String message):
         setState(() {
+          _submitting = false;
           if (message == AuthFailureMessages.passwordMismatch) {
             _currentPasswordError = _PasswordChangeErrorType.currentMismatch;
           }
