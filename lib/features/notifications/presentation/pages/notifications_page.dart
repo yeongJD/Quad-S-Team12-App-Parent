@@ -211,6 +211,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (missionIndex is int) {
       return missionIndex;
     }
+    // FCM `data` payloads are string-only on the wire — the inbox JSON
+    // can echo a real int, but the push variant arrives as "2". Accept
+    // both so the deeplink doesn't fall back to index 0 silently.
+    if (missionIndex is String) {
+      return int.tryParse(missionIndex);
+    }
     return null;
   }
 
