@@ -10,6 +10,7 @@ abstract final class AuthSession {
 
   static const String _accessTokenKey = 'bridge_p.access_token';
   static const String _refreshTokenKey = 'bridge_p.refresh_token';
+  static const String _deviceIdKey = 'bridge_p.device_id';
 
   static Future<void> login({
     required String parentId,
@@ -73,6 +74,24 @@ abstract final class AuthSession {
     final SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove(_accessTokenKey);
     await preferences.remove(_refreshTokenKey);
+  }
+
+  /// Persist the backend-assigned device id returned by
+  /// `DeviceRepository.registerDevice`. Used by the matching
+  /// `unregisterDevice` call at logout / delete-account time.
+  static Future<void> saveDeviceId(String deviceId) async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_deviceIdKey, deviceId);
+  }
+
+  static Future<String?> deviceId() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_deviceIdKey);
+  }
+
+  static Future<void> clearDeviceId() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_deviceIdKey);
   }
 
   static Future<void> resetAllData() async {

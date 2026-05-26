@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
+import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/models/auth/auth_token.dart';
@@ -243,6 +246,7 @@ class _SignupPageState extends State<SignupPage> {
           accessToken: data.accessToken,
           refreshToken: refresh,
         );
+        unawaited(DeviceRegistration.registerCurrent());
         if (!mounted) {
           return;
         }

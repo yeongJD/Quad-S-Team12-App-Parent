@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
+import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/repositories/auth_repository.dart';
@@ -34,6 +35,11 @@ class _DeleteAccountCompletePageState extends State<DeleteAccountCompletePage> {
         throw StateError('Cannot delete account without an active session.');
       }
 
+      // Release the device before the account record is gone — once the
+      // backend account is deleted, the device row would lose its owner
+      // and the DELETE /devices/{id} call would 404. The helper clears
+      // the local id even on failure.
+      await DeviceRegistration.unregisterCurrent();
       final AuthRepository authRepository = createAuthRepository();
       final Result<void> result = await authRepository.deleteAccount(
         parentId: parentId,

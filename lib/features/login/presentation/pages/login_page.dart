@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
+import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/models/auth/auth_token.dart';
@@ -153,6 +156,9 @@ class _LoginPageState extends State<LoginPage> {
           accessToken: data.accessToken,
           refreshToken: refresh,
         );
+        // Fire-and-forget — never blocks the user from advancing past
+        // login if push registration is slow or fails.
+        unawaited(DeviceRegistration.registerCurrent());
         if (!mounted) {
           return;
         }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
+import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/models/parent_profile/parent_profile.dart';
@@ -74,6 +75,10 @@ class _MyPageState extends State<MyPage> {
       onConfirm: () async {
         final GoRouter router = GoRouter.of(context);
         context.pop();
+        // Release the device from the server first so the user doesn't
+        // keep receiving pushes after logout; failures are swallowed
+        // inside DeviceRegistration so the auth happy path still runs.
+        await DeviceRegistration.unregisterCurrent();
         final String? refresh = await AuthSession.refreshToken();
         await _authRepository.logout(refreshToken: refresh);
         await AuthSession.clearTokens();
