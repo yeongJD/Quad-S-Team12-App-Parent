@@ -66,48 +66,77 @@ class NotificationItem {
       return null;
     }
 
-    final Object? id = json['id'];
-    final Object? type = json['type'];
+    final Object? id = json['notificationId'];
+    final Object? type = json['notificationType'];
     final Object? title = json['title'];
-    final Object? message = json['message'];
-    final Object? timeAgo = json['timeAgo'];
+    final Object? message = json['content'];
+    final Object? createdAt = json['createdAt'];
     final Object? actionLabel = json['actionLabel'];
     final Object? isRead = json['isRead'];
     final Object? payload = json['payload'];
-    if (id is! String ||
+    // Backend sends notificationId as a number (Long); accept any non-null and
+    // stringify so notifications are not silently dropped.
+    if (id == null ||
         type is! String ||
         title is! String ||
         message is! String ||
-        timeAgo is! String ||
+        createdAt is! String ||
         (actionLabel != null && actionLabel is! String) ||
         (isRead != null && isRead is! bool) ||
         (payload != null && payload is! Map<String, Object?>)) {
       return null;
     }
 
-    final NotificationType? decodedType = _decodeType(type);
-    if (decodedType == null) {
-      return null;
-    }
+    final NotificationType decodedType = _decodeType(type);
 
     return NotificationItem(
-      id: id,
+      id: id.toString(),
       type: decodedType,
       title: title,
       message: message,
-      timeAgo: timeAgo,
+      timeAgo: _formatTimeAgo(createdAt),
       actionLabel: actionLabel is String ? actionLabel : '확인하러 가기',
       isRead: isRead is bool ? isRead : false,
       payload: payload is Map<String, Object?> ? payload : null,
     );
   }
 
-  static NotificationType? _decodeType(String name) {
+  static String _formatTimeAgo(String createdAt) {
+    final DateTime? parsed = DateTime.tryParse(createdAt);
+    if (parsed == null) {
+      return createdAt;
+    }
+    final Duration diff = DateTime.now().difference(parsed.toLocal());
+    if (diff.isNegative || diff.inMinutes < 1) {
+      return '방금 전';
+    }
+    if (diff.inHours < 1) {
+      return '${diff.inMinutes}분 전';
+    }
+    if (diff.inDays < 1) {
+      return '${diff.inHours}시간 전';
+    }
+    return '${diff.inDays}일 전';
+  }
+
+  static NotificationType _decodeType(String name) {
+    // App-enum name match first (keeps mock payloads working).
     for (final NotificationType type in NotificationType.values) {
       if (type.name == name) {
         return type;
       }
     }
-    return null;
+    // Backend NotificationType {MISSION_CREATED, MISSION_APPROVED,
+    // MISSION_REJECTED, GENERAL} → closest parent-app category.
+    switch (name) {
+      case 'MISSION_APPROVED':
+        return NotificationType.missionCompleted;
+      case 'MISSION_CREATED':
+      case 'MISSION_REJECTED':
+        return NotificationType.missionConfirmationRequested;
+      case 'GENERAL':
+      default:
+        return NotificationType.timeConfigured;
+    }
   }
 }

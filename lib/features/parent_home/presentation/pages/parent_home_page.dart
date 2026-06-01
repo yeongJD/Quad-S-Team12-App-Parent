@@ -194,7 +194,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
       data: ParentHomeData.withLinkedChildren(
         names: children.map((ChildSummary child) => child.name).toList(),
         photoBase64Values: children
-            .map((ChildSummary child) => child.photoBase64)
+            .map((ChildSummary child) => child.profileImageUrl)
             .toList(),
         timeSummary: timeSummary,
         waitingForChildTimePlan: hasParentRules && !hasChildTimePlan,

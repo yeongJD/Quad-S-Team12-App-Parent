@@ -7,39 +7,39 @@
 class ChildSummary {
   const ChildSummary({
     required this.childrenId,
-    required this.childCode,
+    this.childCode = '',
     required this.name,
-    this.photoBase64,
+    this.profileImageUrl,
   });
 
   final String childrenId;
   final String childCode;
   final String name;
-  final String? photoBase64;
+  final String? profileImageUrl;
 
   ChildSummary copyWith({
     String? name,
-    String? photoBase64,
+    String? profileImageUrl,
   }) {
     return ChildSummary(
       childrenId: childrenId,
       childCode: childCode,
       name: name ?? this.name,
-      photoBase64: photoBase64 ?? this.photoBase64,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
     );
   }
 
   factory ChildSummary.fromJson(Map<String, dynamic> json) => ChildSummary(
         childrenId: json['childrenId'] as String,
-        childCode: json['childCode'] as String,
+        childCode: (json['childCode'] as String?) ?? '',
         name: json['name'] as String,
-        photoBase64: json['photoBase64'] as String?,
+        profileImageUrl: json['profileImageUrl'] as String?,
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'childrenId': childrenId,
         'childCode': childCode,
         'name': name,
-        if (photoBase64 case final String photoBase64) 'photoBase64': photoBase64,
+        if (profileImageUrl case final String profileImageUrl) 'profileImageUrl': profileImageUrl,
       };
 }

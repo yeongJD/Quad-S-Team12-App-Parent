@@ -28,7 +28,7 @@ class MockChildRepository implements ChildRepository {
             childrenId: child.childrenId,
             childCode: child.childCode,
             name: child.name,
-            photoBase64: child.photoBase64,
+            profileImageUrl: child.photoBase64,
           ),
         )
         .toList(growable: false);
@@ -72,7 +72,7 @@ class MockChildRepository implements ChildRepository {
         childrenId: newChild.childrenId,
         childCode: newChild.childCode,
         name: newChild.name,
-        photoBase64: newChild.photoBase64,
+        profileImageUrl: newChild.photoBase64,
       ),
     );
   }

@@ -32,8 +32,8 @@ class ApiMissionRepository implements MissionRepository {
   }) async {
     try {
       final Response<dynamic> response = await _dio.get<dynamic>(
-        '/children/$childrenId/missions',
-        queryParameters: <String, dynamic>{'parentId': parentId},
+        '/api/v1/missions',
+        queryParameters: <String, dynamic>{'childId': childrenId},
       );
       final dynamic data = response.data;
       if (data is! List) {
@@ -78,9 +78,18 @@ class ApiMissionRepository implements MissionRepository {
   }) async {
     try {
       await _dio.post<dynamic>(
-        '/children/$childrenId/missions',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-        data: _missionToJson(mission),
+        '/api/v1/missions',
+        data: <String, dynamic>{
+          'childId': childrenId,
+          'title': mission.title,
+          // Backend enums are UPPER_CASE. confirmationMethod {ai,child,parent}
+          // maps 1:1 to the backend VerificationType {AI,CHILD,PARENT}.
+          'category': mission.category.name.toUpperCase(),
+          'description': mission.description,
+          'reward': mission.rewardMinutes,
+          'resetCycle': mission.resetPeriod.name.toUpperCase(),
+          'verificationType': mission.confirmationMethod.name.toUpperCase(),
+        },
       );
       return Result<void>.success(null);
     } on DioException catch (e) {
@@ -162,9 +171,36 @@ class ApiMissionRepository implements MissionRepository {
     required String action,
   }) async {
     try {
-      await _dio.post<dynamic>(
-        '/children/$childrenId/missions/at/$index/$action',
-        queryParameters: <String, dynamic>{'parentId': parentId},
+      // Backend exposes approval only by performanceId. Bridge the page's
+      // index-based call via the existing endpoints: list → missionId →
+      // performance → performanceId, then PATCH the approval state. No backend
+      // change required (see backend-handoff §3.3).
+      final Response<dynamic> listResp = await _dio.get<dynamic>(
+        '/api/v1/missions',
+        queryParameters: <String, dynamic>{'childId': childrenId},
+      );
+      final dynamic listData = listResp.data;
+      if (listData is! List || index < 0 || index >= listData.length) {
+        return Result<void>.failure(MissionFailureMessages.missionNotFound);
+      }
+      final dynamic entry = listData[index];
+      final Object? missionId = entry is Map ? entry['missionId'] : null;
+      if (missionId == null) {
+        return Result<void>.failure(MissionFailureMessages.missionNotFound);
+      }
+
+      final Response<dynamic> perfResp = await _dio.get<dynamic>(
+        '/api/v1/missions/$missionId/performance',
+      );
+      final dynamic perfData = perfResp.data;
+      final Object? performanceId =
+          perfData is Map ? perfData['performanceId'] : null;
+      if (performanceId == null) {
+        return Result<void>.failure(MissionFailureMessages.invalidState);
+      }
+
+      await _dio.patch<dynamic>(
+        '/api/v1/missions/performances/$performanceId/$action',
       );
       return Result<void>.success(null);
     } on DioException catch (e) {
@@ -206,18 +242,14 @@ class ApiMissionRepository implements MissionRepository {
     final Object? category = json['category'];
     final Object? resetPeriod = json['resetPeriod'];
     final Object? confirmationMethod = json['confirmationMethod'];
+    final Object? reward = json['reward'];
     final Object? rewardMinutes = json['rewardMinutes'];
     final Object? description = json['description'];
     final Object? status = json['status'];
     final Object? verificationStatus = json['verificationStatus'];
     final Object? submittedAtText = json['submittedAtText'];
 
-    if (title is! String ||
-        category is! String ||
-        resetPeriod is! String ||
-        confirmationMethod is! String ||
-        rewardMinutes is! int ||
-        description is! String) {
+    if (title is! String || category is! String) {
       return null;
     }
 
@@ -225,19 +257,22 @@ class ApiMissionRepository implements MissionRepository {
       MissionCategory.values,
       category,
     );
-    final MissionResetPeriod? decodedResetPeriod = _decodeEnum(
-      MissionResetPeriod.values,
-      resetPeriod,
-    );
-    final MissionConfirmationMethod? decodedConfirmationMethod = _decodeEnum(
-      MissionConfirmationMethod.values,
-      confirmationMethod,
-    );
-    if (decodedCategory == null ||
-        decodedResetPeriod == null ||
-        decodedConfirmationMethod == null) {
+    if (decodedCategory == null) {
       return null;
     }
+    final MissionResetPeriod decodedResetPeriod = resetPeriod is String
+        ? _decodeEnum(MissionResetPeriod.values, resetPeriod) ??
+              MissionResetPeriod.daily
+        : MissionResetPeriod.daily;
+    final MissionConfirmationMethod decodedConfirmationMethod =
+        confirmationMethod is String
+        ? _decodeEnum(MissionConfirmationMethod.values, confirmationMethod) ??
+              MissionConfirmationMethod.parent
+        : MissionConfirmationMethod.parent;
+    final int decodedReward = reward is int
+        ? reward
+        : (rewardMinutes is int ? rewardMinutes : 0);
+    final String decodedDescription = description is String ? description : '';
 
     final TodayMissionStatus decodedStatus = status is String
         ? _decodeEnum(TodayMissionStatus.values, status) ??
@@ -260,8 +295,8 @@ class ApiMissionRepository implements MissionRepository {
       category: decodedCategory,
       resetPeriod: decodedResetPeriod,
       confirmationMethod: decodedConfirmationMethod,
-      rewardMinutes: rewardMinutes,
-      description: description,
+      rewardMinutes: decodedReward,
+      description: decodedDescription,
       status: decodedVerification.legacyStatus,
       verificationStatus: decodedVerification,
       submittedAtText: submittedAtText is String ? submittedAtText : null,
@@ -269,8 +304,12 @@ class ApiMissionRepository implements MissionRepository {
   }
 
   T? _decodeEnum<T extends Enum>(List<T> values, String name) {
+    // Backend serialises enums in UPPER_CASE (e.g. STUDY, DAILY, AI) while the
+    // app enums are lowerCamel; match case-insensitively so backend payloads
+    // are not silently dropped.
+    final String target = name.toLowerCase();
     for (final T value in values) {
-      if (value.name == name) {
+      if (value.name.toLowerCase() == target) {
         return value;
       }
     }

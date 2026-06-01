@@ -95,11 +95,31 @@ Failure<T> failureFromDioException<T>(DioException e) {
   return Failure<T>(_GenericMessages.unknown, cause: '$statusCode');
 }
 
-/// Returns the `error.code` from a [DioException] response body, or `null` if
-/// the body isn't in contract shape. Repositories use this to map specific
-/// codes (e.g. `INVALID_CREDENTIALS`) to UI-anchored failure messages BEFORE
-/// falling back to [failureFromDioException].
+/// Maps the backend's ApiResponse error codes (e.g. `MEMBER401`) onto the
+/// app's canonical SCREAMING_SNAKE_CASE codes that repository switches match.
+/// Unmapped codes pass through unchanged — repositories then fall back to the
+/// server-supplied Korean message via [failureFromDioException].
+const Map<String, String> _backendCodeAliases = <String, String>{
+  'MEMBER401': 'INVALID_CREDENTIALS', // 비밀번호 불일치
+  'MEMBER404': 'USER_NOT_FOUND',
+  'MEMBER409': 'DUPLICATE_EMAIL',
+  'MEMBER403_INACTIVE': 'ACCOUNT_DORMANT',
+  'MEMBER404_CHILDREN': 'INVALID_CHILD_CODE',
+  'MEMBER409_CHILDREN': 'CHILD_ALREADY_LINKED',
+  'MISSION404': 'MISSION_NOT_FOUND',
+  'MISSION400': 'INVALID_MISSION_STATE',
+};
+
+/// Returns the `error.code` from a [DioException] response body (translated to
+/// the app's canonical code via [_backendCodeAliases]), or `null` if the body
+/// isn't in contract shape. Repositories use this to map specific codes (e.g.
+/// `INVALID_CREDENTIALS`) to UI-anchored failure messages BEFORE falling back
+/// to [failureFromDioException].
 String? errorCodeOf(DioException e) {
   final Map<String, dynamic>? errorMap = _extractErrorPayload(e.response);
-  return errorMap?['code'] as String?;
+  final String? raw = errorMap?['code'] as String?;
+  if (raw == null) {
+    return null;
+  }
+  return _backendCodeAliases[raw] ?? raw;
 }

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../core/auth/auth_session.dart';
 import '../../core/config/dio_config.dart';
 import '../../core/models/result.dart';
 import '../../core/network/api_error.dart';
@@ -9,11 +10,11 @@ import 'auth_repository.dart';
 /// Network-backed [AuthRepository].
 ///
 /// Implements the auth endpoints per `docs/api/01-auth.md`:
-/// - `POST /auth/login`
-/// - `POST /auth/signup`
-/// - `POST /auth/refresh`
-/// - `PUT  /auth/password`
-/// - `DELETE /auth/account`
+/// - `POST /auth/parent/login`
+/// - `POST /auth/parent/signup`
+/// - `POST /auth/token/refresh`
+/// - `PATCH /api/v1/members/password`
+/// - `DELETE /api/v1/members`
 /// - `POST /auth/logout`
 ///
 /// Each method wraps the Dio call in a try/catch that funnels [DioException]s
@@ -33,7 +34,7 @@ class ApiAuthRepository implements AuthRepository {
   }) async {
     try {
       final Response<dynamic> response = await _dio.post<dynamic>(
-        '/auth/login',
+        '/auth/parent/login',
         data: <String, dynamic>{
           'email': email,
           'password': password,
@@ -57,7 +58,7 @@ class ApiAuthRepository implements AuthRepository {
   }) async {
     try {
       final Response<dynamic> response = await _dio.post<dynamic>(
-        '/auth/signup',
+        '/auth/parent/signup',
         data: <String, dynamic>{
           'email': email,
           'name': name,
@@ -78,7 +79,7 @@ class ApiAuthRepository implements AuthRepository {
   Future<Result<AuthToken>> refreshToken(String refreshToken) async {
     try {
       final Response<dynamic> response = await _dio.post<dynamic>(
-        '/auth/refresh',
+        '/auth/token/refresh',
         data: <String, dynamic>{'refreshToken': refreshToken},
       );
       final AuthToken token = _parseTokenResponse(
@@ -98,11 +99,10 @@ class ApiAuthRepository implements AuthRepository {
     required String newPassword,
   }) async {
     try {
-      await _dio.put<dynamic>(
-        '/auth/password',
+      await _dio.patch<dynamic>(
+        '/api/v1/members/password',
         data: <String, dynamic>{
-          'parentId': parentId,
-          'currentPassword': currentPassword,
+          'oldPassword': currentPassword,
           'newPassword': newPassword,
         },
       );
@@ -124,10 +124,7 @@ class ApiAuthRepository implements AuthRepository {
     required String parentId,
   }) async {
     try {
-      await _dio.delete<dynamic>(
-        '/auth/account',
-        data: <String, dynamic>{'parentId': parentId},
-      );
+      await _dio.delete<dynamic>('/api/v1/members');
       return Result<void>.success(null);
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
@@ -136,12 +133,20 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<Result<void>> logout({String? refreshToken}) async {
-    final Map<String, dynamic> body = <String, dynamic>{};
-    if (refreshToken != null) {
-      body['refreshToken'] = refreshToken;
+    String? token = refreshToken;
+    if (token == null || token.isEmpty) {
+      token = await AuthSession.refreshToken();
+    }
+    if (token == null || token.isEmpty) {
+      // Backend requires a non-blank refreshToken; with none available we
+      // skip the remote call and let the caller perform local cleanup.
+      return Result<void>.success(null);
     }
     try {
-      await _dio.post<dynamic>('/auth/logout', data: body);
+      await _dio.post<dynamic>(
+        '/auth/logout',
+        data: <String, dynamic>{'refreshToken': token},
+      );
       return Result<void>.success(null);
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
@@ -164,7 +169,9 @@ class ApiAuthRepository implements AuthRepository {
     return AuthToken(
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String?,
-      parentId: (json['parentId'] as String?) ?? '',
+      parentId: json['memberId']?.toString() ??
+          (json['parentId'] as String?) ??
+          '',
       email: (json['email'] as String?) ?? fallbackEmail,
       name: (json['name'] as String?) ?? '',
     );

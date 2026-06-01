@@ -15,7 +15,7 @@ class DioConfig {
   const DioConfig._();
 
   static const String _kRetriedFlag = '__bridge_p_refresh_retried__';
-  static const String _kRefreshPath = '/auth/refresh';
+  static const String _kRefreshPath = '/auth/token/refresh';
 
   static Dio create({EnvironmentConfig? overrideConfig}) {
     final EnvironmentConfig env = overrideConfig ?? currentEnvironment;
@@ -41,7 +41,29 @@ class DioConfig {
           }
           handler.next(options);
         },
+        onResponse: (
+          Response<dynamic> response,
+          ResponseInterceptorHandler handler,
+        ) {
+          final dynamic body = response.data;
+          if (body is Map && body.containsKey('isSuccess')) {
+            response.data = body['data'];
+          }
+          handler.next(response);
+        },
         onError: (DioException error, ErrorInterceptorHandler handler) async {
+          final dynamic body = error.response?.data;
+          if (body is Map &&
+              !body.containsKey('error') &&
+              body.containsKey('code') &&
+              body.containsKey('message')) {
+            error.response!.data = <String, dynamic>{
+              'error': <String, dynamic>{
+                'code': body['code'],
+                'message': body['message'],
+              },
+            };
+          }
           await _handleError(
             dio: dio,
             baseUrl: env.baseUrl,
@@ -93,12 +115,14 @@ class DioConfig {
       refreshClient.close(force: true);
     }
 
-    final dynamic data = refreshResponse.data;
-    if (data is! Map) {
+    final dynamic body = refreshResponse.data;
+    if (body is! Map) {
       await _forceLogout();
       handler.next(error);
       return;
     }
+    final Map<dynamic, dynamic> data =
+        body['data'] is Map ? body['data'] as Map : body;
     final String? newAccess = data['accessToken'] as String?;
     final String? newRefresh = data['refreshToken'] as String?;
     if (newAccess == null || newAccess.isEmpty) {

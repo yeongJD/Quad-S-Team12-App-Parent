@@ -38,8 +38,7 @@ class ApiChildRepository implements ChildRepository {
   Future<Result<List<ChildSummary>>> loadChildren(String parentId) async {
     try {
       final Response<dynamic> response = await _dio.get<dynamic>(
-        '/children',
-        queryParameters: <String, dynamic>{'parentId': parentId},
+        '/api/v1/parents/children',
       );
       final dynamic data = response.data;
       if (data is! List) {
@@ -62,17 +61,21 @@ class ApiChildRepository implements ChildRepository {
     required String name,
     String? photoBase64,
   }) async {
+    // Backend identifies the parent via JWT, so parentId is not sent. Field
+    // names follow RegisterChildRequest {childrenName, childrenCode,
+    // profileImageUrl}. childrenBirth is intentionally omitted — see
+    // backend-handoff §2.1 (pinned: childrenBirth optional, response returns
+    // the created child object so it parses as ChildSummary below).
     final Map<String, dynamic> body = <String, dynamic>{
-      'parentId': parentId,
-      'childCode': childCode,
-      'name': name,
+      'childrenName': name,
+      'childrenCode': childCode,
     };
     if (photoBase64 != null) {
-      body['photoBase64'] = photoBase64;
+      body['profileImageUrl'] = photoBase64;
     }
     try {
       final Response<dynamic> response = await _dio.post<dynamic>(
-        '/children',
+        '/api/v1/parents/children',
         data: body,
       );
       final dynamic data = response.data;

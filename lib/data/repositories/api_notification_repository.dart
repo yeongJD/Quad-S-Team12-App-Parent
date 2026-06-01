@@ -8,10 +8,10 @@ import 'notification_repository.dart';
 
 /// Network-backed [NotificationRepository] per `docs/api/05-notification.md`.
 ///
-/// - `GET    /notifications?parentId={}`           → `[NotificationItem]`
-/// - `GET    /notifications/unread-count?parentId={}` → `{ unread: bool, count: int }`
-/// - `PATCH  /notifications/{id}/read?parentId={}`
-/// - `DELETE /notifications/{id}?parentId={}`        (= hide)
+/// - `GET    /api/v1/notifications`                 → `[NotificationItem]`
+/// - unread count is derived locally from the inbox (no backend endpoint)
+/// - `PATCH  /api/v1/notifications/{id}/read`
+/// - `DELETE /api/v1/notifications/{id}`            (= hide)
 class ApiNotificationRepository implements NotificationRepository {
   ApiNotificationRepository({Dio? dio}) : _dio = dio ?? DioConfig.create();
 
@@ -21,8 +21,7 @@ class ApiNotificationRepository implements NotificationRepository {
   Future<Result<List<NotificationItem>>> loadInbox(String parentId) async {
     try {
       final Response<dynamic> response = await _dio.get<dynamic>(
-        '/notifications',
-        queryParameters: <String, dynamic>{'parentId': parentId},
+        '/api/v1/notifications',
       );
       final dynamic data = response.data;
       if (data is! List) {
@@ -43,19 +42,19 @@ class ApiNotificationRepository implements NotificationRepository {
 
   @override
   Future<Result<bool>> hasUnread(String parentId) async {
-    try {
-      final Response<dynamic> response = await _dio.get<dynamic>(
-        '/notifications/unread-count',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-      );
-      final dynamic data = response.data;
-      if (data is! Map) {
-        return Result<bool>.success(false);
-      }
-      return Result<bool>.success(data['unread'] == true);
-    } on DioException catch (e) {
-      return failureFromDioException<bool>(e);
-    }
+    final Result<List<NotificationItem>> inbox = await loadInbox(parentId);
+    return switch (inbox) {
+      Success<List<NotificationItem>>(:final List<NotificationItem> data) =>
+        Result<bool>.success(
+          data.any((NotificationItem item) => !item.isRead),
+        ),
+      Failure<List<NotificationItem>>(
+        :final String message,
+        :final Object? cause,
+        :final StackTrace? stack,
+      ) =>
+        Result<bool>.failure(message, cause: cause, stack: stack),
+    };
   }
 
   @override
@@ -65,8 +64,7 @@ class ApiNotificationRepository implements NotificationRepository {
   }) async {
     try {
       await _dio.patch<dynamic>(
-        '/notifications/$notificationId/read',
-        queryParameters: <String, dynamic>{'parentId': parentId},
+        '/api/v1/notifications/$notificationId/read',
       );
       return Result<void>.success(null);
     } on DioException catch (e) {
@@ -81,8 +79,7 @@ class ApiNotificationRepository implements NotificationRepository {
   }) async {
     try {
       await _dio.delete<dynamic>(
-        '/notifications/$notificationId',
-        queryParameters: <String, dynamic>{'parentId': parentId},
+        '/api/v1/notifications/$notificationId',
       );
       return Result<void>.success(null);
     } on DioException catch (e) {
