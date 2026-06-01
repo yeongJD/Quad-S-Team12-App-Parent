@@ -220,7 +220,7 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
                               title: '일간 시간 설정',
                               description:
                                   '자녀가 하루에 사용했으면 하는 시간을 설정해주세요!\n'
-                                  '이 시간을 이용해서 주간 총시간이 자동 계산 됩니다.',
+                                  '이 시간을 이용해서 이번 달 총 시간이 자동 계산 됩니다.',
                               showTip: _showTip,
                               onTipTap: _toggleTip,
                             ),

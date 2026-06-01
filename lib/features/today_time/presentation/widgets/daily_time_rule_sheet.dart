@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/pickers/bridge_time_bottom_sheet.dart';
 import '../models/daily_time_rule.dart';
 import '../styles/time_setup_tokens.dart';
 import 'time_setup_action_button.dart';
@@ -54,21 +54,20 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
   }
 
   Future<void> _openTimePicker() async {
-    final TimeSelection? result = await showModalBottomSheet<TimeSelection>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color.fromRGBO(68, 68, 68, 0.6),
-      builder: (BuildContext context) {
-        return TimePickerSheet(initialTime: _selectedTime);
-      },
+    final TimeOfDayPick? result = await BridgeTimeBottomSheet.show(
+      context,
+      initialHours: _selectedTime.hour,
+      initialMinutes: _selectedTime.minute,
     );
 
     if (result == null || !mounted) {
       return;
     }
     setState(() {
-      _selectedTime = result;
+      _selectedTime = TimeSelection(
+        hour: result.hours,
+        minute: result.minutes,
+      );
     });
   }
 
@@ -298,165 +297,6 @@ class TimeSelectorPart extends StatelessWidget {
                 color: const Color(0xFF050505),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class TimePickerSheet extends StatefulWidget {
-  const TimePickerSheet({super.key, required this.initialTime});
-
-  final TimeSelection initialTime;
-
-  @override
-  State<TimePickerSheet> createState() => _TimePickerSheetState();
-}
-
-class _TimePickerSheetState extends State<TimePickerSheet> {
-  static const List<int> _hours = <int>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  static const List<int> _minutes = <int>[
-    0,
-    5,
-    10,
-    15,
-    20,
-    25,
-    30,
-    35,
-    40,
-    45,
-    50,
-    55,
-  ];
-
-  late int _selectedHourIndex;
-  late int _selectedMinuteIndex;
-  late final FixedExtentScrollController _hourController;
-  late final FixedExtentScrollController _minuteController;
-
-  TimeSelection get _selectedTime {
-    return TimeSelection(
-      hour: _hours[_selectedHourIndex],
-      minute: _minutes[_selectedMinuteIndex],
-    );
-  }
-
-  int _initialIndexFor(List<int> values, int value) {
-    final int index = values.indexOf(value);
-    if (index < 0) {
-      return 0;
-    }
-    return index;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    final TimeSelection initial = widget.initialTime.isEmpty
-        ? const TimeSelection(hour: 1, minute: 5)
-        : widget.initialTime;
-    _selectedHourIndex = _initialIndexFor(_hours, initial.hour);
-    _selectedMinuteIndex = _initialIndexFor(_minutes, initial.minute);
-    _hourController = FixedExtentScrollController(
-      initialItem: _selectedHourIndex,
-    );
-    _minuteController = FixedExtentScrollController(
-      initialItem: _selectedMinuteIndex,
-    );
-  }
-
-  @override
-  void dispose() {
-    _hourController.dispose();
-    _minuteController.dispose();
-    super.dispose();
-  }
-
-  void _confirm() {
-    Navigator.of(context).pop(_selectedTime);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final double bottomInset = MediaQuery.paddingOf(context).bottom;
-    final double sheetHeight =
-        MediaQuery.sizeOf(context).height * TimeSetupSize.timeSheetHeightRatio;
-
-    return Container(
-      height: sheetHeight + bottomInset,
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(TimeSetupRadius.sheet),
-        ),
-      ),
-      child: Stack(
-        children: [
-          const Positioned(
-            top: TimeSetupSpacing.pickerTitleTop,
-            left: 0,
-            right: 0,
-            child: Center(child: SheetLabel('시간 선택')),
-          ),
-          Positioned(
-            left: TimeSetupSpacing.sheetHorizontalPadding,
-            right: TimeSetupSpacing.sheetHorizontalPadding,
-            top: TimeSetupSpacing.pickerHighlightTop,
-            height: 44.954,
-            child: const DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppColors.primary, width: 2),
-                  bottom: BorderSide(color: AppColors.primary, width: 2),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: TimeSetupSpacing.pickerTop,
-            left: TimeSetupSpacing.pickerHorizontalInset,
-            right: TimeSetupSpacing.pickerHorizontalInset,
-            height: TimeSetupSize.pickerHeight,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                PickerColumn(
-                  controller: _hourController,
-                  values: _hours,
-                  selectedIndex: _selectedHourIndex,
-                  onSelectedItemChanged: (int index) {
-                    setState(() {
-                      _selectedHourIndex = index;
-                    });
-                  },
-                ),
-                PickerColumn(
-                  controller: _minuteController,
-                  values: _minutes,
-                  selectedIndex: _selectedMinuteIndex,
-                  onSelectedItemChanged: (int index) {
-                    setState(() {
-                      _selectedMinuteIndex = index;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-          const Positioned(
-            left: TimeSetupSpacing.sheetHorizontalPadding,
-            right: TimeSetupSpacing.sheetHorizontalPadding,
-            top: TimeSetupSpacing.pickerHighlightTop,
-            height: 44.954,
-            child: IgnorePointer(child: PickerSelectionUnits()),
-          ),
-          Positioned(
-            left: TimeSetupSpacing.sheetHorizontalPadding,
-            right: TimeSetupSpacing.sheetHorizontalPadding,
-            bottom: TimeSetupSpacing.sheetButtonBottom + bottomInset,
-            child: SheetConfirmButton(enabled: true, onTap: _confirm),
           ),
         ],
       ),

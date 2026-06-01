@@ -593,6 +593,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('시간 선택'), findsNWidgets(2));
 
+    // BridgeTimeBottomSheet renders two ListWheelScrollViews — hour, minute.
+    // itemHeight is 50, so scrolling up by 50px moves the selection down by
+    // one row. Pick 1 hour, 5 minutes.
+    final Finder wheels = find.byType(ListWheelScrollView);
+    await tester.drag(wheels.first, const Offset(0, -50));
+    await tester.pumpAndSettle();
+    await tester.drag(wheels.last, const Offset(0, -50));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('확인').last);
     await tester.pumpAndSettle();
 
