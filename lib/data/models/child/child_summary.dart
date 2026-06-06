@@ -30,9 +30,11 @@ class ChildSummary {
   }
 
   factory ChildSummary.fromJson(Map<String, dynamic> json) => ChildSummary(
-        childrenId: json['childrenId'] as String,
+        // Backend serialises childrenId as a number (Long); coerce to String so
+        // the cast never throws regardless of JSON number-vs-string shape.
+        childrenId: (json['childrenId'] ?? '').toString(),
         childCode: (json['childCode'] as String?) ?? '',
-        name: json['name'] as String,
+        name: (json['name'] ?? '').toString(),
         profileImageUrl: json['profileImageUrl'] as String?,
       );
 

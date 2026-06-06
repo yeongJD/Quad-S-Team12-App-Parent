@@ -240,6 +240,28 @@ class _SignupPageState extends State<SignupPage> {
 
     switch (result) {
       case Success<AuthToken>(:final AuthToken data):
+        // The backend creates the account but issues no session on signup
+        // (no tokens). When no access token comes back, send the user to the
+        // login screen with their details prefilled instead of persisting an
+        // empty session and landing on a home that would immediately 401.
+        if (data.accessToken.isEmpty) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _submitting = false;
+          });
+          context.go(
+            Uri(
+              path: '/login',
+              queryParameters: <String, String>{
+                'name': _name.trim(),
+                'email': _email.trim(),
+              },
+            ).toString(),
+          );
+          return;
+        }
         await AuthSession.login(parentId: data.parentId, email: data.email);
         final String? refresh = data.refreshToken;
         await AuthSession.saveTokens(

@@ -167,7 +167,11 @@ class ApiAuthRepository implements AuthRepository {
     }
     final Map<String, dynamic> json = Map<String, dynamic>.from(data);
     return AuthToken(
-      accessToken: json['accessToken'] as String,
+      // Signup does not auto-login: the backend returns an empty body (no
+      // tokens), so accept a missing accessToken as an empty string instead of
+      // a hard cast that would throw. The signup page routes such tokenless
+      // results to /login.
+      accessToken: (json['accessToken'] as String?) ?? '',
       refreshToken: json['refreshToken'] as String?,
       parentId: json['memberId']?.toString() ??
           (json['parentId'] as String?) ??

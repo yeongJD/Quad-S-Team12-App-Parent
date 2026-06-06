@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
@@ -144,8 +143,8 @@ class _ChildAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Uint8List? photoBytes = _decodePhotoBytes();
-    if (!isDeleteVisible && photoBytes != null) {
+    final ImageProvider? photoImage = _resolvePhotoImage();
+    if (!isDeleteVisible && photoImage != null) {
       return Container(
         width: _childAvatarSize,
         height: _childAvatarSize,
@@ -157,11 +156,13 @@ class _ChildAvatar extends StatelessWidget {
               : null,
         ),
         child: ClipOval(
-          child: Image.memory(
-            photoBytes,
+          child: Image(
+            image: photoImage,
             width: _childAvatarSize,
             height: _childAvatarSize,
             fit: BoxFit.cover,
+            errorBuilder: (BuildContext context, Object error, StackTrace? _) =>
+                Image.asset(_assetPath, fit: BoxFit.contain),
           ),
         ),
       );
@@ -174,14 +175,19 @@ class _ChildAvatar extends StatelessWidget {
     );
   }
 
-  Uint8List? _decodePhotoBytes() {
+  /// Resolves the avatar source: a presigned HTTP(S) URL from the backend
+  /// (`profileImageUrl`) renders via [NetworkImage]; a base64 payload (mock /
+  /// local pick) via [MemoryImage]. Returns null when neither applies.
+  ImageProvider? _resolvePhotoImage() {
     final String? value = photoBase64;
     if (value == null || value.isEmpty) {
       return null;
     }
-
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return NetworkImage(value);
+    }
     try {
-      return base64Decode(value);
+      return MemoryImage(base64Decode(value));
     } on FormatException {
       return null;
     }

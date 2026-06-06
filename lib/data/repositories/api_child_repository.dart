@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 
 import '../../core/config/dio_config.dart';
@@ -63,15 +66,22 @@ class ApiChildRepository implements ChildRepository {
   }) async {
     // Backend identifies the parent via JWT, so parentId is not sent. Field
     // names follow RegisterChildRequest {childrenName, childrenCode,
-    // profileImageUrl}. childrenBirth is intentionally omitted — see
+    // profileImageKey}. childrenBirth is intentionally omitted — see
     // backend-handoff §2.1 (pinned: childrenBirth optional, response returns
     // the created child object so it parses as ChildSummary below).
     final Map<String, dynamic> body = <String, dynamic>{
       'childrenName': name,
       'childrenCode': childCode,
     };
-    if (photoBase64 != null) {
-      body['profileImageUrl'] = photoBase64;
+    // Profile photos are stored on S3: the picked image is uploaded first to
+    // POST /api/v1/files/photos (category=PROFILE), which returns an S3 key the
+    // register call references via `profileImageKey`. Upload is best-effort —
+    // a failure registers the child without an avatar rather than blocking.
+    if (photoBase64 != null && photoBase64.isNotEmpty) {
+      final String? key = await _uploadProfilePhoto(photoBase64);
+      if (key != null) {
+        body['profileImageKey'] = key;
+      }
     }
     try {
       final Response<dynamic> response = await _dio.post<dynamic>(
@@ -124,5 +134,65 @@ class ApiChildRepository implements ChildRepository {
       }
       return failureFromDioException<void>(e);
     }
+  }
+
+  /// Uploads a base64-encoded profile image to `POST /api/v1/files/photos`
+  /// (category=PROFILE) and returns the S3 key, or `null` on any failure.
+  ///
+  /// The backend rejects non-image content types, so the multipart part is
+  /// tagged with an image media type sniffed from the bytes (PNG/WebP magic,
+  /// else JPEG — image_picker re-encodes gallery picks to JPEG).
+  Future<String?> _uploadProfilePhoto(String base64Data) async {
+    try {
+      final Uint8List bytes = base64Decode(base64Data);
+      if (bytes.isEmpty) {
+        return null;
+      }
+      final ({String subtype, String ext}) media = _sniffImageType(bytes);
+      final FormData form = FormData.fromMap(<String, dynamic>{
+        'category': 'PROFILE',
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: 'profile.${media.ext}',
+          contentType: DioMediaType('image', media.subtype),
+        ),
+      });
+      final Response<dynamic> response = await _dio.post<dynamic>(
+        '/api/v1/files/photos',
+        data: form,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      final dynamic data = response.data;
+      if (data is Map && data['key'] is String) {
+        return data['key'] as String;
+      }
+      return null;
+    } catch (_) {
+      // Best-effort: never block child registration on an avatar upload.
+      return null;
+    }
+  }
+
+  /// Minimal magic-byte sniff for the image media type the backend will accept.
+  ({String subtype, String ext}) _sniffImageType(Uint8List bytes) {
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      return (subtype: 'png', ext: 'png');
+    }
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return (subtype: 'webp', ext: 'webp');
+    }
+    return (subtype: 'jpeg', ext: 'jpg');
   }
 }
