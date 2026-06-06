@@ -72,17 +72,19 @@ class ApiTimePlanRepository implements TimePlanRepository {
     required String parentId,
     required String childrenId,
   }) async {
+    // Backend has no /time-plan/monthly-total; the child's monthly base time is
+    // read from the policy snapshot (GET /api/v1/children/{id}/policies). We
+    // surface `baseTime` (the parent-set pure base) as the monthly total.
     try {
       final Response<dynamic> response = await _dio.get<dynamic>(
-        '/children/$childrenId/time-plan/monthly-total',
-        queryParameters: <String, dynamic>{'parentId': parentId},
+        '/api/v1/children/$childrenId/policies',
       );
       final dynamic data = response.data;
       if (data is! Map) {
         return Result<int?>.success(null);
       }
-      final dynamic value = data['totalMinutes'];
-      return Result<int?>.success(value is int ? value : null);
+      final dynamic value = data['baseTime'];
+      return Result<int?>.success(value is num ? value.toInt() : null);
     } on DioException catch (e) {
       return failureFromDioException<int?>(e);
     }
@@ -94,11 +96,20 @@ class ApiTimePlanRepository implements TimePlanRepository {
     required String childrenId,
     required int totalMinutes,
   }) async {
+    // Backend has no /time-plan/monthly-total; the parent sets the child's
+    // monthly base time via POST /api/v1/parents/time-policy (parent resolved
+    // from JWT). This baseTime is the prerequisite the child's weekly-budget
+    // save validates against, so both sides file it under the same yearMonth.
+    // baseTime must be > 0 (backend @Positive) — a 0 total is rejected with the
+    // backend's Korean message, surfaced via failureFromDioException.
     try {
-      await _dio.put<dynamic>(
-        '/children/$childrenId/time-plan/monthly-total',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-        data: <String, dynamic>{'totalMinutes': totalMinutes},
+      await _dio.post<dynamic>(
+        '/api/v1/parents/time-policy',
+        data: <String, dynamic>{
+          'childId': int.tryParse(childrenId) ?? childrenId,
+          'yearMonth': _currentYearMonth(),
+          'baseTime': totalMinutes,
+        },
       );
       return Result<void>.success(null);
     } on DioException catch (e) {
@@ -197,5 +208,13 @@ class ApiTimePlanRepository implements TimePlanRepository {
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
     }
+  }
+
+  /// Current `"yyyy-MM"` — the month the time policy is filed under. Must match
+  /// the month the child app uses for weekly-budgets/templates.
+  String _currentYearMonth() {
+    final DateTime now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}';
   }
 }
