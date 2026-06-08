@@ -4,7 +4,7 @@
 
 > 본 문서는 자녀용 앱(`bridge-k`, `Quad-S-Team12-App-Child`)과 부모용 앱(`bridge-p`, `Quad-S-Team12-App-Parent`)이 공유하는 backend contract이다. 두 앱은 같은 서버를 호출하며, 일부 endpoint는 공통(예: `/auth/login`, `/devices`)이지만 사용자 유형별로 body shape이 다르거나 호출자에 따라 다른 데이터를 반환한다.
 >
-> 본 contract는 양 앱 클라이언트의 `Api*Repository` 구현과 cross-reference로 검증됐다. endpoint/path/body/response shape은 코드와 100% 일치한다. 백엔드 명세 합의 후 변경되는 경우 코드와 본 문서를 동시 업데이트한다.
+> 현재 배포 기준의 canonical contract는 AWS Swagger(`https://leyoung.shop/swagger-ui/index.html`)이다. 양 앱의 실제 네트워크 호출은 Swagger에 있는 path만 사용하도록 정리됐다. 아래 상세 섹션 중 과거 `/children/*`, `/parents/*`, `/devices/*`, `/time-setup/*`, `/time-confirm/*`, `/reports/*`, `/user/*` 계약은 historical note로 보고, 신규 구현은 Swagger와 앱 코드의 `Api*Repository`를 우선한다.
 >
 > **문서 구조**:
 > - §1 — 양 앱 공통: Base URL, 인증, 에러 shape, FCM 페이로드.
@@ -20,24 +20,28 @@
 
 ## 1.1 Base URL — 환경별
 
-자녀 앱(`bridge-k`)과 부모 앱(`bridge-p`)은 현재 별도 host를 사용한다 (`lib/core/config/environment.dart`).
+자녀 앱(`bridge-k`)과 부모 앱(`bridge-p`)은 같은 AWS-backed 백엔드를 기본값으로 호출한다
+(`lib/core/config/environment.dart`). 로컬 서버나 Android emulator를 쓸 때는
+`BRIDGE_API_BASE_URL` dart-define으로 덮어쓴다.
 
 | 환경 | 자녀 앱(`bridge-k`) | 부모 앱(`bridge-p`) | useMocks |
 |---|---|---|---|
-| development | `https://api.dev.bridge-k.example.com` | `https://api.dev.bridge-p.example.com` | true (현재 default) |
-| staging | `https://api.staging.bridge-k.example.com` | `https://api.staging.bridge-p.example.com` | false |
-| production | `https://api.bridge-k.example.com` | `https://api.bridge-p.example.com` | false |
+| development | `https://leyoung.shop` | `https://leyoung.shop` | false (현재 default) |
+| staging | `https://leyoung.shop` | `https://leyoung.shop` | false |
+| production | `https://leyoung.shop` | `https://leyoung.shop` | false |
 
-- TODO(env): 출시 전 양 앱의 `currentEnvironment`를 `.staging()` / `.production()`으로 교체.
-- TODO(backend): 양 앱 host의 분리 여부는 부록 D.4 참조. 같은 백엔드를 공유한다면 host도 통일할 수 있음.
+- `flutter run --dart-define=BRIDGE_API_BASE_URL=http://10.0.2.2:8080`
+  (Android emulator에서 로컬 백엔드를 볼 때)
+- `flutter run --dart-define=BRIDGE_USE_MOCKS=true` (Figma fixture / mock UI 복귀)
+- Swagger: `https://leyoung.shop/swagger-ui/index.html`
 
 ## 1.2 인증 — Bearer 토큰 + 401 refresh 흐름
 
 - 모든 보호 endpoint는 `Authorization: Bearer <accessToken>` 헤더를 요구한다. `dio_config.dart`의 `InterceptorsWrapper`가 자동 주입한다.
 - `/auth/*` endpoint (login/signup/refresh)는 토큰 없이 호출 가능. 그 외에는 토큰 누락 시 401을 반환해야 한다.
-- Access token이 만료(401)되면 클라이언트는 **1회** `POST /auth/refresh`로 갱신을 시도하고, 성공 시 원 요청을 재시도한다 (interceptor가 자동 수행, `__bridge_*_refresh_retried__` 플래그로 무한 루프 방지).
+- Access token이 만료(401)되면 클라이언트는 **1회** `POST /auth/token/refresh`로 갱신을 시도하고, 성공 시 원 요청을 재시도한다 (interceptor가 자동 수행, `__bridge_*_refresh_retried__` 플래그로 무한 루프 방지).
 - Refresh가 실패하거나 응답에 `accessToken`이 없으면 `AuthSession.clearTokens()` + `logout()` 후 시작 화면으로 라우팅한다.
-- Refresh token rotation: `/auth/refresh` 응답에 새 `refreshToken`이 포함되면 클라이언트는 새 값을 저장한다.
+- Refresh token rotation: `/auth/token/refresh` 응답에 새 `refreshToken`이 포함되면 클라이언트는 새 값을 저장한다.
 
 양 앱이 같은 백엔드를 공유할 때 access/refresh token 발급 정책은 동일해야 하지만, 사용자 유형(부모 vs 자녀)을 token claim 또는 별도 endpoint로 식별해야 한다 (부록 D.1 참조).
 
@@ -71,7 +75,7 @@
 | `201 Created` | 생성 성공 + 새 리소스 반환 | body 파싱 |
 | `204 No Content` | 성공 + 본문 없음 | success 처리 |
 | `400 Bad Request` | 잘못된 요청 | 에러 메시지 노출 |
-| `401 Unauthorized` | 토큰 만료/누락 | 1회 `/auth/refresh` 시도 → 재시도 / 강제 로그아웃 |
+| `401 Unauthorized` | 토큰 만료/누락 | 1회 `/auth/token/refresh` 시도 → 재시도 / 강제 로그아웃 |
 | `403 Forbidden` | 권한 없음 | `'권한이 없어요.'` 폴백 |
 | `404 Not Found` | 리소스 없음 | `'찾을 수 없어요.'` 폴백 (단 `DELETE /devices/{id}`은 success로 처리) |
 | `409 Conflict` | 중복/충돌 | code별 분기 (예: `DUPLICATE_USERNAME`, `DUPLICATE_EMAIL`, `ALREADY_REGISTERED`) |
@@ -177,12 +181,12 @@
 
 ```bash
 # 토큰 없는 호출 (login, signup, refresh)
-curl -X POST 'https://api.bridge-k.example.com/auth/login' \
+curl -X POST 'https://leyoung.shop/auth/login' \
   -H 'Content-Type: application/json' \
   -d '{"username": "gdg12", "password": "Gdg123456789!"}'
 
 # 토큰 필요한 호출 (그 외 전체)
-curl -X GET 'https://api.bridge-k.example.com/missions' \
+curl -X GET 'https://leyoung.shop/missions' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -211,7 +215,7 @@ login / signup 응답:
 ```
 
 - `refreshToken`은 선택 (null 허용). refresh 응답에서는 생략 가능.
-- `/auth/refresh` 응답에는 `username`이 없어도 됨 (`_parseTokenResponse`가 fallback으로 빈 문자열을 채움).
+- `/auth/token/refresh` 응답에는 `username`이 없어도 됨 (`_parseTokenResponse`가 fallback으로 빈 문자열을 채움).
 
 ### `POST /auth/login` [child]
 
@@ -228,7 +232,7 @@ login / signup 응답:
 #### cURL
 
 ```bash
-curl -X POST 'https://api.bridge-k.example.com/auth/login' \
+curl -X POST 'https://leyoung.shop/auth/login' \
   -H 'Content-Type: application/json' \
   -d '{"username": "gdg12", "password": "Gdg123456789!"}'
 ```
@@ -245,7 +249,7 @@ curl -X POST 'https://api.bridge-k.example.com/auth/login' \
   - `DUPLICATE_USERNAME` (409) → `'이미 사용 중인 아이디예요.'` (`AuthFailureMessages.duplicatedUsername`)
   - `INVALID_FORMAT` (422) → `'아이디/비밀번호 형식이 올바르지 않아요.'`
 
-### `POST /auth/refresh` [child]
+### `POST /auth/token/refresh` [child]
 
 - **인증**: 불필요 (body의 refresh token으로 식별).
 - **Request body**:
@@ -311,7 +315,7 @@ curl -X POST 'https://api.bridge-k.example.com/auth/login' \
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-k.example.com/missions' \
+curl -X GET 'https://leyoung.shop/missions' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -341,7 +345,7 @@ curl -X GET 'https://api.bridge-k.example.com/missions' \
 #### cURL
 
 ```bash
-curl -X POST 'https://api.bridge-k.example.com/missions/1/submit' \
+curl -X POST 'https://leyoung.shop/missions/1/submit' \
   -H 'Authorization: Bearer <accessToken>' \
   -H 'Content-Type: application/json' \
   -d '{"photoUrls": ["https://cdn.bridge-k.example.com/photos/abc.jpg"]}'
@@ -405,7 +409,7 @@ curl -X POST 'https://api.bridge-k.example.com/missions/1/submit' \
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-k.example.com/time-setup/current' \
+curl -X GET 'https://leyoung.shop/time-setup/current' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -492,7 +496,7 @@ curl -X GET 'https://api.bridge-k.example.com/time-setup/current' \
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-k.example.com/notifications' \
+curl -X GET 'https://leyoung.shop/notifications' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -570,7 +574,7 @@ curl -X GET 'https://api.bridge-k.example.com/notifications' \
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-k.example.com/reports/weekly' \
+curl -X GET 'https://leyoung.shop/reports/weekly' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -616,7 +620,7 @@ curl -X GET 'https://api.bridge-k.example.com/reports/weekly' \
 #### cURL
 
 ```bash
-curl -X PATCH 'https://api.bridge-k.example.com/user/password' \
+curl -X PATCH 'https://leyoung.shop/user/password' \
   -H 'Authorization: Bearer <accessToken>' \
   -H 'Content-Type: application/json' \
   -d '{"currentPassword": "old123", "newPassword": "new456"}'
@@ -654,7 +658,7 @@ curl -X PATCH 'https://api.bridge-k.example.com/user/password' \
 #### cURL
 
 ```bash
-curl -X POST 'https://api.bridge-k.example.com/uploads/photo' \
+curl -X POST 'https://leyoung.shop/uploads/photo' \
   -H 'Authorization: Bearer <accessToken>' \
   -F 'file=@/path/to/photo.jpg' \
   -F 'purpose=mission'
@@ -696,7 +700,7 @@ curl -X POST 'https://api.bridge-k.example.com/uploads/photo' \
 #### cURL
 
 ```bash
-curl -X POST 'https://api.bridge-k.example.com/devices' \
+curl -X POST 'https://leyoung.shop/devices' \
   -H 'Authorization: Bearer <accessToken>' \
   -H 'Content-Type: application/json' \
   -d '{"fcmToken": "eXxxxx-token", "platform": "ios"}'
@@ -771,7 +775,7 @@ login / signup 응답:
 #### cURL
 
 ```bash
-curl -X POST 'https://api.bridge-p.example.com/auth/signup' \
+curl -X POST 'https://leyoung.shop/auth/signup' \
   -H 'Content-Type: application/json' \
   -d '{"email": "parent@example.com", "name": "박부모", "password": "Parent12345!"}'
 ```
@@ -791,7 +795,7 @@ curl -X POST 'https://api.bridge-p.example.com/auth/signup' \
 
 > 자녀 앱과 동일한 의미·동일한 code (`INVALID_CREDENTIALS`, `USER_NOT_FOUND`) — 백엔드는 단일 구현으로 두 앱 모두 처리 가능하지만, message는 사용자 유형에 맞게 다르게 발급해야 한다 (자녀: `'아이디를 다시 확인해 주세요.'` vs 부모: `'가입되지 않은 이메일이에요.'`).
 
-### `POST /auth/refresh` [parent]
+### `POST /auth/token/refresh` [parent]
 
 - **인증**: 불필요.
 - **Request body**:
@@ -838,7 +842,7 @@ curl -X POST 'https://api.bridge-p.example.com/auth/signup' \
 #### cURL
 
 ```bash
-curl -X PUT 'https://api.bridge-p.example.com/auth/password' \
+curl -X PUT 'https://leyoung.shop/auth/password' \
   -H 'Authorization: Bearer <accessToken>' \
   -H 'Content-Type: application/json' \
   -d '{"parentId": "parent-uuid-123", "currentPassword": "old", "newPassword": "new"}'
@@ -897,7 +901,7 @@ curl -X PUT 'https://api.bridge-p.example.com/auth/password' \
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-p.example.com/parents/parent-uuid-123' \
+curl -X GET 'https://leyoung.shop/parents/parent-uuid-123' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -989,7 +993,7 @@ curl -X GET 'https://api.bridge-p.example.com/parents/parent-uuid-123' \
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-p.example.com/children?parentId=parent-uuid-123' \
+curl -X GET 'https://leyoung.shop/children?parentId=parent-uuid-123' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -1082,7 +1086,7 @@ Failure 메시지 상수: `lib/data/repositories/mission_repository.dart`의 `Mi
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-p.example.com/children/child-uuid-456/missions?parentId=parent-uuid-123' \
+curl -X GET 'https://leyoung.shop/children/child-uuid-456/missions?parentId=parent-uuid-123' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -1139,7 +1143,7 @@ curl -X GET 'https://api.bridge-p.example.com/children/child-uuid-456/missions?p
 #### cURL
 
 ```bash
-curl -X POST 'https://api.bridge-p.example.com/children/child-uuid-456/missions/at/2/approve?parentId=parent-uuid-123' \
+curl -X POST 'https://leyoung.shop/children/child-uuid-456/missions/at/2/approve?parentId=parent-uuid-123' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -1225,7 +1229,7 @@ curl -X POST 'https://api.bridge-p.example.com/children/child-uuid-456/missions/
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-p.example.com/children/child-uuid-456/time-plan/daily-rules?parentId=parent-uuid-123' \
+curl -X GET 'https://leyoung.shop/children/child-uuid-456/time-plan/daily-rules?parentId=parent-uuid-123' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -1367,7 +1371,7 @@ curl -X GET 'https://api.bridge-p.example.com/children/child-uuid-456/time-plan/
 #### cURL
 
 ```bash
-curl -X GET 'https://api.bridge-p.example.com/notifications?parentId=parent-uuid-123' \
+curl -X GET 'https://leyoung.shop/notifications?parentId=parent-uuid-123' \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
@@ -1572,7 +1576,7 @@ curl -X GET 'https://api.bridge-p.example.com/notifications?parentId=parent-uuid
 | `INVALID_CREDENTIALS` | both | (login) 비밀번호가 일치하지 않아요. / (parent password) 현재 비밀번호가 일치하지 않아요. | POST /auth/login (both), PUT /auth/password (parent) | 비밀번호 필드 red border + 토스트 |
 | `USER_NOT_FOUND` | both | (child) 아이디를 다시 확인해 주세요. / (parent) 가입되지 않은 이메일이에요. | POST /auth/login | 아이디/이메일 필드 red border + 토스트 |
 | `ACCOUNT_DORMANT` | parent | 휴면 계정이에요. 고객센터에 문의해 주세요. | POST /auth/login | 토스트 + 재활성화 안내 |
-| `INVALID_REFRESH_TOKEN` | both | (메시지 무관) | POST /auth/refresh | 강제 로그아웃 → 시작 화면 |
+| `INVALID_REFRESH_TOKEN` | both | (메시지 무관) | POST /auth/token/refresh | 강제 로그아웃 → 시작 화면 |
 | `DUPLICATE_USERNAME` | child | 이미 사용 중인 아이디예요. | POST /auth/signup | 아이디 필드 헬퍼 텍스트 + 토스트 |
 | `DUPLICATE_EMAIL` | parent | 이미 사용 중인 이메일이에요. | POST /auth/signup | 이메일 필드 헬퍼 텍스트 + 토스트 |
 | `INVALID_FORMAT` | both | (signup) 아이디/이메일/비밀번호 형식이 올바르지 않아요. / (password) 비밀번호 형식이 올바르지 않아요. | POST /auth/signup, PATCH/PUT /user/password 또는 /auth/password | 토스트 (클라이언트도 regex로 1차 차단) |
@@ -1625,7 +1629,7 @@ curl -X GET 'https://api.bridge-p.example.com/notifications?parentId=parent-uuid
 |---|---|---|---|---|
 | Auth | POST | /auth/login | both | child: `username` / parent: `email` |
 | Auth | POST | /auth/signup | both | child: `username` / parent: `email`+`name` |
-| Auth | POST | /auth/refresh | both | `refreshToken` |
+| Auth | POST | /auth/token/refresh | both | `refreshToken` |
 | Auth | POST | /auth/logout | parent (child TODO) | optional `refreshToken` |
 | Auth | PUT | /auth/password | parent | `parentId`+`currentPassword`+`newPassword` |
 | Auth | DELETE | /auth/account | parent | `parentId` |
@@ -1776,7 +1780,7 @@ curl -X GET 'https://api.bridge-p.example.com/notifications?parentId=parent-uuid
 
 ### D.4 Parent와 Child의 host 분리 여부
 
-자녀 앱: `api.bridge-k.*`, 부모 앱: `api.bridge-p.*` (§1.1). 양 앱이 동일 백엔드를 공유하면 host를 통일하는 것을 권장. 별도 게이트웨이면 그대로 유지.
+자녀 앱과 부모 앱 모두 `https://leyoung.shop`을 기본 host로 사용한다 (§1.1). 별도 게이트웨이를 분리하면 `BRIDGE_API_BASE_URL`로 앱별 host를 덮어쓴다.
 
 ### D.5 부모/자녀 앱의 Mission JSON shape 통일
 

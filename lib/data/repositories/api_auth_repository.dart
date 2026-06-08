@@ -153,7 +153,7 @@ class ApiAuthRepository implements AuthRepository {
     }
   }
 
-  /// Tolerant parser: the `/auth/refresh` response shape is
+  /// Tolerant parser: the `/auth/token/refresh` response shape is
   /// `{ accessToken, refreshToken }` (no parentId / email / name fields),
   /// while login/signup include the full profile. We accept both and
   /// substitute placeholder values when missing so refresh callers can

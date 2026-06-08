@@ -5,16 +5,15 @@ import '../../core/models/result.dart';
 import '../../core/network/api_error.dart';
 import '../../features/today_time/presentation/data/child_weekly_time_plan_store.dart';
 import '../../features/today_time/presentation/data/daily_time_rule_store.dart';
+import '../../features/today_time/presentation/data/whitelist_app_store.dart';
 import '../../features/today_time/presentation/models/daily_time_rule.dart';
 import 'time_plan_repository.dart';
 
 /// Network-backed [TimePlanRepository] per `docs/api/04-time-plan.md`.
 ///
-/// Endpoints sit under `/children/{childrenId}/time-plan/*` and accept
-/// `parentId` as a query param for authorisation. Each sub-resource has
-/// its own GET / PUT pair — backends that prefer a single aggregate GET
-/// can implement that as an optimisation while still honouring the
-/// individual PUTs (see contract doc for details).
+/// Uses the AWS Swagger time-policy endpoints where they exist. Daily/weekly
+/// draft rules and whitelist app ids have no AWS endpoints, so those remain
+/// local-only instead of calling legacy `/children/{id}/time-plan/*` paths.
 class ApiTimePlanRepository implements TimePlanRepository {
   ApiTimePlanRepository({Dio? dio}) : _dio = dio ?? DioConfig.create();
 
@@ -132,23 +131,11 @@ class ApiTimePlanRepository implements TimePlanRepository {
     required String parentId,
     required String childrenId,
   }) async {
-    try {
-      final Response<dynamic> response = await _dio.get<dynamic>(
-        '/children/$childrenId/time-plan/whitelist',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-      );
-      final dynamic data = response.data;
-      if (data is! Map) {
-        return Result<Set<String>>.success(<String>{});
-      }
-      final dynamic appIds = data['appIds'];
-      if (appIds is! List) {
-        return Result<Set<String>>.success(<String>{});
-      }
-      return Result<Set<String>>.success(appIds.whereType<String>().toSet());
-    } on DioException catch (e) {
-      return failureFromDioException<Set<String>>(e);
-    }
+    final Set<String> ids = await WhitelistAppStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return Result<Set<String>>.success(ids);
   }
 
   @override
@@ -157,18 +144,12 @@ class ApiTimePlanRepository implements TimePlanRepository {
     required String childrenId,
     required Set<String> appIds,
   }) async {
-    try {
-      await _dio.put<dynamic>(
-        '/children/$childrenId/time-plan/whitelist',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-        data: <String, dynamic>{
-          'appIds': (appIds.toList()..sort()),
-        },
-      );
-      return Result<void>.success(null);
-    } on DioException catch (e) {
-      return failureFromDioException<void>(e);
-    }
+    await WhitelistAppStore.save(
+      parentId: parentId,
+      childrenId: childrenId,
+      appIds: appIds,
+    );
+    return Result<void>.success(null);
   }
 
   /// Current `"yyyy-MM"` — the month the time policy is filed under. Must match

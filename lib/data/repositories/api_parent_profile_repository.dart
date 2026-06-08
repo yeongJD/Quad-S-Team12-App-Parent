@@ -1,46 +1,29 @@
-import 'package:dio/dio.dart';
-
-import '../../core/config/dio_config.dart';
+import '../../core/auth/account_store.dart';
+import '../../core/auth/auth_session.dart';
 import '../../core/models/result.dart';
-import '../../core/network/api_error.dart';
 import '../models/parent_profile/parent_profile.dart';
 import 'parent_profile_repository.dart';
 
 /// Network-backed [ParentProfileRepository] per `docs/api/06-parent-profile.md`.
 ///
-/// - `GET   /parents/{parentId}`         → `ParentProfile`
-/// - `PATCH /parents/{parentId}` body: `{ name }`        → `ParentProfile`
-/// - `PATCH /parents/{parentId}/status` body: `{ status }`
+/// AWS Swagger does not expose parent profile read/update endpoints. This
+/// repository therefore uses the locally stored auth session/account snapshot
+/// and does not call the legacy `/parents/{parentId}` compatibility paths.
 class ApiParentProfileRepository implements ParentProfileRepository {
-  ApiParentProfileRepository({Dio? dio}) : _dio = dio ?? DioConfig.create();
-
-  final Dio _dio;
+  const ApiParentProfileRepository();
 
   @override
   Future<Result<ParentProfile>> getProfile(String parentId) async {
-    try {
-      final Response<dynamic> response = await _dio.get<dynamic>(
-        '/parents/$parentId',
-      );
-      final dynamic data = response.data;
-      if (data is! Map) {
-        throw const FormatException(
-          'getProfile response was not a JSON object.',
-        );
-      }
-      return Result<ParentProfile>.success(
-        ParentProfile.fromJson(Map<String, dynamic>.from(data)),
-      );
-    } on DioException catch (e) {
-      final String? code = errorCodeOf(e);
-      if (code == 'ACCOUNT_NOT_FOUND') {
-        return Result<ParentProfile>.failure(
-          ParentProfileFailureMessages.notFound,
-          cause: code,
-        );
-      }
-      return failureFromDioException<ParentProfile>(e);
-    }
+    final ParentAccount? account = await AccountStore.getAccountById(parentId);
+    final String? email = await AuthSession.getCurrentEmail();
+    return Result<ParentProfile>.success(
+      ParentProfile(
+        parentId: parentId,
+        email: account?.email ?? email ?? '',
+        name: account?.name ?? AuthSession.fallbackName,
+        status: _profileStatusFromAccount(account?.status),
+      ),
+    );
   }
 
   @override
@@ -48,23 +31,11 @@ class ApiParentProfileRepository implements ParentProfileRepository {
     required String parentId,
     required String name,
   }) async {
-    try {
-      final Response<dynamic> response = await _dio.patch<dynamic>(
-        '/parents/$parentId',
-        data: <String, dynamic>{'name': name},
-      );
-      final dynamic data = response.data;
-      if (data is! Map) {
-        throw const FormatException(
-          'updateName response was not a JSON object.',
-        );
-      }
-      return Result<ParentProfile>.success(
-        ParentProfile.fromJson(Map<String, dynamic>.from(data)),
-      );
-    } on DioException catch (e) {
-      return failureFromDioException<ParentProfile>(e);
+    final ParentAccount? account = await AccountStore.getAccountById(parentId);
+    if (account != null) {
+      await AccountStore.saveAccount(account.copyWith(name: name));
     }
+    return getProfile(parentId);
   }
 
   @override
@@ -72,14 +43,19 @@ class ApiParentProfileRepository implements ParentProfileRepository {
     required String parentId,
     required ParentProfileStatus status,
   }) async {
-    try {
-      await _dio.patch<dynamic>(
-        '/parents/$parentId/status',
-        data: <String, dynamic>{'status': status.name},
-      );
-      return Result<void>.success(null);
-    } on DioException catch (e) {
-      return failureFromDioException<void>(e);
+    final AccountStatus accountStatus = status == ParentProfileStatus.dormant
+        ? AccountStatus.dormant
+        : AccountStatus.active;
+    final ParentAccount? account = await AccountStore.getAccountById(parentId);
+    if (account != null) {
+      await AccountStore.updateStatus(parentId: parentId, status: accountStatus);
     }
+    return Result<void>.success(null);
+  }
+
+  ParentProfileStatus _profileStatusFromAccount(AccountStatus? status) {
+    return status == AccountStatus.dormant
+        ? ParentProfileStatus.dormant
+        : ParentProfileStatus.active;
   }
 }

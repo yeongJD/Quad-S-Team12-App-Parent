@@ -7,7 +7,7 @@ import 'environment.dart';
 ///
 /// Wires two interceptors:
 /// 1. Request: inject `Authorization: Bearer <accessToken>` when available.
-/// 2. Error: on `401`, attempt one `/auth/refresh` rotation and retry the
+/// 2. Error: on `401`, attempt one `/auth/token/refresh` rotation and retry the
 ///    original request transparently. On refresh failure, tokens are cleared
 ///    and the original error propagates to the caller — pages then route the
 ///    user back to login per the standard `Result.failure` flow.

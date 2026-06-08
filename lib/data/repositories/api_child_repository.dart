@@ -11,10 +11,9 @@ import 'child_repository.dart';
 
 /// Network-backed [ChildRepository] per `docs/api/02-child.md`.
 ///
-/// - `POST /children/validate-code` → `{ valid: bool }`
-/// - `GET  /children?parentId={}`   → `[ChildSummary]`
-/// - `POST /children`               → `ChildSummary`
-/// - `DELETE /children/{childrenId}?parentId={}`
+/// - `GET  /api/v1/parents/children`
+/// - `POST /api/v1/parents/children`
+/// - `POST /api/v1/files/photos`
 class ApiChildRepository implements ChildRepository {
   ApiChildRepository({Dio? dio}) : _dio = dio ?? DioConfig.create();
 
@@ -22,19 +21,9 @@ class ApiChildRepository implements ChildRepository {
 
   @override
   Future<Result<bool>> validateChildCode(String code) async {
-    try {
-      final Response<dynamic> response = await _dio.post<dynamic>(
-        '/children/validate-code',
-        data: <String, dynamic>{'code': code},
-      );
-      final dynamic data = response.data;
-      if (data is! Map) {
-        return Result<bool>.success(false);
-      }
-      return Result<bool>.success(data['valid'] == true);
-    } on DioException catch (e) {
-      return failureFromDioException<bool>(e);
-    }
+    // AWS has no separate validate endpoint. Let registerChild perform the
+    // authoritative validation and surface its server error.
+    return Result<bool>.success(code.trim().isNotEmpty);
   }
 
   @override
@@ -118,22 +107,7 @@ class ApiChildRepository implements ChildRepository {
     required String parentId,
     required String childrenId,
   }) async {
-    try {
-      await _dio.delete<dynamic>(
-        '/children/$childrenId',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-      );
-      return Result<void>.success(null);
-    } on DioException catch (e) {
-      final String? code = errorCodeOf(e);
-      if (code == 'CHILD_NOT_FOUND') {
-        return Result<void>.failure(
-          ChildFailureMessages.childNotFound,
-          cause: code,
-        );
-      }
-      return failureFromDioException<void>(e);
-    }
+    return Result<void>.failure('AWS API에 자녀 삭제 경로가 없어요.');
   }
 
   /// Uploads a base64-encoded profile image to `POST /api/v1/files/photos`
@@ -150,7 +124,6 @@ class ApiChildRepository implements ChildRepository {
       }
       final ({String subtype, String ext}) media = _sniffImageType(bytes);
       final FormData form = FormData.fromMap(<String, dynamic>{
-        'category': 'PROFILE',
         'file': MultipartFile.fromBytes(
           bytes,
           filename: 'profile.${media.ext}',
@@ -159,6 +132,7 @@ class ApiChildRepository implements ChildRepository {
       });
       final Response<dynamic> response = await _dio.post<dynamic>(
         '/api/v1/files/photos',
+        queryParameters: <String, dynamic>{'category': 'PROFILE'},
         data: form,
         options: Options(contentType: 'multipart/form-data'),
       );
