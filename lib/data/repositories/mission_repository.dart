@@ -75,4 +75,5 @@ MissionRepository createMissionRepository() => _missionRepository;
 abstract final class MissionFailureMessages {
   static const String missionNotFound = '미션을 찾을 수 없어요.';
   static const String invalidState = '지금 상태에서는 이 작업을 할 수 없어요.';
+  static const String unsupportedByAws = 'AWS API에 미션 수정/삭제 경로가 없어요.';
 }

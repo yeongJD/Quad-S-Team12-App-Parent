@@ -8,13 +8,9 @@ import 'mission_repository.dart';
 
 /// Network-backed [MissionRepository] per `docs/api/03-mission.md`.
 ///
-/// Endpoints are scoped under
-/// `/children/{childrenId}/missions?parentId={parentId}` so the backend can
-/// authorize on both the parent and the child. The repository serialises
-/// [TodayMission] via [_missionToJson] / [_missionFromJson]; the JSON shape
-/// mirrors what TodayMissionStore already persisted to SharedPreferences,
-/// so a backend implementing the contract literally can replay existing
-/// fixtures.
+/// Uses only the AWS Swagger mission endpoints:
+/// `GET/POST /api/v1/missions`, `GET /api/v1/missions/{missionId}/performance`,
+/// and `PATCH /api/v1/missions/performances/{performanceId}/{approve|reject}`.
 ///
 /// Index-based CRUD (approve/reject/update/remove at a position) is
 /// translated to a missionId via a per-call [loadMissions] round-trip so
@@ -39,11 +35,15 @@ class ApiMissionRepository implements MissionRepository {
       if (data is! List) {
         return Result<List<TodayMission>>.success(const <TodayMission>[]);
       }
-      final List<TodayMission> missions = data
-          .whereType<Map<String, dynamic>>()
-          .map(_missionFromJson)
-          .whereType<TodayMission>()
-          .toList(growable: false);
+      final List<TodayMission> missions = <TodayMission>[];
+      for (final Map<String, dynamic> entry
+          in data.whereType<Map<String, dynamic>>()) {
+        final TodayMission? mission = _missionFromJson(entry);
+        if (mission == null) {
+          continue;
+        }
+        missions.add(await _hydrateMission(mission));
+      }
       return Result<List<TodayMission>>.success(missions);
     } on DioException catch (e) {
       return failureFromDioException<List<TodayMission>>(e);
@@ -56,18 +56,7 @@ class ApiMissionRepository implements MissionRepository {
     required String childrenId,
     required List<TodayMission> missions,
   }) async {
-    try {
-      await _dio.put<dynamic>(
-        '/children/$childrenId/missions',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-        data: <String, dynamic>{
-          'missions': missions.map(_missionToJson).toList(growable: false),
-        },
-      );
-      return Result<void>.success(null);
-    } on DioException catch (e) {
-      return failureFromDioException<void>(e);
-    }
+    return Result<void>.failure(MissionFailureMessages.unsupportedByAws);
   }
 
   @override
@@ -104,19 +93,7 @@ class ApiMissionRepository implements MissionRepository {
     required int index,
     required TodayMission mission,
   }) async {
-    // TODO(api): once the page-level controllers track missionId, replace
-    // the index→id translation below with a direct PUT
-    // `/missions/{missionId}` call.
-    try {
-      await _dio.put<dynamic>(
-        '/children/$childrenId/missions/at/$index',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-        data: _missionToJson(mission),
-      );
-      return Result<void>.success(null);
-    } on DioException catch (e) {
-      return failureFromDioException<void>(e);
-    }
+    return Result<void>.failure(MissionFailureMessages.unsupportedByAws);
   }
 
   @override
@@ -125,15 +102,7 @@ class ApiMissionRepository implements MissionRepository {
     required String childrenId,
     required int index,
   }) async {
-    try {
-      await _dio.delete<dynamic>(
-        '/children/$childrenId/missions/at/$index',
-        queryParameters: <String, dynamic>{'parentId': parentId},
-      );
-      return Result<void>.success(null);
-    } on DioException catch (e) {
-      return failureFromDioException<void>(e);
-    }
+    return Result<void>.failure(MissionFailureMessages.unsupportedByAws);
   }
 
   @override
@@ -171,31 +140,19 @@ class ApiMissionRepository implements MissionRepository {
     required String action,
   }) async {
     try {
-      // Backend exposes approval only by performanceId. Bridge the page's
-      // index-based call via the existing endpoints: list → missionId →
-      // performance → performanceId, then PATCH the approval state. No backend
-      // change required (see backend-handoff §3.3).
-      final Response<dynamic> listResp = await _dio.get<dynamic>(
-        '/api/v1/missions',
-        queryParameters: <String, dynamic>{'childId': childrenId},
+      final Result<List<TodayMission>> loaded = await loadMissions(
+        parentId: parentId,
+        childrenId: childrenId,
       );
-      final dynamic listData = listResp.data;
-      if (listData is! List || index < 0 || index >= listData.length) {
+      if (loaded is! Success<List<TodayMission>>) {
         return Result<void>.failure(MissionFailureMessages.missionNotFound);
       }
-      final dynamic entry = listData[index];
-      final Object? missionId = entry is Map ? entry['missionId'] : null;
-      if (missionId == null) {
+      final List<TodayMission> missions = loaded.data;
+      if (index < 0 || index >= missions.length) {
         return Result<void>.failure(MissionFailureMessages.missionNotFound);
       }
-
-      final Response<dynamic> perfResp = await _dio.get<dynamic>(
-        '/api/v1/missions/$missionId/performance',
-      );
-      final dynamic perfData = perfResp.data;
-      final Object? performanceId =
-          perfData is Map ? perfData['performanceId'] : null;
-      if (performanceId == null) {
+      final String? performanceId = missions[index].performanceId;
+      if (performanceId == null || performanceId.isEmpty) {
         return Result<void>.failure(MissionFailureMessages.invalidState);
       }
 
@@ -221,27 +178,13 @@ class ApiMissionRepository implements MissionRepository {
     }
   }
 
-  Map<String, dynamic> _missionToJson(TodayMission mission) {
-    return <String, dynamic>{
-      'title': mission.title,
-      'category': mission.category.name,
-      'resetPeriod': mission.resetPeriod.name,
-      'confirmationMethod': mission.confirmationMethod.name,
-      'rewardMinutes': mission.rewardMinutes,
-      'description': mission.description,
-      'status': mission.effectiveStatus.name,
-      'verificationType': mission.verificationType.name,
-      'verificationStatus': mission.effectiveVerificationStatus.name,
-      if (mission.submittedAtText case final String submittedAtText)
-        'submittedAtText': submittedAtText,
-    };
-  }
-
   TodayMission? _missionFromJson(Map<String, dynamic> json) {
+    final Object? missionId = json['missionId'];
     final Object? title = json['title'];
     final Object? category = json['category'];
     final Object? resetPeriod = json['resetPeriod'];
     final Object? confirmationMethod = json['confirmationMethod'];
+    final Object? verificationType = json['verificationType'];
     final Object? reward = json['reward'];
     final Object? rewardMinutes = json['rewardMinutes'];
     final Object? description = json['description'];
@@ -257,18 +200,17 @@ class ApiMissionRepository implements MissionRepository {
       MissionCategory.values,
       category,
     );
-    if (decodedCategory == null) {
-      return null;
-    }
+    final MissionCategory safeCategory =
+        decodedCategory ?? MissionCategory.routine;
     final MissionResetPeriod decodedResetPeriod = resetPeriod is String
         ? _decodeEnum(MissionResetPeriod.values, resetPeriod) ??
               MissionResetPeriod.daily
         : MissionResetPeriod.daily;
     final MissionConfirmationMethod decodedConfirmationMethod =
-        confirmationMethod is String
-        ? _decodeEnum(MissionConfirmationMethod.values, confirmationMethod) ??
-              MissionConfirmationMethod.parent
-        : MissionConfirmationMethod.parent;
+        _decodeConfirmationMethod(
+          confirmationMethod: confirmationMethod,
+          verificationType: verificationType,
+        );
     final int decodedReward = reward is int
         ? reward
         : (rewardMinutes is int ? rewardMinutes : 0);
@@ -278,8 +220,8 @@ class ApiMissionRepository implements MissionRepository {
         ? _decodeEnum(TodayMissionStatus.values, status) ??
               TodayMissionStatus.pending
         : TodayMissionStatus.pending;
-    final MissionVerificationStatus decodedVerification = verificationStatus
-            is String
+    final MissionVerificationStatus decodedVerification =
+        verificationStatus is String
         ? _decodeEnum(MissionVerificationStatus.values, verificationStatus) ??
               missionVerificationStatusFromLegacyStatus(
                 status: decodedStatus,
@@ -291,8 +233,9 @@ class ApiMissionRepository implements MissionRepository {
           );
 
     return TodayMission(
+      missionId: missionId?.toString(),
       title: title,
-      category: decodedCategory,
+      category: safeCategory,
       resetPeriod: decodedResetPeriod,
       confirmationMethod: decodedConfirmationMethod,
       rewardMinutes: decodedReward,
@@ -301,6 +244,110 @@ class ApiMissionRepository implements MissionRepository {
       verificationStatus: decodedVerification,
       submittedAtText: submittedAtText is String ? submittedAtText : null,
     );
+  }
+
+  Future<TodayMission> _hydrateMission(TodayMission mission) async {
+    final String? missionId = mission.missionId;
+    if (missionId == null || missionId.isEmpty) {
+      return mission;
+    }
+
+    TodayMission hydrated = mission;
+    try {
+      final Response<dynamic> detailResp = await _dio.get<dynamic>(
+        '/api/v1/missions/$missionId',
+      );
+      final Map<String, dynamic>? detail = _jsonMap(detailResp.data);
+      if (detail != null) {
+        hydrated = _missionFromJson(detail) ?? hydrated;
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode != 404) {
+        // Keep the summary item renderable even if detail enrichment fails.
+      }
+    }
+
+    try {
+      final Response<dynamic> perfResp = await _dio.get<dynamic>(
+        '/api/v1/missions/$missionId/performance',
+      );
+      final Map<String, dynamic>? performance = _jsonMap(perfResp.data);
+      if (performance != null) {
+        hydrated = _applyPerformance(hydrated, performance);
+      }
+    } on DioException catch (e) {
+      final String? code = errorCodeOf(e);
+      if (e.response?.statusCode != 404 && code != 'MISSION_NOT_FOUND') {
+        // The list itself is still useful without a submitted performance.
+      }
+    }
+
+    return hydrated;
+  }
+
+  TodayMission _applyPerformance(
+    TodayMission mission,
+    Map<String, dynamic> performance,
+  ) {
+    final MissionVerificationStatus verificationStatus =
+        _verificationFromPerformanceStatus(
+          performance['status']?.toString(),
+          mission.verificationType,
+        );
+    return mission.copyWith(
+      performanceId: performance['performanceId']?.toString(),
+      verificationStatus: verificationStatus,
+      proofImageUrl: performance['proofImageUrl']?.toString(),
+    );
+  }
+
+  MissionVerificationStatus _verificationFromPerformanceStatus(
+    String? status,
+    MissionVerificationType verificationType,
+  ) {
+    switch (status?.toUpperCase()) {
+      case 'ACCEPTED':
+        return MissionVerificationStatus.approved;
+      case 'REJECTED':
+        return MissionVerificationStatus.rejected;
+      case 'PENDING':
+        return switch (verificationType) {
+          MissionVerificationType.ai =>
+            MissionVerificationStatus.waitingAiVerification,
+          MissionVerificationType.parent =>
+            MissionVerificationStatus.waitingParentApproval,
+          MissionVerificationType.self => MissionVerificationStatus.approved,
+        };
+    }
+    return MissionVerificationStatus.idle;
+  }
+
+  MissionConfirmationMethod _decodeConfirmationMethod({
+    required Object? confirmationMethod,
+    required Object? verificationType,
+  }) {
+    if (confirmationMethod is String) {
+      return _decodeEnum(
+            MissionConfirmationMethod.values,
+            confirmationMethod,
+          ) ??
+          MissionConfirmationMethod.parent;
+    }
+    if (verificationType is String) {
+      return _decodeEnum(MissionConfirmationMethod.values, verificationType) ??
+          MissionConfirmationMethod.parent;
+    }
+    return MissionConfirmationMethod.parent;
+  }
+
+  Map<String, dynamic>? _jsonMap(dynamic data) {
+    if (data is Map && data['data'] is Map) {
+      return Map<String, dynamic>.from(data['data'] as Map);
+    }
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    return null;
   }
 
   T? _decodeEnum<T extends Enum>(List<T> values, String name) {

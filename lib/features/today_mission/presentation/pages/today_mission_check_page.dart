@@ -735,7 +735,7 @@ class _MissionReviewContent extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 36),
-                const _ProofPhotoGrid(),
+                _ProofPhotoGrid(proofImageUrl: mission.proofImageUrl),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -785,19 +785,46 @@ class _MissionReviewContent extends StatelessWidget {
 }
 
 class _ProofPhotoGrid extends StatelessWidget {
-  const _ProofPhotoGrid();
+  const _ProofPhotoGrid({this.proofImageUrl});
+
+  final String? proofImageUrl;
 
   @override
   Widget build(BuildContext context) {
+    final String? imageUrl = proofImageUrl;
     return Wrap(
       spacing: 10.789,
       runSpacing: 10.789,
-      children: const [
-        _ProofPhotoPlaceholder(),
-        _ProofPhotoPlaceholder(),
-        _ProofPhotoPlaceholder(),
-        _ProofPhotoPlaceholder(),
+      children: [
+        if (imageUrl != null && imageUrl.isNotEmpty)
+          _ProofPhotoImage(imageUrl: imageUrl)
+        else
+          const _ProofPhotoPlaceholder(),
+        const _ProofPhotoPlaceholder(),
+        const _ProofPhotoPlaceholder(),
+        const _ProofPhotoPlaceholder(),
       ],
+    );
+  }
+}
+
+class _ProofPhotoImage extends StatelessWidget {
+  const _ProofPhotoImage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(7.193),
+      child: Image.network(
+        imageUrl,
+        width: 141.155,
+        height: 140.256,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            const _ProofPhotoPlaceholder(),
+      ),
     );
   }
 }

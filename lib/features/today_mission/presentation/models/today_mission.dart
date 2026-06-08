@@ -18,6 +18,8 @@ enum MissionVerificationStatus {
 
 class TodayMission {
   const TodayMission({
+    this.missionId,
+    this.performanceId,
     required this.title,
     required this.category,
     required this.resetPeriod,
@@ -27,8 +29,11 @@ class TodayMission {
     this.status = TodayMissionStatus.pending,
     this.verificationStatus = MissionVerificationStatus.idle,
     this.submittedAtText,
+    this.proofImageUrl,
   });
 
+  final String? missionId;
+  final String? performanceId;
   final String title;
   final MissionCategory category;
   final MissionResetPeriod resetPeriod;
@@ -38,6 +43,7 @@ class TodayMission {
   final TodayMissionStatus status;
   final MissionVerificationStatus verificationStatus;
   final String? submittedAtText;
+  final String? proofImageUrl;
 
   MissionVerificationType get verificationType {
     return confirmationMethod.verificationType;
@@ -59,6 +65,8 @@ class TodayMission {
   }
 
   TodayMission copyWith({
+    String? missionId,
+    String? performanceId,
     String? title,
     MissionCategory? category,
     MissionResetPeriod? resetPeriod,
@@ -68,6 +76,7 @@ class TodayMission {
     TodayMissionStatus? status,
     MissionVerificationStatus? verificationStatus,
     String? submittedAtText,
+    String? proofImageUrl,
   }) {
     final MissionConfirmationMethod nextConfirmationMethod =
         confirmationMethod ?? this.confirmationMethod;
@@ -81,6 +90,8 @@ class TodayMission {
               ));
 
     return TodayMission(
+      missionId: missionId ?? this.missionId,
+      performanceId: performanceId ?? this.performanceId,
       title: title ?? this.title,
       category: category ?? this.category,
       resetPeriod: resetPeriod ?? this.resetPeriod,
@@ -90,6 +101,7 @@ class TodayMission {
       status: status ?? nextVerificationStatus.legacyStatus,
       verificationStatus: nextVerificationStatus,
       submittedAtText: submittedAtText ?? this.submittedAtText,
+      proofImageUrl: proofImageUrl ?? this.proofImageUrl,
     );
   }
 
