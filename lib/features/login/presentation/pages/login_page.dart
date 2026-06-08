@@ -13,17 +13,15 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../data/models/auth/auth_token.dart';
 import '../../../../data/repositories/auth_repository.dart';
 
-enum _LoginErrorType { missingName, missingEmail, wrongPassword }
+enum _LoginErrorType { missingEmail, wrongPassword }
 
 class LoginPage extends StatefulWidget {
   const LoginPage({
     super.key,
-    this.initialName,
     this.initialEmail,
     this.showExistingAccountNotice = false,
   });
 
-  final String? initialName;
   final String? initialEmail;
   final bool showExistingAccountNotice;
 
@@ -32,7 +30,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthRepository _authRepository = createAuthRepository();
@@ -40,16 +37,13 @@ class _LoginPageState extends State<LoginPage> {
   _LoginErrorType? _activeError;
   bool _submitting = false;
 
-  String get _name => _nameController.text;
   String get _email => _emailController.text;
   String get _password => _passwordController.text;
-  bool get _canSubmit =>
-      _name.isNotEmpty && _email.isNotEmpty && _password.isNotEmpty;
+  bool get _canSubmit => _email.isNotEmpty && _password.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    _nameController.text = widget.initialName ?? '';
     _emailController.text = widget.initialEmail ?? '';
     if (widget.showExistingAccountNotice) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,8 +59,6 @@ class _LoginPageState extends State<LoginPage> {
 
   String? get _errorMessage {
     switch (_activeError) {
-      case _LoginErrorType.missingName:
-        return '해당 이름으로 가입된 정보가 없습니다.';
       case _LoginErrorType.missingEmail:
         return '해당 이메일로 가입된 정보가 없습니다.';
       case _LoginErrorType.wrongPassword:
@@ -78,16 +70,9 @@ class _LoginPageState extends State<LoginPage> {
 
   void _reconcileActiveError() {
     switch (_activeError) {
-      case _LoginErrorType.missingName:
-        if (_name.trim().isNotEmpty) {
-          _activeError = null;
-        }
-        break;
       case _LoginErrorType.missingEmail:
         if (_email.trim().isNotEmpty) {
-          _activeError = _name.trim().isNotEmpty
-              ? null
-              : _LoginErrorType.missingName;
+          _activeError = null;
         }
         break;
       case _LoginErrorType.wrongPassword:
@@ -98,12 +83,6 @@ class _LoginPageState extends State<LoginPage> {
       case null:
         break;
     }
-  }
-
-  void _onNameChanged(String value) {
-    setState(() {
-      _reconcileActiveError();
-    });
   }
 
   void _onEmailChanged(String value) {
@@ -125,13 +104,6 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    if (_name.trim().isEmpty) {
-      setState(() {
-        _activeError = _LoginErrorType.missingName;
-      });
-      return;
-    }
-
     setState(() {
       _submitting = true;
     });
@@ -145,11 +117,6 @@ class _LoginPageState extends State<LoginPage> {
 
     switch (result) {
       case Success<AuthToken>(:final AuthToken data):
-        // Backend authenticates on email + password only. The "name" input
-        // is a UX helper (the user types their own name to feel anchored)
-        // — comparing it against the server-returned name fails as soon as
-        // the response omits or normalises the field, so we don't gate the
-        // happy path on it. Pre-submit empty-name check above still applies.
         await AuthSession.login(parentId: data.parentId, email: data.email);
         final String? refresh = data.refreshToken;
         await AuthSession.saveTokens(
@@ -192,7 +159,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -221,23 +187,6 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             _LoginTopBar(onBack: () => context.go('/')),
                             const SizedBox(height: 25),
-                            _LoginField(
-                              label: '이름',
-                              controller: _nameController,
-                              borderColor:
-                                  _activeError == _LoginErrorType.missingName
-                                  ? AppColors.destructive
-                                  : AppColors.gray200,
-                              onChanged: _onNameChanged,
-                              inputFormatters: <TextInputFormatter>[
-                                FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                                LengthLimitingTextInputFormatter(20),
-                              ],
-                              keyboardType: TextInputType.text,
-                              labelBottomSpacing: 10,
-                              labelFontSize: 14.385,
-                            ),
-                            const SizedBox(height: 35),
                             _LoginField(
                               label: '이메일',
                               controller: _emailController,
@@ -361,7 +310,6 @@ class _LoginField extends StatelessWidget {
     required this.inputFormatters,
     required this.keyboardType,
     required this.labelBottomSpacing,
-    this.labelFontSize = 16,
   });
 
   final String label;
@@ -371,7 +319,6 @@ class _LoginField extends StatelessWidget {
   final List<TextInputFormatter> inputFormatters;
   final TextInputType keyboardType;
   final double labelBottomSpacing;
-  final double labelFontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +328,7 @@ class _LoginField extends StatelessWidget {
         Text(
           label,
           style: AppTypography.bodyMedium.copyWith(
-            fontSize: labelFontSize,
+            fontSize: 16,
             height: 1.5,
             letterSpacing: 0.0912,
             color: AppColors.gray600,

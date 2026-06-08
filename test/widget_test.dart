@@ -414,7 +414,7 @@ void main() {
     expect(find.text('부모 회원가입'), findsOneWidget);
   });
 
-  testWidgets('cached parent login still starts at entry screen', (
+  testWidgets('cached parent login opens parent home', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
@@ -425,9 +425,8 @@ void main() {
     await tester.pumpWidget(const BridgePApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Bridge'), findsOneWidget);
-    expect(find.text('로그인'), findsOneWidget);
-    expect(find.text('부모 회원가입'), findsOneWidget);
+    expect(find.byType(ParentHomePage), findsOneWidget);
+    expect(find.text('부모 회원가입'), findsNothing);
   });
 
   testWidgets('my page logout clears parent session', (

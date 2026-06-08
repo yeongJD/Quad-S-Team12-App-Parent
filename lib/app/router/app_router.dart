@@ -35,7 +35,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => LoginPage(
-        initialName: state.uri.queryParameters['name'],
         initialEmail: state.uri.queryParameters['email'],
         showExistingAccountNotice:
             state.uri.queryParameters['notice'] == 'existing-account',

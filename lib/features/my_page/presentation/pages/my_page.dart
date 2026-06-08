@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
 import '../../../../core/services/device_registration.dart';
@@ -35,7 +36,9 @@ class _MyPageState extends State<MyPage> {
 
   Future<void> _loadUsername() async {
     final String? parentId = await AuthSession.getCurrentParentId();
+    final String? sessionEmail = await AuthSession.getCurrentEmail();
     ParentProfile? profile;
+    ParentAccount? localAccount;
     if (parentId != null && parentId.isNotEmpty) {
       final Result<ParentProfile> result = await _profileRepository.getProfile(
         parentId,
@@ -44,13 +47,21 @@ class _MyPageState extends State<MyPage> {
         Success<ParentProfile>(:final data) => data,
         Failure<ParentProfile>() => null,
       };
+      if (profile == null) {
+        localAccount = await AccountStore.getAccountById(parentId);
+      }
+    }
+    if (localAccount == null &&
+        sessionEmail != null &&
+        sessionEmail.isNotEmpty) {
+      localAccount = await AccountStore.getAccountByEmail(sessionEmail);
     }
     if (!mounted) {
       return;
     }
     setState(() {
-      _name = profile?.name ?? AuthSession.fallbackName;
-      _email = profile?.email ?? '';
+      _name = profile?.name ?? localAccount?.name ?? AuthSession.fallbackName;
+      _email = profile?.email ?? localAccount?.email ?? sessionEmail ?? '';
     });
   }
 

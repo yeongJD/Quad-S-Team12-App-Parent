@@ -20,7 +20,7 @@ class PasswordChangePage extends StatefulWidget {
 
 class _PasswordChangePageState extends State<PasswordChangePage> {
   static final RegExp _passwordPattern = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{8,15}$',
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{12,15}$',
   );
 
   final TextEditingController _currentPasswordController =
@@ -79,7 +79,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       return '새 비밀번호는 기존 비밀번호와 달라야 합니다.';
     }
     if (_showNewPasswordRuleError) {
-      return '영문 대/소문자, 숫자, 특수문자 혼합 8자 / 빈칸, 공백 불가';
+      return '영문 대/소문자, 숫자, 특수문자 혼합 12~15자 / 빈칸, 공백 불가';
     }
     return null;
   }

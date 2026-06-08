@@ -32,7 +32,7 @@ class SignupPage extends StatefulWidget {
 class _SignupPageState extends State<SignupPage> {
   static final RegExp _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
   static final RegExp _passwordPattern = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{8,15}$',
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{12,15}$',
   );
 
   final TextEditingController _nameController = TextEditingController();
@@ -100,7 +100,7 @@ class _SignupPageState extends State<SignupPage> {
     if (_password.isEmpty || _isPasswordValid) {
       return null;
     }
-    return '영문 대/소문자, 숫자, 특수문자 혼합 8자 / 빈칸, 공백 불가';
+    return '영문 대/소문자, 숫자, 특수문자 혼합 12~15자 / 빈칸, 공백 불가';
   }
 
   String? get _passwordConfirmInlineMessage {
@@ -255,7 +255,6 @@ class _SignupPageState extends State<SignupPage> {
             Uri(
               path: '/login',
               queryParameters: <String, String>{
-                'name': _name.trim(),
                 'email': _email.trim(),
               },
             ).toString(),
@@ -285,7 +284,6 @@ class _SignupPageState extends State<SignupPage> {
             Uri(
               path: '/login',
               queryParameters: <String, String>{
-                'name': _name.trim(),
                 'email': _email.trim(),
                 'notice': 'existing-account',
               },
