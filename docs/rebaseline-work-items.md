@@ -228,7 +228,8 @@
 작업:
 - 시간 설정 진입 전 `GET /api/v1/children/{childId}/policies` 또는 동일 policy 조회를 수행한다.
 - 정책이 없으면 기존 알림/안내 UI를 재활용해 시간 설정을 막는다.
-- 정책이 있으면 `baseTime` 또는 `totalAvailableTime`을 월 총량으로 사용한다.
+- 정책이 있으면 원칙적으로 `baseTime`을 월 총량으로 사용한다.
+- `baseTime`이 없는 구버전 응답에서만 `totalAvailableTime - accumulatedRewardTime`으로 fallback한다. reward pool을 자녀 weekly budget에 섞지 않는다.
 - policy fallback을 "이미 자녀 계획이 있음"으로 오해하지 않게 한다.
 
 검수:

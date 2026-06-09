@@ -197,7 +197,8 @@ Response:
 
 Rules:
 - 정책이 없으면 Child 시간 설정 진입을 차단한다.
-- Child 시간 설정의 월 총량 기준은 `baseTime` 우선, fallback은 `totalAvailableTime`이다.
+- Child 시간 설정의 월 총량 기준은 `baseTime`이다.
+- 구버전 응답처럼 `baseTime`이 없을 때만 `totalAvailableTime - accumulatedRewardTime`을 fallback으로 쓴다. reward pool을 자녀 weekly budget에 섞지 않는다.
 - 보너스 시간은 오늘 보너스가 아니라 `accumulatedRewardTime` monthly reward pool이다.
 
 ### Child Weekly Budgets
@@ -574,6 +575,34 @@ Payload rules:
 - `targetRoute` and `deeplink` should carry the same app route.
 - Parent app accepts top-level and nested `childId`, `childrenId`, `childCode`, `missionId`, `performanceId`, `targetRoute`, `deeplink`.
 - Child app routes by top-level or nested `deeplink`/`targetRoute`.
+
+### FCM Data Payload
+
+Backend push data carries the same routing aliases as the inbox row. All FCM
+data values are strings.
+
+```json
+{
+  "title": "미션 확인 요청",
+  "body": "자녀가 미션 확인을 요청했습니다.",
+  "type": "MISSION_REQUESTED",
+  "notificationType": "MISSION_REQUESTED",
+  "targetId": "300",
+  "notificationId": "300",
+  "childId": "22",
+  "childrenId": "22",
+  "missionId": "100",
+  "performanceId": "900",
+  "deeplink": "/today-mission?childrenId=22",
+  "targetRoute": "/today-mission?childrenId=22"
+}
+```
+
+Rules:
+- `notificationId` is the saved inbox row id and matches `targetId`.
+- `type` and `notificationType` carry the same backend notification enum.
+- `targetRoute` and `deeplink` carry the same app route.
+- Entity ids may be omitted when the notification type does not need them.
 
 ### Read/Delete
 
