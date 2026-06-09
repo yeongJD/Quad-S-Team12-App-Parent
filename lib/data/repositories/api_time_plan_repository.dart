@@ -89,8 +89,8 @@ class ApiTimePlanRepository implements TimePlanRepository {
         '/api/v1/parents/children/$childrenId/time-summary',
         queryParameters: <String, dynamic>{'date': _yyyyMmDd(DateTime.now())},
       );
-      final dynamic data = response.data;
-      if (data is! Map) {
+      final Map<String, dynamic>? data = _jsonMap(response.data);
+      if (data == null) {
         return Result<int?>.success(null);
       }
       final int basePolicyMinutes = _intValue(data['basePolicyMinutes']);
@@ -142,13 +142,11 @@ class ApiTimePlanRepository implements TimePlanRepository {
           if (date != null) 'date': _yyyyMmDd(date),
         },
       );
-      final dynamic data = response.data;
-      if (data is! Map) {
+      final Map<String, dynamic>? data = _jsonMap(response.data);
+      if (data == null) {
         return Result<ChildTimeSummary>.success(_emptySummary());
       }
-      return Result<ChildTimeSummary>.success(
-        _timeSummaryFromJson(Map<String, dynamic>.from(data)),
-      );
+      return Result<ChildTimeSummary>.success(_timeSummaryFromJson(data));
     } on DioException catch (e) {
       return failureFromDioException<ChildTimeSummary>(e);
     }
@@ -234,5 +232,15 @@ class ApiTimePlanRepository implements TimePlanRepository {
       return value.toInt();
     }
     return fallback;
+  }
+
+  Map<String, dynamic>? _jsonMap(dynamic data) {
+    if (data is Map && data['data'] is Map) {
+      return Map<String, dynamic>.from(data['data'] as Map);
+    }
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    return null;
   }
 }
