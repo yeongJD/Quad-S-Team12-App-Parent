@@ -118,13 +118,15 @@ PASS 증거:
 목표:
 - Backend notification row와 FCM payload가 같은 routing field를 내려주고, 앱 클릭이 대상 화면으로 이동한다.
 
-필수 payload field:
+공통 필수 payload field:
 - `notificationId`
 - `notificationType`
 - `childId` 또는 `childrenId`
-- `missionId`
-- `performanceId`
 - `targetRoute` 또는 `deeplink`
+
+미션 알림 조건부 필수 payload field:
+- `missionId`: 미션 생성/승인/반려/제출 알림에서 대상 미션 식별용.
+- `performanceId`: 부모 심사가 필요한 미션 제출/심사 알림에서 approve/reject 대상 식별용.
 
 순서:
 1. Parent가 월 총 시간을 설정한다.

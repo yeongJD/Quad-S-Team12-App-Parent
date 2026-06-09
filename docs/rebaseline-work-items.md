@@ -127,8 +127,11 @@
 - "로컬 정적 검증 PASS"와 "실제 계정 E2E PASS"를 분리한다. 현재 문서의 완료 항목은 대부분 전자이며, 최종 AWS 배포 전에는 후자를 다시 찍어야 한다.
 - 알림 클릭 라우팅은 앱 parser/route 보강을 완료했지만, 실제 push 수신 상태별 tap 이동은 E2E로 최종 확인해야 한다.
 - 미션 제출 알림처럼 `missionId`/`performanceId`가 있는 알림은 route 문자열만 신뢰하지 말고 실제 미션 심사 상세로 열리는지 확인한다.
+- `missionId`/`performanceId`는 모든 알림 공통 필수값이 아니라 미션 관련 알림의 조건부 필수값이다. 시간 설정 알림은 `childId`/`childrenId`와 route만으로 충분하다.
 - 미션 reward는 unit test로 중복 지급을 방어했더라도 실제 self/parent/AI 확인 방식별 E2E에서 reward pool 반영을 다시 확인한다.
 - whitelist는 Parent local only가 확정 범위다. Child blocker의 package-level 허용 목록과 연결하는 작업은 이번 문서 기준 비목표로 유지한다.
+- 4주 고정은 데모 효율용 제약이다. 5주차 날짜를 4주차 template으로 캡핑하면 "오늘 표시"는 단순해지지만, 월 전체 daily allocation 합을 엄밀한 회계값으로 삼기에는 한계가 있다.
+- Child local screen-time ledger는 앱 데이터 삭제, 재설치, 기기 변경까지 복구하는 source가 아니다. 이번 범위의 PASS 기준은 같은 기기/같은 앱 데이터에서 재시작과 백그라운드 상태를 견디는 것이다.
 
 ## 3. Parent 앱 작업
 
@@ -595,6 +598,7 @@ backend sync:
 
 1. 5주차가 있는 달 처리 방식
    - 결정: 이번 리베이스에서는 4주 고정이며, backend는 5주차 날짜를 4주차로 캡핑해 조회한다.
+   - 현재 검수 목표는 5주차 날짜에서도 오늘 시간이 비거나 터지지 않는 것이다. 월 전체 daily allocation 합이 부모 월 총량과 완전히 보존되는지는 이번 PASS 기준이 아니다.
    - 실제 달력 주차 수 또는 남은 일수 자동 계산은 후속 확장 후보.
 
 2. 반려된 미션 재수행 방식
@@ -610,6 +614,7 @@ backend sync:
 4. 알림 범위
    - 현재 구현 방향: backend notification row 생성 + FCM best-effort 발송.
    - payload field는 `childId`, `missionId`, `performanceId`, `targetRoute`/`deeplink` 기준으로 맞춘다.
+   - `missionId`/`performanceId`는 미션 알림에서만 필수로 본다. 시간 설정/시간 계획 제출 알림은 자녀 식별자와 route가 맞으면 PASS 후보가 될 수 있다.
    - 남은 범위: foreground/background/terminated 수신과 클릭 라우팅 E2E 검수.
 
 5. `docs/api-contract.md` 정리 방식
