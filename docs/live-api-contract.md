@@ -536,6 +536,7 @@ Rules:
 - `AI` verification result creates a Child notification:
   - accepted -> `MISSION_APPROVED`, `/child-home/mission/{missionId}`
   - rejected -> `MISSION_REJECTED`, `/child-home/mission/{missionId}`
+- AI service/network failure is treated as `REJECTED`, not `PENDING`, so the Child can retry instead of getting stuck in a state Parent cannot review.
 - Invalid state returns `INVALID_MISSION_STATE`.
 - 중복 approve/reward 방지는 backend unit test로 1차 방어했고, 실제 approve/reject 반복 E2E는 추가 검수 대상이다.
 

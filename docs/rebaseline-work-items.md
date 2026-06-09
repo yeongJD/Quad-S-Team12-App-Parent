@@ -100,6 +100,7 @@
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
 - Backend: 이미 승인된 미션의 재제출/다른 pending performance 승인과 이미 심사 대기 중인 미션의 중복 제출을 차단해 reward 중복 지급 여지를 줄임.
 - Backend: 오늘 시간 연장은 `TimePolicy.baseTime`이 아니라 `accumulatedRewardTime` reward pool만 차감하도록 보완.
+- Backend: AI 확인 중 AI 서비스 오류가 나면 처리 불가능한 `PENDING`으로 두지 않고 `REJECTED`와 Child 알림으로 정리해 재수행 가능하게 보완.
 
 검증 완료:
 - Parent: `flutter analyze`, `flutter test`, `flutter build apk --debug`.
@@ -518,6 +519,7 @@ backend sync:
 - 자녀 본인 확인: 제출 즉시 지급.
 - 부모 확인: 부모 승인 시 지급.
 - AI 확인: AI 승인 시 지급.
+- AI 확인 중 AI 서비스 오류가 나면 reward는 지급하지 않고 `REJECTED`로 처리해 자녀가 다시 수행할 수 있게 한다.
 
 검수:
 - self 미션 제출 즉시 reward 증가.
