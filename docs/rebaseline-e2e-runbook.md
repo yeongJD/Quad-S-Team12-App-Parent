@@ -58,6 +58,7 @@ flutter run --dart-define=BRIDGE_USE_MOCKS=false --dart-define=BRIDGE_API_BASE_U
 
 주의:
 - 로컬 기본 `java`가 JDK 17이면 Gradle Java 21 toolchain에서 실패할 수 있다. 위처럼 Java 21 `JAVA_HOME`을 명시한다.
+- `docker compose up -d postgres` 전에 Docker Desktop 또는 Docker daemon이 실행 중이어야 한다.
 - local backend 기본 profile은 `local`이고 DB는 `jdbc:postgresql://localhost:5432/postgres` / user `postgres`를 사용한다.
 - 미션 사진 업로드, 프로필 이미지, AI 확인까지 실제로 검수하려면 dummy 값이 아니라 유효한 S3/Gemini 설정이 필요하다.
 - Parent/Child 앱은 development 기본값이 mock mode다. 실제 API 검수는 반드시 `BRIDGE_USE_MOCKS=false`를 붙여 실행한다.
