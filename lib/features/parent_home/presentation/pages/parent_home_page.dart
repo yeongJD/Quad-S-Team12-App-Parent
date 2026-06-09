@@ -70,6 +70,11 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return _connectedChildren[_selectedChildIndex];
   }
 
+  bool get _usesPreviewData =>
+      widget.showFilledPreview ||
+      widget.showTimeEmptyPreview ||
+      widget.showLinkedChildPreview;
+
   @override
   void initState() {
     super.initState();
@@ -268,7 +273,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
   }
 
   String get _missionConfirmationLocation {
-    if (_data.hasConfiguredMissions) {
+    if (_data.hasConfiguredMissions || !_usesPreviewData) {
       return _withChildCode('/today-mission');
     }
     return _withChildCode('/today-mission', demo: 'empty');

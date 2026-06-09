@@ -816,6 +816,60 @@ void main() {
     expect(find.text('00:30'), findsNothing);
   });
 
+  testWidgets('parent home opens real mission list for empty stored missions', (
+    WidgetTester tester,
+  ) async {
+    const String parentId = 'mission-empty-parent@example.com';
+    const String childrenId = 'GDG12-1';
+    await AccountStore.saveAccount(
+      const ParentAccount(
+        parentId: parentId,
+        email: parentId,
+        name: 'mission-empty-parent',
+        passwordHash: 'Password1234!',
+      ),
+    );
+    await AuthSession.login(parentId: parentId, email: parentId);
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: '미션 대기 자녀',
+        childCode: childrenId,
+      ),
+    );
+
+    Uri? openedMissionUri;
+    final GoRouter router = GoRouter(
+      initialLocation: '/parent-home',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/parent-home',
+          builder: (context, state) => const ParentHomePage(),
+        ),
+        GoRoute(
+          path: '/today-mission',
+          builder: (context, state) {
+            openedMissionUri = state.uri;
+            return const Scaffold(body: Text('mission-list'));
+          },
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('오늘의 미션'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('mission-list'), findsOneWidget);
+    expect(openedMissionUri?.path, '/today-mission');
+    expect(openedMissionUri?.queryParameters['parentId'], parentId);
+    expect(openedMissionUri?.queryParameters['childrenId'], childrenId);
+    expect(openedMissionUri?.queryParameters.containsKey('demo'), isFalse);
+  });
+
   testWidgets(
     'parent home shows waiting state after only monthly time is set',
     (WidgetTester tester) async {
