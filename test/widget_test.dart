@@ -19,6 +19,7 @@ import 'package:bridge_p/features/today_mission/presentation/models/today_missio
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_check_page.dart';
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_list_page.dart';
 import 'package:bridge_p/features/today_time/presentation/data/daily_time_rule_store.dart';
+import 'package:bridge_p/features/today_time/presentation/data/child_weekly_time_plan_store.dart';
 import 'package:bridge_p/features/today_time/presentation/data/monthly_total_time_store.dart';
 import 'package:bridge_p/features/today_time/presentation/data/whitelist_app_store.dart';
 import 'package:bridge_p/features/today_time/presentation/models/daily_time_rule.dart';
@@ -849,6 +850,55 @@ void main() {
       expect(find.text('자녀가 아직 시간 설정 이전입니다.'), findsOneWidget);
       expect(find.text('01:30'), findsNothing);
       expect(find.text('00:30'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'parent home shows today template missing without falling back to monthly time',
+    (WidgetTester tester) async {
+      const String parentId = 'template-missing-parent@example.com';
+      const String childrenId = 'GDG12-1';
+      final int todayIndex = DateTime.now().weekday - 1;
+      final int nonTodayIndex = (todayIndex + 1) % weekdayLabels.length;
+      await AccountStore.saveAccount(
+        const ParentAccount(
+          parentId: parentId,
+          email: parentId,
+          name: 'template-parent',
+          passwordHash: 'Password1234!',
+        ),
+      );
+      await AuthSession.login(parentId: parentId, email: parentId);
+      await ChildConnectionStore.addChild(
+        parentId: parentId,
+        child: ChildConnectionStore.childFromCode(
+          name: '템플릿 자녀',
+          childCode: childrenId,
+        ),
+      );
+      await MonthlyTotalTimeStore.save(
+        parentId: parentId,
+        childrenId: childrenId,
+        totalMinutes: 600,
+      );
+      await ChildWeeklyTimePlanStore.save(
+        parentId: parentId,
+        childrenId: childrenId,
+        rules: <DailyTimeRule>[
+          DailyTimeRule(
+            days: <int>{nonTodayIndex},
+            time: const TimeSelection(hour: 1, minute: 30),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: ParentHomePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('템플릿 자녀'), findsOneWidget);
+      expect(find.text('오늘 배정 시간이 없습니다.'), findsOneWidget);
+      expect(find.text('01:30'), findsNothing);
+      expect(find.text('10:00'), findsNothing);
     },
   );
 
