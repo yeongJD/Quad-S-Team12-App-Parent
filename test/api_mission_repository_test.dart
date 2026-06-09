@@ -101,6 +101,124 @@ void main() {
         TodayMissionStatus.completed,
       );
     });
+
+    test(
+      'approveMissionPerformance patches concrete performance endpoint',
+      () async {
+        final List<String> calls = <String>[];
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  calls.add('${options.method} ${options.path}');
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{'isSuccess': true, 'data': 'ok'},
+                    ),
+                  );
+                },
+          ),
+        );
+        final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+        final Result<void> result = await repository.approveMissionPerformance(
+          parentId: 'parent-1',
+          childrenId: '22',
+          performanceId: '201',
+        );
+
+        expect(result, isA<Success<void>>());
+        expect(calls, <String>[
+          'PATCH /api/v1/missions/performances/201/approve',
+        ]);
+      },
+    );
+
+    test('approveMissionAt loads latest performance before patching', () async {
+      final List<String> calls = <String>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+            calls.add('${options.method} ${options.path}');
+            if (options.path ==
+                '/api/v1/missions/performances/parent-mission-performance/approve') {
+              handler.resolve(
+                Response<dynamic>(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: <String, dynamic>{'isSuccess': true, 'data': 'ok'},
+                ),
+              );
+              return;
+            }
+            handler.resolve(
+              Response<dynamic>(
+                requestOptions: options,
+                statusCode: 200,
+                data: _missionResponseFor(options.path),
+              ),
+            );
+          },
+        ),
+      );
+      final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+      final Result<void> result = await repository.approveMissionAt(
+        parentId: 'parent-1',
+        childrenId: '22',
+        index: 0,
+      );
+
+      expect(result, isA<Success<void>>());
+      expect(
+        calls,
+        containsAllInOrder(<String>[
+          'GET /api/v1/missions',
+          'GET /api/v1/missions/parent-mission',
+          'GET /api/v1/missions/parent-mission/performance',
+          'PATCH /api/v1/missions/performances/parent-mission-performance/approve',
+        ]),
+      );
+    });
+
+    test('approveMissionPerformance maps invalid state errors', () async {
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    response: Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 400,
+                      data: <String, dynamic>{
+                        'isSuccess': false,
+                        'code': 'INVALID_MISSION_STATE',
+                        'message': '대기 상태인 부모 확인 미션만 승인/반려할 수 있습니다.',
+                      },
+                    ),
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+      final Result<void> result = await repository.approveMissionPerformance(
+        parentId: 'parent-1',
+        childrenId: '22',
+        performanceId: '201',
+      );
+
+      expect(result, isA<Failure<void>>());
+      expect((result as Failure<void>).message, '지금 상태에서는 이 작업을 할 수 없어요.');
+    });
   });
 }
 
