@@ -47,6 +47,47 @@ void main() {
       expect(calls, <String>['GET /api/v1/parents/children/2/time-summary']);
     });
 
+    test('loads null monthly total when parent policy is missing', () async {
+      final List<String> calls = <String>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                calls.add('${options.method} ${options.path}');
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: <String, dynamic>{
+                      'isSuccess': true,
+                      'data': <String, dynamic>{
+                        'parentPolicyExists': false,
+                        'childPlanExists': false,
+                        'todayScheduleStatus': 'noParentPolicy',
+                        'yearMonth': '2026-06',
+                        'basePolicyMinutes': 0,
+                        'todaySchedule': null,
+                        'rewardPoolMinutes': 0,
+                      },
+                    },
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiTimePlanRepository repository = ApiTimePlanRepository(dio: dio);
+
+      final Result<int?> result = await repository.loadMonthlyTotal(
+        parentId: '1',
+        childrenId: '2',
+      );
+
+      expect(result, isA<Success<int?>>());
+      expect((result as Success<int?>).data, isNull);
+      expect(calls, <String>['GET /api/v1/parents/children/2/time-summary']);
+    });
+
     test('saves monthly total as parent time policy baseTime', () async {
       final List<RequestOptions> calls = <RequestOptions>[];
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
