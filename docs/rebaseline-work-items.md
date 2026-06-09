@@ -250,6 +250,7 @@
 - Child UI에서는 week별 budget 합이 부모 `baseTime`과 같아야 다음 단계로 진행한다.
 - Backend validation은 최소한 week별 budget 합이 부모 `baseTime`을 넘지 않게 막아야 한다.
 - week template 합이 해당 week budget을 넘지 않게 한다.
+- Child 앱 저장 시 요일별 분배 패턴은 각 주차 budget에 맞춰 비율 조정해 `WeeklyTimeDistribution`으로 저장한다.
 - 제출 성공 후 Child 홈으로 돌아와 오늘의 시간이 보이게 한다.
 - 자녀 계획 제출 후 부모 승인 flow는 만들지 않는다.
 

@@ -246,6 +246,7 @@ Rules:
 - `dayOfWeek`: `MONDAY`, `TUESDAY`, `WEDNESDAY`, `THURSDAY`, `FRIDAY`, `SATURDAY`, `SUNDAY`.
 - 해당 week budget이 먼저 있어야 한다.
 - 같은 week의 template 합은 해당 week budget을 넘지 않아야 한다.
+- Child 앱은 하나의 요일별 분배 패턴을 기준으로 각 주차 budget에 맞춰 `baseMinutes`를 비율 조정해 저장한다.
 
 Response:
 
