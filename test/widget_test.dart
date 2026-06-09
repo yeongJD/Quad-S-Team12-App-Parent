@@ -15,6 +15,7 @@ import 'package:bridge_p/features/today_mission/presentation/data/today_mission_
 import 'package:bridge_p/features/today_mission/presentation/models/today_mission.dart';
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_check_page.dart';
 import 'package:bridge_p/features/today_time/presentation/data/daily_time_rule_store.dart';
+import 'package:bridge_p/features/today_time/presentation/data/whitelist_app_store.dart';
 import 'package:bridge_p/features/today_time/presentation/models/daily_time_rule.dart';
 import 'package:bridge_p/features/today_time/presentation/pages/today_time_setup_page.dart';
 import 'package:go_router/go_router.dart';
@@ -159,6 +160,33 @@ void main() {
       expect(firstMissions.single.title, '첫째 미션');
       expect(secondMissions.single.title, '둘째 미션');
       expect(otherAccountMissions, isEmpty);
+
+      await WhitelistAppStore.save(
+        parentId: firstParentId,
+        childrenId: 'GDG12-1',
+        appIds: <String>{'phone', 'messages'},
+      );
+      await WhitelistAppStore.save(
+        parentId: firstParentId,
+        childrenId: 'GDG12-2',
+        appIds: <String>{'calendar'},
+      );
+
+      final Set<String> firstWhitelist = await WhitelistAppStore.load(
+        parentId: firstParentId,
+        childrenId: 'GDG12-1',
+      );
+      final Set<String> secondWhitelist = await WhitelistAppStore.load(
+        parentId: firstParentId,
+        childrenId: 'GDG12-2',
+      );
+      final Set<String> otherAccountWhitelist = await WhitelistAppStore.load(
+        parentId: secondParentId,
+        childrenId: 'GDG12-1',
+      );
+      expect(firstWhitelist, <String>{'phone', 'messages'});
+      expect(secondWhitelist, <String>{'calendar'});
+      expect(otherAccountWhitelist, isEmpty);
     },
   );
 

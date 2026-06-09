@@ -147,11 +147,13 @@
 현재 방향:
 - 이번 단계에서는 리스트 설정 UI와 local 저장만 유지한다.
 - 실제 package-level blocker 연동은 앱 차단 검증 뒤로 미룬다.
+- 저장 범위는 Parent 앱 local only로 확정한다.
 
 작업:
 - Parent 앱 local whitelist store가 자녀별로 분리되는지 확인한다.
 - 시간 설정 플로우 중 whitelist 단계가 완료를 막지 않게 한다.
 - backend AppBlock API가 없거나 불완전해도 Parent 시간 설정이 완료되게 한다.
+- Child blocker와의 package-level 허용/차단 연동은 이번 범위에서 제외한다.
 
 검수:
 - 같은 부모의 자녀 A/B whitelist가 섞이지 않음.
@@ -548,9 +550,9 @@ backend sync:
    - Child 앱은 반려 상태에서 `다시 수행하기`로 수행 플로우에 재진입한다.
 
 3. 화이트리스트 저장 범위
-   - Parent 앱 local only
-   - backend 저장만 하고 Child blocker 미연동
-   - Child blocker까지 연동
+   - 결정: Parent 앱 local only.
+   - backend 저장만 하고 Child blocker 미연동하거나, Child blocker까지 연동하는 방식은 후속 확장 후보.
+   - 현재 검수 기준은 자녀 A/B local whitelist가 섞이지 않고, whitelist 저장이 월 총 시간 저장 성공을 되돌리지 않는 것이다.
 
 4. 알림 범위
    - 현재 구현 방향: backend notification row 생성 + FCM best-effort 발송.
@@ -569,7 +571,7 @@ backend sync:
 5. Child 실기기에서 Accessibility 권한을 켠 뒤 화면 켜짐 local ledger, 재시작 복원, 0 도달 blocker 호출을 확인한다.
 6. 미션 생성/제출/승인/반려/reward pool 반영을 실제 API 기준으로 검수한다.
 7. 알림 row/FCM payload와 클릭 라우팅을 검수한다.
-8. whitelist 저장 범위만 추가 결정한다.
+8. 실제 계정으로 whitelist 선택이 시간 설정 완료를 막지 않는지 검수한다.
 9. Parent `flutter analyze && flutter test`, Child `flutter analyze && flutter test`, Backend `JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH bash ./gradlew test`를 최종 실행한다.
 
 ## 9. 이번 문서 기준의 비목표
