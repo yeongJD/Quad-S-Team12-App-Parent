@@ -249,7 +249,7 @@
 | 자녀 연결 목록 | backend Parent children API | Parent local cache 가능 | 연결 후 `childrenId` 사용 |
 | 부모 월 총 시간 | backend TimePolicy | Parent setup draft | `yearMonth`, `baseTime` |
 | 부모 요일별 입력 | Parent 계산용 draft | Parent local draft | 월 총 시간 계산용. 최종 UI 노출 목표 아님 |
-| 화이트리스트 | 미정 | Parent local list | 앱 차단 연동 전까지 local 가능 |
+| 화이트리스트 | Parent local list | Parent local list | 이번 리베이스에서는 Child blocker package-level 연동 전까지 Parent 앱 local only |
 | 자녀 주차 예산 | backend weekly budgets | Child controller draft | 부모 월 총량 선행 필요 |
 | 자녀 요일별 시간 | backend weekly templates | Child controller draft | 오늘 시간 계산의 핵심 후보 |
 | 자녀 계획 존재 여부 | backend weekly budgets + weekly templates + 부모 월 총량 일치 여부 | 없음 | `TimePolicy`만 있으면 아직 자녀 계획 전 상태 |
@@ -411,7 +411,7 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
    - 목적: 휴대폰 화면 켜짐 시간 기준 차감, 앱 재시작 후 시간 차감 유지, 앱 차단 트리거 안정화
 
 3. Notification payload 확장
-   - 필요 필드: `childId`, `missionId`, `scheduleId`, `notificationType`, route target
+   - 필요 필드: `childId`, `missionId`, `performanceId`, `notificationType`, route target
    - 목적: 알림 클릭 라우팅 안정화
 
 4. App block policy write/read
@@ -465,12 +465,13 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
    - AI 확인: AI 승인 시 지급
 
 10. 반려된 미션은 같은 날 다시 수행할 수 있어야 하나요?
-    - 가능하면 기존 performance를 덮어쓰는지, 새 performance를 만드는지 backend 정책이 필요합니다.
+    - 결정: 다시 수행할 수 있게 한다.
+    - 구현 기준: 기존 performance를 덮어쓰지 않고 새 `MissionPerformance`를 생성한다.
+    - 마지막 performance가 `ACCEPTED`인 경우는 재수행/중복 제출을 막고, `REJECTED`는 새 제출을 허용한다.
 
 11. 화이트리스트는 이번 리베이스 단계에서 어디까지 저장하면 되나요?
-    - Parent 앱 local only
-    - backend 저장만 하고 Child blocker 미연동
-    - Child blocker까지 연동
+    - 결정: Parent 앱 local only.
+    - Child blocker package-level 허용/차단 연동은 이번 범위의 PASS 조건이 아니다.
 
 12. 알림은 이번 단계에서 push까지 필수인가요, 아니면 inbox row와 foreground refresh만 먼저 맞춰도 될까요?
     - 현재 구현 방향: backend notification row 생성 + FCM best-effort 발송을 유지한다.
@@ -483,7 +484,7 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
     - mission/category sample
 
 14. `docs/api-contract.md`는 historical note가 많이 남아 있는데, 이번 작업 후 live/current contract 기준으로 재작성할까요?
-    - 아니면 새 contract 문서를 별도로 만들고 기존 문서는 보존할까요?
+    - 결정: 기존 문서는 historical note로 보존하고, live/current contract는 `docs/live-api-contract.md`에서 관리한다.
 
 ## 6. Immediate Next Step
 
