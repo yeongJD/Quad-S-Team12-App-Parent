@@ -1,17 +1,17 @@
 import 'dart:async';
 
-import 'package:bridge_p/app/app.dart';
-import 'package:bridge_p/app/router/app_router.dart';
 import 'package:bridge_p/core/auth/auth_session.dart';
 import 'package:bridge_p/core/services/fcm_bootstrap.dart';
 import 'package:bridge_p/core/services/fcm_messaging_service.dart';
+import 'package:bridge_p/data/repositories/mock_device_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    appRouter.go('/');
     await FcmBootstrap.dispose();
   });
 
@@ -24,9 +24,16 @@ void main() {
   ) async {
     await AuthSession.login(parentId: 'parent-1', email: 'p@test.local');
     final _FakeFcmMessagingService messaging = _FakeFcmMessagingService();
+    addTearDown(messaging.dispose);
+    final GoRouter router = _testRouter();
+    addTearDown(router.dispose);
 
-    await tester.pumpWidget(const BridgePApp());
-    await FcmBootstrap.initialize(messagingService: messaging);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await FcmBootstrap.initialize(
+      messagingService: messaging,
+      deviceRepository: const MockDeviceRepository(),
+      router: router,
+    );
 
     messaging.openedMessages.add(
       const FcmMessage(
@@ -35,9 +42,9 @@ void main() {
         childrenId: '22',
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpFcmRoute(tester);
 
-    final Uri uri = appRouter.routeInformationProvider.value.uri;
+    final Uri uri = router.routeInformationProvider.value.uri;
     expect(uri.path, '/today-time');
     expect(uri.queryParameters['parentId'], 'parent-1');
     expect(uri.queryParameters['childrenId'], '22');
@@ -48,16 +55,23 @@ void main() {
   ) async {
     await AuthSession.login(parentId: 'parent-1', email: 'p@test.local');
     final _FakeFcmMessagingService messaging = _FakeFcmMessagingService();
+    addTearDown(messaging.dispose);
+    final GoRouter router = _testRouter();
+    addTearDown(router.dispose);
 
-    await tester.pumpWidget(const BridgePApp());
-    await FcmBootstrap.initialize(messagingService: messaging);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await FcmBootstrap.initialize(
+      messagingService: messaging,
+      deviceRepository: const MockDeviceRepository(),
+      router: router,
+    );
 
     messaging.openedMessages.add(
       const FcmMessage(type: 'GENERAL', deeplink: '/today-time?childrenId=22'),
     );
-    await tester.pumpAndSettle();
+    await _pumpFcmRoute(tester);
 
-    final Uri uri = appRouter.routeInformationProvider.value.uri;
+    final Uri uri = router.routeInformationProvider.value.uri;
     expect(uri.path, '/today-time');
     expect(uri.queryParameters['parentId'], 'parent-1');
     expect(uri.queryParameters['childrenId'], '22');
@@ -76,12 +90,19 @@ void main() {
         performanceId: '200',
       ),
     );
+    addTearDown(messaging.dispose);
+    final GoRouter router = _testRouter();
+    addTearDown(router.dispose);
 
-    await tester.pumpWidget(const BridgePApp());
-    await FcmBootstrap.initialize(messagingService: messaging);
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await FcmBootstrap.initialize(
+      messagingService: messaging,
+      deviceRepository: const MockDeviceRepository(),
+      router: router,
+    );
+    await _pumpFcmRoute(tester);
 
-    final Uri uri = appRouter.routeInformationProvider.value.uri;
+    final Uri uri = router.routeInformationProvider.value.uri;
     expect(uri.path, '/today-mission');
     expect(uri.queryParameters['parentId'], 'parent-1');
     expect(uri.queryParameters['childrenId'], '22');
@@ -95,9 +116,16 @@ void main() {
   ) async {
     await AuthSession.login(parentId: 'parent-1', email: 'p@test.local');
     final _FakeFcmMessagingService messaging = _FakeFcmMessagingService();
+    addTearDown(messaging.dispose);
+    final GoRouter router = _testRouter();
+    addTearDown(router.dispose);
 
-    await tester.pumpWidget(const BridgePApp());
-    await FcmBootstrap.initialize(messagingService: messaging);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await FcmBootstrap.initialize(
+      messagingService: messaging,
+      deviceRepository: const MockDeviceRepository(),
+      router: router,
+    );
 
     messaging.openedMessages.add(
       const FcmMessage(
@@ -107,9 +135,9 @@ void main() {
         performanceId: '200',
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpFcmRoute(tester);
 
-    final Uri uri = appRouter.routeInformationProvider.value.uri;
+    final Uri uri = router.routeInformationProvider.value.uri;
     expect(uri.path, '/today-mission');
     expect(uri.queryParameters['parentId'], 'parent-1');
     expect(uri.queryParameters['childrenId'], '22');
@@ -122,17 +150,45 @@ void main() {
     WidgetTester tester,
   ) async {
     final _FakeFcmMessagingService messaging = _FakeFcmMessagingService();
+    addTearDown(messaging.dispose);
+    final GoRouter router = _testRouter();
+    addTearDown(router.dispose);
 
-    await tester.pumpWidget(const BridgePApp());
-    await FcmBootstrap.initialize(messagingService: messaging);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await FcmBootstrap.initialize(
+      messagingService: messaging,
+      deviceRepository: const MockDeviceRepository(),
+      router: router,
+    );
 
     messaging.openedMessages.add(
       const FcmMessage(type: 'GENERAL', deeplink: 'https://example.com'),
     );
-    await tester.pumpAndSettle();
+    await _pumpFcmRoute(tester);
 
-    expect(appRouter.routeInformationProvider.value.uri.path, '/');
+    expect(router.routeInformationProvider.value.uri.path, '/');
   });
+}
+
+GoRouter _testRouter() {
+  return GoRouter(
+    routes: <RouteBase>[
+      GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
+      GoRoute(path: '/today-time', builder: (_, _) => const SizedBox.shrink()),
+      GoRoute(
+        path: '/today-mission',
+        builder: (_, _) => const SizedBox.shrink(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const SizedBox.shrink(),
+      ),
+    ],
+  );
+}
+
+Future<void> _pumpFcmRoute(WidgetTester tester) async {
+  await tester.pump();
 }
 
 class _FakeFcmMessagingService implements FcmMessagingService {
@@ -144,6 +200,8 @@ class _FakeFcmMessagingService implements FcmMessagingService {
 
   @override
   Future<void> deleteToken() async {}
+
+  Future<void> dispose() => openedMessages.close();
 
   @override
   Future<FcmMessage?> getInitialMessage() async => initialMessage;

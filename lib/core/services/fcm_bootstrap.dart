@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_router.dart';
 import '../../features/notifications/presentation/models/notification_target_route.dart';
+import '../../data/repositories/device_repository.dart';
 import '../auth/auth_session.dart';
 import 'device_registration.dart';
 import 'fcm_messaging_service.dart';
@@ -15,6 +17,8 @@ abstract final class FcmBootstrap {
 
   static Future<void> initialize({
     FcmMessagingService? messagingService,
+    DeviceRepository? deviceRepository,
+    GoRouter? router,
   }) async {
     final FcmMessagingService messaging =
         messagingService ?? createFcmMessagingService();
@@ -26,13 +30,19 @@ abstract final class FcmBootstrap {
     }
 
     if (await AuthSession.isLoggedIn()) {
-      await DeviceRegistration.registerCurrent(messagingService: messaging);
+      await DeviceRegistration.registerCurrent(
+        messagingService: messaging,
+        deviceRepository: deviceRepository,
+      );
     }
 
     await _tokenRefreshSub?.cancel();
     _tokenRefreshSub = messaging.onTokenRefresh.listen((String _) async {
       if (await AuthSession.isLoggedIn()) {
-        await DeviceRegistration.registerCurrent(messagingService: messaging);
+        await DeviceRegistration.registerCurrent(
+          messagingService: messaging,
+          deviceRepository: deviceRepository,
+        );
       }
     });
 
@@ -45,13 +55,13 @@ abstract final class FcmBootstrap {
 
     await _openedAppSub?.cancel();
     _openedAppSub = messaging.onMessageOpenedApp.listen((FcmMessage message) {
-      unawaited(_navigate(message));
+      unawaited(_navigate(message, router: router));
     });
 
     final FcmMessage? initialMessage = await messaging.getInitialMessage();
     if (initialMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(_navigate(initialMessage));
+        unawaited(_navigate(initialMessage, router: router));
       });
     }
   }
@@ -65,7 +75,7 @@ abstract final class FcmBootstrap {
     _tokenRefreshSub = null;
   }
 
-  static Future<void> _navigate(FcmMessage message) async {
+  static Future<void> _navigate(FcmMessage message, {GoRouter? router}) async {
     final String? parentId = await AuthSession.getCurrentParentId();
     final String route = normalizeParentNotificationRoute(
       message.deeplink,
@@ -79,7 +89,7 @@ abstract final class FcmBootstrap {
     }
 
     try {
-      appRouter.go(route);
+      (router ?? appRouter).go(route);
     } catch (e) {
       debugPrint('[fcm] navigate failed for "$route": $e');
     }
