@@ -11,6 +11,7 @@ import 'package:bridge_p/features/my_page/presentation/pages/my_page.dart';
 import 'package:bridge_p/features/notifications/presentation/data/notification_store.dart';
 import 'package:bridge_p/features/notifications/presentation/models/notification_item.dart';
 import 'package:bridge_p/features/parent_home/presentation/pages/parent_home_page.dart';
+import 'package:bridge_p/features/parent_home/presentation/widgets/today_time_section.dart';
 import 'package:bridge_p/features/today_mission/presentation/data/today_mission_store.dart';
 import 'package:bridge_p/features/today_mission/presentation/models/today_mission.dart';
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_check_page.dart';
@@ -671,6 +672,25 @@ void main() {
     expect(find.text('오늘의 시간'), findsOneWidget);
     expect(find.text('01:30'), findsNothing);
     expect(find.text('00:30'), findsNothing);
+  });
+
+  testWidgets('today time section can show load failure message', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TodayTimeSection(
+            timeSummary: null,
+            emptyMessage: '시간 정보를 불러오지 못했습니다.',
+            onSetup: () {},
+            onAdd: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('시간 정보를 불러오지 못했습니다.'), findsOneWidget);
   });
 
   testWidgets('today time setup screen toggles tip content', (

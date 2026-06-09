@@ -216,7 +216,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
       Failure<ChildTimeSummary>() => const ChildTimeSummary(
         parentPolicyExists: false,
         childPlanExists: false,
-        todayScheduleStatus: 'noParentPolicy',
+        todayScheduleStatus: 'loadFailed',
         basePolicyMinutes: 0,
         baseMinutes: 0,
         extendedMinutes: 0,
@@ -255,6 +255,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return switch (summary.todayScheduleStatus) {
       'waitingChildPlan' => '자녀가 아직 시간 설정 이전입니다.',
       'templateMissing' => '오늘 배정 시간이 없습니다.',
+      'loadFailed' => '시간 정보를 불러오지 못했습니다.',
       _ => null,
     };
   }
