@@ -43,6 +43,26 @@ void main() {
     expect(uri.queryParameters['childrenId'], '22');
   });
 
+  testWidgets('opened FCM time route keeps backend children query', (
+    WidgetTester tester,
+  ) async {
+    await AuthSession.login(parentId: 'parent-1', email: 'p@test.local');
+    final _FakeFcmMessagingService messaging = _FakeFcmMessagingService();
+
+    await tester.pumpWidget(const BridgePApp());
+    await FcmBootstrap.initialize(messagingService: messaging);
+
+    messaging.openedMessages.add(
+      const FcmMessage(type: 'GENERAL', deeplink: '/today-time?childrenId=22'),
+    );
+    await tester.pumpAndSettle();
+
+    final Uri uri = appRouter.routeInformationProvider.value.uri;
+    expect(uri.path, '/today-time');
+    expect(uri.queryParameters['parentId'], 'parent-1');
+    expect(uri.queryParameters['childrenId'], '22');
+  });
+
   testWidgets('initial FCM mission message keeps review target ids', (
     WidgetTester tester,
   ) async {
