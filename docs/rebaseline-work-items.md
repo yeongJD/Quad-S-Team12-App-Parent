@@ -86,6 +86,7 @@
 - Child: 부모 `TimePolicy`가 없으면 시간 설정 진입을 안내 화면으로 차단.
 - Backend: 자녀 정책 조회 API는 인증된 자녀 본인의 `childId`로만 조회 가능하도록 보완.
 - Backend/Child: 자녀 정책 응답에 `yearMonth`를 포함하고, Child 시간 계획 저장 시 해당 값을 `weekly-budgets`/`templates`/`complete`에 재사용하도록 보완.
+- Backend: 부모 월 총 시간 설정의 `yearMonth`는 `yyyy-MM` 형식과 01~12월만 허용해 Child 계획 저장 월과 daily 조회 월이 어긋나지 않도록 보완.
 - Child: 홈 오늘의 시간은 daily schedule 기준으로만 표시하고, 월 정책 fallback을 오늘 시간으로 쓰지 않음.
 - Child: 남은시간 표시는 `HH:MM` 형식으로 정리.
 - Child: Android native `AppBlockerService`에 화면 켜짐 기준 local screen-time ledger와 0 도달 blocker 트리거를 연결.
