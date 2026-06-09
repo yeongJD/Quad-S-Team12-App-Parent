@@ -1,10 +1,16 @@
 import 'package:bridge_p/core/models/result.dart';
 import 'package:bridge_p/data/repositories/api_time_plan_repository.dart';
 import 'package:bridge_p/data/repositories/time_plan_repository.dart';
+import 'package:bridge_p/features/today_time/presentation/data/monthly_total_time_store.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
   group('ApiTimePlanRepository', () {
     test('loads monthly total from parent child time summary', () async {
       final List<String> calls = <String>[];
@@ -125,20 +131,57 @@ void main() {
       });
     });
 
+    test(
+      'saves monthly total to local fallback after backend success',
+      () async {
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{'isSuccess': true, 'data': null},
+                    ),
+                  );
+                },
+          ),
+        );
+        final ApiTimePlanRepository repository = ApiTimePlanRepository(
+          dio: dio,
+        );
+
+        final Result<void> result = await repository.saveMonthlyTotal(
+          parentId: '1',
+          childrenId: '2',
+          totalMinutes: 600,
+        );
+
+        expect(result, isA<Success<void>>());
+        expect(
+          await MonthlyTotalTimeStore.load(parentId: '1', childrenId: '2'),
+          600,
+        );
+      },
+    );
+
     test('rejects invalid monthly total before network call', () async {
       bool wasCalled = false;
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
       dio.interceptors.add(
         InterceptorsWrapper(
-          onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
-            wasCalled = true;
-            handler.reject(
-              DioException(
-                requestOptions: options,
-                message: 'network should not be called',
-              ),
-            );
-          },
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                wasCalled = true;
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    message: 'network should not be called',
+                  ),
+                );
+              },
         ),
       );
       final ApiTimePlanRepository repository = ApiTimePlanRepository(dio: dio);
@@ -161,15 +204,16 @@ void main() {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
       dio.interceptors.add(
         InterceptorsWrapper(
-          onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
-            wasCalled = true;
-            handler.reject(
-              DioException(
-                requestOptions: options,
-                message: 'network should not be called',
-              ),
-            );
-          },
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                wasCalled = true;
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    message: 'network should not be called',
+                  ),
+                );
+              },
         ),
       );
       final ApiTimePlanRepository repository = ApiTimePlanRepository(dio: dio);
@@ -234,6 +278,84 @@ void main() {
       expect(summary.totalAvailableMinutes, 70);
       expect(summary.rewardPoolMinutes, 30);
     });
+
+    test(
+      'falls back to noParentPolicy when time summary request fails',
+      () async {
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  handler.reject(
+                    DioException(
+                      requestOptions: options,
+                      response: Response<dynamic>(
+                        requestOptions: options,
+                        statusCode: 404,
+                      ),
+                    ),
+                  );
+                },
+          ),
+        );
+        final ApiTimePlanRepository repository = ApiTimePlanRepository(
+          dio: dio,
+        );
+
+        final Result<ChildTimeSummary> result = await repository
+            .loadChildTimeSummary(parentId: '1', childrenId: '2');
+
+        expect(result, isA<Success<ChildTimeSummary>>());
+        final ChildTimeSummary summary =
+            (result as Success<ChildTimeSummary>).data;
+        expect(summary.parentPolicyExists, isFalse);
+        expect(summary.childPlanExists, isFalse);
+        expect(summary.todayScheduleStatus, 'noParentPolicy');
+      },
+    );
+
+    test(
+      'falls back to waitingChildPlan when local monthly total exists',
+      () async {
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  handler.reject(
+                    DioException(
+                      requestOptions: options,
+                      response: Response<dynamic>(
+                        requestOptions: options,
+                        statusCode: 404,
+                      ),
+                    ),
+                  );
+                },
+          ),
+        );
+        await MonthlyTotalTimeStore.save(
+          parentId: '1',
+          childrenId: '2',
+          totalMinutes: 600,
+        );
+        final ApiTimePlanRepository repository = ApiTimePlanRepository(
+          dio: dio,
+        );
+
+        final Result<ChildTimeSummary> result = await repository
+            .loadChildTimeSummary(parentId: '1', childrenId: '2');
+
+        expect(result, isA<Success<ChildTimeSummary>>());
+        final ChildTimeSummary summary =
+            (result as Success<ChildTimeSummary>).data;
+        expect(summary.parentPolicyExists, isTrue);
+        expect(summary.childPlanExists, isFalse);
+        expect(summary.todayScheduleStatus, 'waitingChildPlan');
+        expect(summary.basePolicyMinutes, 600);
+      },
+    );
 
     test('displayable today time follows total available minutes', () {
       const ChildTimeSummary rewardOnlyToday = ChildTimeSummary(

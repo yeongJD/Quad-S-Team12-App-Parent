@@ -5,6 +5,7 @@ import '../../core/models/result.dart';
 import '../../core/network/api_error.dart';
 import '../../features/today_time/presentation/data/child_weekly_time_plan_store.dart';
 import '../../features/today_time/presentation/data/daily_time_rule_store.dart';
+import '../../features/today_time/presentation/data/monthly_total_time_store.dart';
 import '../../features/today_time/presentation/data/whitelist_app_store.dart';
 import '../../features/today_time/presentation/models/daily_time_rule.dart';
 import 'time_plan_repository.dart';
@@ -98,6 +99,13 @@ class ApiTimePlanRepository implements TimePlanRepository {
         basePolicyMinutes > 0 ? basePolicyMinutes : null,
       );
     } on DioException catch (e) {
+      final int? localTotal = await MonthlyTotalTimeStore.load(
+        parentId: parentId,
+        childrenId: childrenId,
+      );
+      if (localTotal != null) {
+        return Result<int?>.success(localTotal > 0 ? localTotal : null);
+      }
       return failureFromDioException<int?>(e);
     }
   }
@@ -131,6 +139,11 @@ class ApiTimePlanRepository implements TimePlanRepository {
           'baseTime': totalMinutes,
         },
       );
+      await MonthlyTotalTimeStore.save(
+        parentId: parentId,
+        childrenId: childrenId,
+        totalMinutes: totalMinutes,
+      );
       return Result<void>.success(null);
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
@@ -156,6 +169,14 @@ class ApiTimePlanRepository implements TimePlanRepository {
       }
       return Result<ChildTimeSummary>.success(_timeSummaryFromJson(data));
     } on DioException catch (e) {
+      final ChildTimeSummary? fallback = await _localTimeSummaryFallback(
+        parentId: parentId,
+        childrenId: childrenId,
+        date: date,
+      );
+      if (fallback != null) {
+        return Result<ChildTimeSummary>.success(fallback);
+      }
       return failureFromDioException<ChildTimeSummary>(e);
     }
   }
@@ -231,6 +252,70 @@ class ApiTimePlanRepository implements TimePlanRepository {
       baseMinutes: 0,
       extendedMinutes: 0,
       totalAvailableMinutes: 0,
+      rewardPoolMinutes: 0,
+    );
+  }
+
+  Future<ChildTimeSummary?> _localTimeSummaryFallback({
+    required String parentId,
+    required String childrenId,
+    DateTime? date,
+  }) async {
+    final int? monthlyTotal = await MonthlyTotalTimeStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    if (monthlyTotal == null || monthlyTotal <= 0) {
+      return _emptySummary();
+    }
+
+    final List<DailyTimeRule> rules = await ChildWeeklyTimePlanStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    if (rules.isEmpty) {
+      return ChildTimeSummary(
+        parentPolicyExists: true,
+        childPlanExists: false,
+        todayScheduleStatus: 'waitingChildPlan',
+        basePolicyMinutes: monthlyTotal,
+        baseMinutes: 0,
+        extendedMinutes: 0,
+        totalAvailableMinutes: 0,
+        rewardPoolMinutes: 0,
+      );
+    }
+
+    final int weekdayIndex = (date ?? DateTime.now()).weekday - 1;
+    DailyTimeRule? todayRule;
+    for (final DailyTimeRule rule in rules) {
+      if (rule.days.contains(weekdayIndex)) {
+        todayRule = rule;
+        break;
+      }
+    }
+    if (todayRule == null) {
+      return ChildTimeSummary(
+        parentPolicyExists: true,
+        childPlanExists: true,
+        todayScheduleStatus: 'templateMissing',
+        basePolicyMinutes: monthlyTotal,
+        baseMinutes: 0,
+        extendedMinutes: 0,
+        totalAvailableMinutes: 0,
+        rewardPoolMinutes: 0,
+      );
+    }
+
+    final int baseMinutes = todayRule.time.hour * 60 + todayRule.time.minute;
+    return ChildTimeSummary(
+      parentPolicyExists: true,
+      childPlanExists: true,
+      todayScheduleStatus: 'available',
+      basePolicyMinutes: monthlyTotal,
+      baseMinutes: baseMinutes,
+      extendedMinutes: 0,
+      totalAvailableMinutes: baseMinutes,
       rewardPoolMinutes: 0,
     );
   }

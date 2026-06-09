@@ -1,6 +1,9 @@
 import '../../../../core/auth/account_store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 abstract final class MonthlyTotalTimeStore {
+  static const String _keyPrefix = 'bridge_p.monthly_total';
+
   static Future<void> save({
     required String parentId,
     required String childrenId,
@@ -17,6 +20,8 @@ abstract final class MonthlyTotalTimeStore {
         return child.copyWith(monthlyTotalMinutes: totalMinutes);
       },
     );
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.setInt(_key(parentId, childrenId), totalMinutes);
   }
 
   static Future<int?> load({
@@ -31,6 +36,13 @@ abstract final class MonthlyTotalTimeStore {
       parentId: parentId,
       childrenId: childrenId,
     );
-    return child?.monthlyTotalMinutes;
+    if (child?.monthlyTotalMinutes case final int total) {
+      return total;
+    }
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getInt(_key(parentId, childrenId));
   }
+
+  static String _key(String parentId, String childrenId) =>
+      '$_keyPrefix.$parentId.$childrenId';
 }
