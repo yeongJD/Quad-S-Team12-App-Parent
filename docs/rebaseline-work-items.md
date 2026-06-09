@@ -49,7 +49,7 @@
 중요:
 - `DailyTimeAllocation` 또는 daily schedule row 부재를 `자녀 계획 없음`으로 보지 않는다.
 - daily schedule은 오늘 조회 시 생성/파생될 수 있으므로 표시용 데이터에 가깝다.
-- Parent가 정확히 `hasChildPlan`을 판단하려면 parent token으로 읽을 수 있는 자녀 시간 요약 API가 필요할 가능성이 높다.
+- Parent는 parent token으로 읽을 수 있는 자녀 시간 요약 API를 기준으로 `hasChildPlan`을 판단한다.
 
 ## 2. Surface별 우선 작업 요약
 
@@ -141,8 +141,8 @@
 - `hasChildPlan`에서는 선택된 자녀별 오늘의 시간을 표시한다.
 - 자녀 선택을 바꾸면 해당 자녀 기준으로 time summary와 미션 목록을 다시 로드한다.
 
-필요 API:
-- 우선 후보: `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD`
+적용 API:
+- `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD`
 - 최소 필드: `parentPolicyExists`, `childPlanExists`, `todayScheduleStatus`, `basePolicyMinutes`, `todaySchedule`
 
 검수:
@@ -379,7 +379,7 @@ backend sync:
 - Parent token으로 기존 child schedule API를 그대로 호출하기 어렵다.
 - Parent 홈은 자녀별 `noParentPolicy`, `waitingChildPlan`, `hasChildPlan`, 오늘 시간을 알아야 한다.
 
-후보 endpoint:
+적용 endpoint:
 - `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD`
 
 권장 response:
@@ -528,7 +528,10 @@ backend sync:
 - 앱 inbox 조회.
 - 클릭 라우팅.
 
-## 6. 플로우별 완료 체크리스트
+## 6. 실제 계정/E2E 완료 체크리스트
+
+아래 체크박스는 구현 완료 여부가 아니라 실제 계정, 실제 API, 필요 시 실기기 조건에서 다시 찍어야 하는 최종 검수 항목이다.
+로컬 구현/정적 검증 완료 항목은 `2.1 2026-06-09 구현 반영 메모`를 기준으로 본다.
 
 ### 6.1 시간 설정 플로우
 
