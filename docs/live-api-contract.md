@@ -183,6 +183,7 @@ Response:
 
 ```json
 {
+  "yearMonth": "2026-06",
   "totalAvailableTime": 720,
   "baseTime": 600,
   "accumulatedRewardTime": 120,
@@ -198,6 +199,7 @@ Response:
 Rules:
 - 정책이 없으면 Child 시간 설정 진입을 차단한다.
 - Child 시간 설정의 월 총량 기준은 `baseTime`이다.
+- Child가 weekly budget/template/complete를 저장할 때는 응답의 `yearMonth`를 우선 사용한다.
 - 구버전 응답처럼 `baseTime`이 없을 때만 `totalAvailableTime - accumulatedRewardTime`을 fallback으로 쓴다. reward pool을 자녀 weekly budget에 섞지 않는다.
 - 보너스 시간은 오늘 보너스가 아니라 `accumulatedRewardTime` monthly reward pool이다.
 

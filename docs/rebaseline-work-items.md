@@ -84,6 +84,7 @@
 - Parent: `waitingChildPlan` 상태에서는 `자녀가 아직 시간 설정 이전입니다.` 회색 안내를 표시.
 - Child: 부모 `TimePolicy`가 없으면 시간 설정 진입을 안내 화면으로 차단.
 - Backend: 자녀 정책 조회 API는 인증된 자녀 본인의 `childId`로만 조회 가능하도록 보완.
+- Backend/Child: 자녀 정책 응답에 `yearMonth`를 포함하고, Child 시간 계획 저장 시 해당 값을 `weekly-budgets`/`templates`/`complete`에 재사용하도록 보완.
 - Child: 홈 오늘의 시간은 daily schedule 기준으로만 표시하고, 월 정책 fallback을 오늘 시간으로 쓰지 않음.
 - Child: 남은시간 표시는 `HH:MM` 형식으로 정리.
 - Child: Android native `AppBlockerService`에 화면 켜짐 기준 local screen-time ledger와 0 도달 blocker 트리거를 연결.
@@ -240,6 +241,7 @@
 - 시간 설정 진입 전 `GET /api/v1/children/{childId}/policies` 또는 동일 policy 조회를 수행한다.
 - 정책이 없으면 기존 알림/안내 UI를 재활용해 시간 설정을 막는다.
 - 정책이 있으면 원칙적으로 `baseTime`을 월 총량으로 사용한다.
+- 정책 응답에 `yearMonth`가 있으면 이를 이후 `weekly-budgets`, `templates`, `complete` 저장에 사용한다.
 - `baseTime`이 없는 구버전 응답에서만 `totalAvailableTime - accumulatedRewardTime`으로 fallback한다. reward pool을 자녀 weekly budget에 섞지 않는다.
 - policy fallback을 "이미 자녀 계획이 있음"으로 오해하지 않게 한다.
 
