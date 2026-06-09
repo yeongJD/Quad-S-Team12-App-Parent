@@ -1,6 +1,7 @@
 import 'package:bridge_p/core/models/result.dart';
 import 'package:bridge_p/data/models/child/child_summary.dart';
 import 'package:bridge_p/data/repositories/api_child_repository.dart';
+import 'package:bridge_p/data/repositories/api_device_repository.dart';
 import 'package:bridge_p/data/repositories/api_notification_repository.dart';
 import 'package:bridge_p/features/notifications/presentation/models/notification_item.dart';
 import 'package:dio/dio.dart';
@@ -121,6 +122,59 @@ void main() {
     expect(result, isA<Success<void>>());
     expect(calls, <String>['DELETE /api/v1/notifications/17']);
   });
+
+  test(
+    'ApiDeviceRepository posts FCM token and unwraps response data',
+    () async {
+      Map<String, dynamic>? postedBody;
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                if (options.path == '/api/v1/fcm/token' &&
+                    options.method == 'POST') {
+                  postedBody = Map<String, dynamic>.from(options.data as Map);
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{
+                        'isSuccess': true,
+                        'data': 'FCM 토큰 저장 완료',
+                      },
+                    ),
+                  );
+                  return;
+                }
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    response: Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 404,
+                    ),
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiDeviceRepository repository = ApiDeviceRepository(dio: dio);
+
+      final Result<String> result = await repository.registerDevice(
+        fcmToken: 'token-1',
+        platform: 'ios',
+      );
+
+      expect(postedBody, <String, dynamic>{'fcmToken': 'token-1'});
+      switch (result) {
+        case Success<String>(:final String data):
+          expect(data, 'FCM 토큰 저장 완료');
+        case Failure<String>(:final String message):
+          fail('registerDevice should unwrap FCM response, got $message');
+      }
+    },
+  );
 }
 
 Dio _dioForPath(String path, Object? responseData) {
