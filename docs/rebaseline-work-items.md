@@ -309,13 +309,14 @@ backend sync:
 - 자녀 본인 확인 미션은 제출 즉시 완료/reward 지급으로 반영한다.
 - 부모 확인 미션은 제출 후 `심사중`, 부모 승인 후 완료로 반영한다.
 - AI 확인 미션은 AI 승인 결과가 내려온 뒤 완료로 반영한다.
+- 반려된 미션은 자녀가 다시 수행할 수 있게 하며, backend는 새 `MissionPerformance`를 생성한다.
 
 검수:
 - 미션 목록 조회.
 - 사진 제출.
 - 제출 후 상태 변경.
 - reward pool 반영.
-- 반려 후 재수행 가능 여부 확인.
+- 반려 후 재수행 가능.
 
 ### 4.7 알림
 
@@ -542,9 +543,9 @@ backend sync:
    - 실제 달력 주차 수 또는 남은 일수 자동 계산은 후속 확장 후보.
 
 2. 반려된 미션 재수행 방식
-   - 기존 performance 덮어쓰기
-   - 새 performance 생성
-   - 같은 날 재수행 불가
+   - 결정: 새 performance 생성.
+   - backend는 마지막 performance가 `ACCEPTED`인 경우만 재수행을 막고, `REJECTED`는 새 제출을 허용한다.
+   - Child 앱은 반려 상태에서 `다시 수행하기`로 수행 플로우에 재진입한다.
 
 3. 화이트리스트 저장 범위
    - Parent 앱 local only
@@ -568,7 +569,7 @@ backend sync:
 5. Child 실기기에서 Accessibility 권한을 켠 뒤 화면 켜짐 local ledger, 재시작 복원, 0 도달 blocker 호출을 확인한다.
 6. 미션 생성/제출/승인/반려/reward pool 반영을 실제 API 기준으로 검수한다.
 7. 알림 row/FCM payload와 클릭 라우팅을 검수한다.
-8. 반려된 미션 재수행 방식과 whitelist 저장 범위만 추가 결정한다.
+8. whitelist 저장 범위만 추가 결정한다.
 9. Parent `flutter analyze && flutter test`, Child `flutter analyze && flutter test`, Backend `JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH bash ./gradlew test`를 최종 실행한다.
 
 ## 9. 이번 문서 기준의 비목표

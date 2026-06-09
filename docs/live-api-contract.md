@@ -485,6 +485,7 @@ Status mapping:
 - Child app: `PENDING` + `PARENT` or `AI` means reviewing in UI.
 - `ACCEPTED` means completed.
 - `REJECTED` means rejected.
+- `REJECTED` missions can be submitted again; backend creates a new latest `MissionPerformance`.
 
 ### Parent Approve/Reject
 
