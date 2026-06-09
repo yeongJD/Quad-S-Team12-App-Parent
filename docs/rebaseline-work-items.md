@@ -73,6 +73,7 @@
 이후 작업은 아래 상세 작업표의 모든 항목을 다시 신규 구현 대상으로 보지 않고, 이미 반영된 항목은 실제 계정/실기기 검수 대상으로 읽는다.
 
 완료/반영:
+- Parent: auth login/signup/refresh 응답의 `ApiResponse<AuthResponse>` wrapper를 unwrap해 `memberId`를 `parentId`로 저장하도록 보완.
 - Backend: parent-scoped `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD` 추가.
 - Backend: Parent 전용 자녀 연결/목록/월 총 시간 endpoint는 `AuthMember.asParent()`로 role을 강제해 Child token이 parent service로 들어가지 않도록 보완.
 - Backend: 부모 월 총 시간 설정 시 Child notification inbox row 생성.
