@@ -142,27 +142,28 @@ void main() {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
       dio.interceptors.add(
         InterceptorsWrapper(
-          onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
-            calls.add('${options.method} ${options.path}');
-            if (options.path ==
-                '/api/v1/missions/performances/parent-mission-performance/approve') {
-              handler.resolve(
-                Response<dynamic>(
-                  requestOptions: options,
-                  statusCode: 200,
-                  data: <String, dynamic>{'isSuccess': true, 'data': 'ok'},
-                ),
-              );
-              return;
-            }
-            handler.resolve(
-              Response<dynamic>(
-                requestOptions: options,
-                statusCode: 200,
-                data: _missionResponseFor(options.path),
-              ),
-            );
-          },
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                calls.add('${options.method} ${options.path}');
+                if (options.path ==
+                    '/api/v1/missions/performances/201/approve') {
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{'isSuccess': true, 'data': 'ok'},
+                    ),
+                  );
+                  return;
+                }
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: _missionResponseFor(options.path),
+                  ),
+                );
+              },
         ),
       );
       final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
@@ -180,7 +181,7 @@ void main() {
           'GET /api/v1/missions',
           'GET /api/v1/missions/parent-mission',
           'GET /api/v1/missions/parent-mission/performance',
-          'PATCH /api/v1/missions/performances/parent-mission-performance/approve',
+          'PATCH /api/v1/missions/performances/201/approve',
         ]),
       );
     });
@@ -219,6 +220,74 @@ void main() {
       expect(result, isA<Failure<void>>());
       expect((result as Failure<void>).message, '지금 상태에서는 이 작업을 할 수 없어요.');
     });
+
+    test(
+      'approveMissionPerformance rejects non-numeric performance id before network',
+      () async {
+        final List<String> calls = <String>[];
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  calls.add('${options.method} ${options.path}');
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{'isSuccess': true},
+                    ),
+                  );
+                },
+          ),
+        );
+        final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+        final Result<void> result = await repository.approveMissionPerformance(
+          parentId: 'parent-1',
+          childrenId: '22',
+          performanceId: 'mission-201',
+        );
+
+        expect(result, isA<Failure<void>>());
+        expect((result as Failure<void>).message, '지금 상태에서는 이 작업을 할 수 없어요.');
+        expect(calls, isEmpty);
+      },
+    );
+
+    test(
+      'rejectMissionPerformance rejects blank performance id before network',
+      () async {
+        final List<String> calls = <String>[];
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  calls.add('${options.method} ${options.path}');
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{'isSuccess': true},
+                    ),
+                  );
+                },
+          ),
+        );
+        final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+        final Result<void> result = await repository.rejectMissionPerformance(
+          parentId: 'parent-1',
+          childrenId: '22',
+          performanceId: '  ',
+        );
+
+        expect(result, isA<Failure<void>>());
+        expect((result as Failure<void>).message, '지금 상태에서는 이 작업을 할 수 없어요.');
+        expect(calls, isEmpty);
+      },
+    );
   });
 }
 
@@ -238,10 +307,11 @@ dynamic _missionResponseFor(String path) {
     r'^/api/v1/missions/([^/]+)/performance$',
   ).firstMatch(path);
   if (performanceMatch != null) {
+    final String missionId = performanceMatch.group(1)!;
     return <String, dynamic>{
       'isSuccess': true,
       'data': <String, dynamic>{
-        'performanceId': '${performanceMatch.group(1)}-performance',
+        'performanceId': _performanceIdFor(missionId),
         'status': 'PENDING',
         'proofImageUrl': 'https://test.local/proof.jpg',
       },
@@ -276,5 +346,13 @@ Map<String, dynamic> _missionJson(String missionId, String verificationType) {
     'verificationType': verificationType,
     'reward': 30,
     'description': '$missionId description',
+  };
+}
+
+int _performanceIdFor(String missionId) {
+  return switch (missionId) {
+    'ai-mission' => 202,
+    'child-mission' => 203,
+    _ => 201,
   };
 }

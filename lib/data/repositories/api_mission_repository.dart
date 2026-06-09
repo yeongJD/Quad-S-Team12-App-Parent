@@ -185,9 +185,13 @@ class ApiMissionRepository implements MissionRepository {
     required String performanceId,
     required String action,
   }) async {
+    final int? verifiedPerformanceId = _positiveNumericId(performanceId);
+    if (verifiedPerformanceId == null) {
+      return Result<void>.failure(MissionFailureMessages.invalidState);
+    }
     try {
       await _dio.patch<dynamic>(
-        '/api/v1/missions/performances/$performanceId/$action',
+        '/api/v1/missions/performances/$verifiedPerformanceId/$action',
       );
       return Result<void>.success(null);
     } on DioException catch (e) {
@@ -409,5 +413,13 @@ class ApiMissionRepository implements MissionRepository {
 
   Object _childIdValue(String childrenId) {
     return int.tryParse(childrenId) ?? childrenId;
+  }
+
+  int? _positiveNumericId(String id) {
+    final int? parsed = int.tryParse(id.trim());
+    if (parsed == null || parsed <= 0) {
+      return null;
+    }
+    return parsed;
   }
 }
