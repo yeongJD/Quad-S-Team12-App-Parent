@@ -35,12 +35,32 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PA
 
 Backend 실행:
 ```bash
+export LOCAL_DB_PASSWORD='<postgres-password>'
+export JWT_SECRET_KEY='<jwt-secret>'
+export GEMINI_API_KEY='<gemini-api-key-or-dummy-for-non-ai-flows>'
+export AWS_S3_BUCKET='<s3-bucket-or-dummy-for-non-upload-flows>'
+
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH bash ./gradlew bootRun
+```
+
+앱을 실제 API mode로 실행:
+```bash
+# Android emulator에서 local backend를 볼 때
+flutter run --dart-define=BRIDGE_USE_MOCKS=false --dart-define=BRIDGE_API_BASE_URL=http://10.0.2.2:8080
+
+# Android 실기기에서 local backend를 볼 때: Mac과 같은 네트워크에 붙이고 <MAC_LAN_IP>를 사용
+flutter run --dart-define=BRIDGE_USE_MOCKS=false --dart-define=BRIDGE_API_BASE_URL=http://<MAC_LAN_IP>:8080
+
+# AWS endpoint를 볼 때
+flutter run --dart-define=BRIDGE_USE_MOCKS=false --dart-define=BRIDGE_API_BASE_URL=https://leyoung.shop
 ```
 
 주의:
 - 로컬 기본 `java`가 JDK 17이면 Gradle Java 21 toolchain에서 실패할 수 있다. 위처럼 Java 21 `JAVA_HOME`을 명시한다.
-- Parent/Child 앱의 API base URL과 mock mode는 각 앱의 `lib/core/config/environment.dart`에서 확인한다.
+- local backend 기본 profile은 `local`이고 DB는 `jdbc:postgresql://localhost:5432/postgres` / user `postgres`를 사용한다.
+- 미션 사진 업로드, 프로필 이미지, AI 확인까지 실제로 검수하려면 dummy 값이 아니라 유효한 S3/Gemini 설정이 필요하다.
+- Parent/Child 앱은 development 기본값이 mock mode다. 실제 API 검수는 반드시 `BRIDGE_USE_MOCKS=false`를 붙여 실행한다.
+- Parent/Child 앱의 API base URL과 mock mode 기본값은 각 앱의 `lib/core/config/environment.dart`에서 확인한다.
 - 실기기 차단 검수는 Child Android 앱 설치 후 Accessibility 권한을 켠 상태에서만 PASS 판정한다.
 
 ## 1. 시간 설정 E2E
