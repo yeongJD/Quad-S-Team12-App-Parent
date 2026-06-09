@@ -40,7 +40,7 @@
 
 판정/구현 메모:
 - 부모가 제출하는 데이터는 이번 달 총량 정책인 `TimePolicy`다. 이 값만 있으면 `waitingChildPlan` 상태로 본다.
-- 자녀가 제출하는 데이터는 월/주차 예산 `WeeklyBudget`과 요일별 템플릿 `WeeklyTimeDistribution`이다. 이 값이 있으면 `hasChildPlan` 상태로 볼 수 있다.
+- 자녀가 제출하는 데이터는 월/주차 예산 `WeeklyBudget`과 요일별 템플릿 `WeeklyTimeDistribution`이다. 1~4주차 budget과 각 주차별 template이 모두 있으면 `hasChildPlan` 상태로 볼 수 있다.
 - `DailyTimeAllocation` 또는 daily schedule row는 오늘 조회 시 생성/파생될 수 있으므로, "자녀 계획 없음"의 1차 판정 기준으로 쓰지 않는다.
 - 휴대폰 화면 켜짐 시간은 Child 앱 native 쪽에서 날짜별 local ledger로 저장한다. 단순 Flutter 화면 timer만으로는 재시작과 백그라운드 상태를 견디기 어렵다.
 - 보너스 시간이 monthly reward pool이면 Child/Parent 홈의 `보너스시간` 라벨이 사용자에게 "오늘 보너스"로 읽히지 않는지 확인이 필요하다.
@@ -52,8 +52,8 @@
 | 상태 | backend 데이터 기준 | 앱 표시/동작 |
 |---|---|---|
 | `noParentPolicy` | 해당 자녀/년월의 `TimePolicy` 없음 | Parent는 `+`로 월 총 시간 설정 가능. Child는 시간 설정 진입 차단 |
-| `waitingChildPlan` | `TimePolicy` 있음, 하지만 해당 자녀/년월의 `WeeklyBudget` 또는 `WeeklyTimeDistribution` 없음 | Parent는 회색 문구 `자녀가 아직 시간 설정 이전입니다.` 표시. `+` 재진입은 막음 |
-| `hasChildPlan` | `TimePolicy` 있음, 해당 자녀/년월의 `WeeklyBudget`과 `WeeklyTimeDistribution` 있음 | Parent/Child 홈에서 오늘의 시간 표시. 톱니는 이번 달 시간 상태 확인 |
+| `waitingChildPlan` | `TimePolicy` 있음, 하지만 해당 자녀/년월의 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성 | Parent는 회색 문구 `자녀가 아직 시간 설정 이전입니다.` 표시. `+` 재진입은 막음 |
+| `hasChildPlan` | `TimePolicy` 있음, 해당 자녀/년월의 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution` 있음 | Parent/Child 홈에서 오늘의 시간 표시. 톱니는 이번 달 시간 상태 확인 |
 | `todayTemplateMissing` | 자녀 계획은 있으나 오늘 날짜의 week/day 템플릿 없음 | 예외 상태. 오늘 시간 없음으로 뭉개지 말고 "오늘 배정 시간이 없습니다"에 가까운 상태로 처리 |
 
 권장 판정:

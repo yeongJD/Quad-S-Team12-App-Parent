@@ -144,8 +144,8 @@ Response:
 | 상태 | 기준 |
 |---|---|
 | `noParentPolicy` | 해당 자녀/년월 `TimePolicy` 없음 |
-| `waitingChildPlan` | `TimePolicy` 있음, 자녀 `WeeklyBudget` 또는 `WeeklyTimeDistribution` 없음 |
-| `available` | `TimePolicy`, `WeeklyBudget`, `WeeklyTimeDistribution`, 오늘 template 있음 |
+| `waitingChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성 |
+| `available` | `TimePolicy`, 자녀 1~4주차 `WeeklyBudget`, 각 주차별 `WeeklyTimeDistribution`, 오늘 template 있음 |
 | `templateMissing` | 자녀 계획은 있으나 오늘 week/day template 없음 |
 
 `DailyTimeAllocation` row 부재는 자녀 계획 없음으로 보지 않는다.
@@ -297,7 +297,7 @@ Child token required.
 
 Rules:
 - 자녀 계획 제출 완료 신호다.
-- `WeeklyBudget` + `WeeklyTimeDistribution`이 존재해야 한다.
+- 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 존재해야 한다.
 - 성공 시 Parent notification inbox row가 생성된다.
 
 Response data: `null`
