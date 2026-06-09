@@ -5,6 +5,7 @@
 참조 문서:
 - `docs/flow-rebaseline-plan.md`
 - `docs/live-api-contract.md`
+- `docs/rebaseline-e2e-runbook.md`
 - `docs/api-contract.md` (기존/historical 계약 메모)
 
 범위:
