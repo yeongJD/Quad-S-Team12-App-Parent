@@ -66,14 +66,14 @@
 
 프로젝트/데모 효율을 우선한 추천안:
 - Child 앱에 local screen-time ledger를 둔다. 저장소는 `SharedPreferences` 또는 현재 앱에서 이미 쓰는 가벼운 local storage를 쓴다.
-- key는 `childId + yyyy-MM-dd + scheduleId(or policyMonth)` 조합으로 잡는다. 날짜가 바뀌거나 오늘 배정 시간이 바뀌면 새 ledger로 시작한다.
+- key는 현재 구현 기준 `childId + yyyy-MM-dd + today-screen-time` 조합으로 잡는다. 날짜가 바뀌면 새 ledger로 시작하고, 같은 날짜에 오늘 배정 시간이 바뀌면 `allocatedSeconds`만 갱신하되 기존 `usedSeconds`는 유지한다.
 - 저장 값은 `allocatedSeconds`, `usedSeconds`, `remainingSeconds`, `lastScreenOnAt`, `lastPersistedAt`, `date` 정도로 충분하다.
 - 차감 기준은 Bridge 앱 foreground 시간이 아니라 휴대폰 화면이 켜져 있는 시간이다.
 - Flutter `resumed` lifecycle만으로는 다른 앱 사용 중인 화면 켜짐 시간을 안정적으로 잴 수 없다. Android native 쪽에서 screen on/off 또는 interactive 상태를 추적해야 한다.
 - 현재 `AppBlockerService`는 차단 실행용 AccessibilityService다. 차단은 백그라운드에서도 동작할 수 있지만, 화면 켜짐 시간 누적 ledger는 별도로 붙여야 한다.
 - 앱별 사용 추적이나 전체 기기 UsageStats는 이번 범위에서 제외한다.
 - timer tick마다 UI는 갱신하되, 저장은 30-60초 간격 또는 pause/inactive 시점에 한다.
-- 앱 재시작 시 같은 날짜/같은 schedule이면 local ledger의 `remainingSeconds`를 복원한다. 없으면 backend daily schedule에서 오늘 배정 시간을 받아 새로 시작한다.
+- 앱 재시작 시 같은 자녀/같은 날짜이면 local ledger의 `remainingSeconds`를 복원한다. 없으면 backend daily schedule에서 오늘 배정 시간을 받아 새로 시작한다.
 - `remainingSeconds <= 0`이 되면 local에 0을 저장하고 `DeviceBlockController.applyForRemainingMinutes(0)`을 호출한다.
 - backend sync는 선택 사항으로 둔다. 기존 `/api/v1/schedules/settle`이 실제 "사용량 기록" 의미로 안전한지 확인되면 pause/하루 마감 시 coarse sync만 한다. 의미가 애매하면 데모 단계에서는 local ledger를 source로 삼는다.
 

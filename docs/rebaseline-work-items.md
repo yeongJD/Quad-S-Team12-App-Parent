@@ -85,7 +85,7 @@
 - Child: 남은시간 표시는 `HH:MM` 형식으로 정리.
 - Child: Android native `AppBlockerService`에 화면 켜짐 기준 local screen-time ledger와 0 도달 blocker 트리거를 연결.
 - Child/Backend: 자녀 미션 상세/목록에서 performance 상태를 조회할 수 있도록 보완.
-- Parent: notification `targetRoute`/`deeplink` 클릭 시 현재 세션 `parentId`와 payload `childrenId`를 보강해 시간/미션/리포트 화면으로 이동하도록 정리.
+- Parent: notification `targetRoute`/`deeplink` 클릭 시 현재 세션 `parentId`와 payload `childrenId`를 보강하는 route 정규화 기준을 정리.
 - Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
 - Child: FCM push payload에서 `deeplink`가 없고 `targetRoute`만 있는 경우도 tap route로 사용하도록 보완.
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
@@ -100,6 +100,7 @@
 - Child: Android debug APK build는 통과했지만, 실기기 설치와 Accessibility 권한 기반 screen-time ledger/blocker 검수는 별도 확인해야 한다.
 - 실제 기기에서 Accessibility 권한을 켠 뒤 screen-time ledger와 blocker 발동을 확인해야 한다.
 - 알림 payload parsing과 앱 내 클릭/FCM tap route 보강은 로컬 테스트로 1차 확인했다. 실제 foreground/background/terminated FCM 수신과 tap 이동은 E2E 추가 검수 대상이다.
+- Parent 미션 알림은 `missionId`/`performanceId`가 있으면 generic `targetRoute`보다 심사 상세 진입을 우선해야 한다. 목록까지만 열리는 경우는 추가 보완 대상이다.
 - 미션 reward 중복 지급 방지는 실제 approve/reject 반복 케이스로 E2E 검증이 필요하다.
 
 ### 2.2 진행 방향 재검수 메모
@@ -116,6 +117,7 @@
 주의할 경계:
 - "로컬 정적 검증 PASS"와 "실제 계정 E2E PASS"를 분리한다. 현재 문서의 완료 항목은 대부분 전자이며, 최종 AWS 배포 전에는 후자를 다시 찍어야 한다.
 - 알림 클릭 라우팅은 앱 parser/route 보강을 완료했지만, 실제 push 수신 상태별 tap 이동은 E2E로 최종 확인해야 한다.
+- 미션 제출 알림처럼 `missionId`/`performanceId`가 있는 알림은 route 문자열만 신뢰하지 말고 실제 미션 심사 상세로 열리는지 확인한다.
 - 미션 reward는 unit test로 중복 지급을 방어했더라도 실제 self/parent/AI 확인 방식별 E2E에서 reward pool 반영을 다시 확인한다.
 - whitelist는 Parent local only가 확정 범위다. Child blocker의 package-level 허용 목록과 연결하는 작업은 이번 문서 기준 비목표로 유지한다.
 
@@ -204,11 +206,13 @@
 - Parent notification inbox 응답 shape과 앱 파서를 맞춘다.
 - unread indicator가 실제 unread 상태를 반영하는지 확인한다.
 - 알림 클릭 시 선택 자녀/미션/시간 화면으로 이동하게 한다.
+- 미션 제출/심사 알림은 `missionId`/`performanceId`를 우선 사용해 `/today-mission/check` 심사 상세로 진입하게 한다. `targetRoute`가 목록 경로여도 payload id가 있으면 상세 진입을 우선한다.
 
 검수:
 - 자녀가 시간 계획 제출 시 Parent 알림 또는 inbox row 생성.
 - 자녀가 부모 확인 미션 제출 시 Parent 알림 생성.
 - 클릭 후 대상 화면 진입.
+- 부모 확인 미션 알림 클릭 후 해당 미션의 심사 상세 진입.
 
 ## 4. Child 앱 작업
 
@@ -279,7 +283,7 @@
 현재 방향:
 - Child 앱 local screen-time ledger를 만든다.
 - 저장소는 `SharedPreferences` 또는 현재 앱에서 이미 쓰는 local storage를 사용한다.
-- key는 `childId + yyyy-MM-dd + scheduleId(or policyMonth)` 조합으로 잡는다.
+- key는 현재 구현 기준 `childId + yyyy-MM-dd + today-screen-time` 조합으로 잡는다.
 - 저장 값은 `allocatedSeconds`, `usedSeconds`, `remainingSeconds`, `lastScreenOnAt`, `lastPersistedAt`, `date` 정도로 둔다.
 
 작업:
@@ -293,8 +297,9 @@
 - 백그라운드 실행은 OS 제약을 받으므로, 데모 기준에서는 AccessibilityService가 켜진 상태에서 native tracker를 같이 쓰는 방향이 가장 효율적이다.
 - UI timer는 1초 단위로 갱신해도 저장은 30-60초 간격으로 한다.
 - screen off, app pause/inactive, tracker stop 시점에는 즉시 저장한다.
-- 앱 재시작 시 같은 날짜/같은 schedule이면 local ledger에서 남은 시간을 복원한다.
-- 날짜가 바뀌거나 schedule이 바뀌면 backend daily schedule 기준으로 새 ledger를 시작한다.
+- 앱 재시작 시 같은 자녀/같은 날짜이면 local ledger에서 남은 시간을 복원한다.
+- 날짜가 바뀌면 backend daily schedule 기준으로 새 ledger를 시작한다.
+- 같은 날짜에 오늘 배정 시간이 바뀌면 ledger key를 바꾸지 않고 `allocatedSeconds`만 갱신하며 기존 `usedSeconds`는 유지한다. 설정 변경으로 사용 시간이 초기화되는 우회로를 막기 위함이다.
 - `remainingSeconds <= 0`이 되면 local에 0을 저장하고 blocker를 호출한다.
 
 backend sync:
@@ -306,6 +311,7 @@ backend sync:
 검수:
 - 앱 재시작 후 남은 시간이 초기화되지 않음.
 - 같은 날짜에서는 이전 ledger 복원.
+- 같은 날짜에 배정 시간이 바뀌어도 이미 사용한 시간은 유지.
 - Bridge 앱이 백그라운드이고 다른 앱을 쓰는 동안에도 화면 켜짐 시간이 누적됨.
 - 화면이 꺼져 있으면 시간이 줄지 않음.
 - 날짜 변경 시 새 오늘 시간으로 초기화.
@@ -560,6 +566,7 @@ backend sync:
 - [ ] Child: 승인/반려 알림.
 - [ ] Parent/Child: inbox unread 표시.
 - [ ] Parent/Child: 알림 클릭 라우팅.
+- [ ] Parent: `missionId`/`performanceId`가 있는 미션 알림 클릭 시 심사 상세 진입.
 
 ## 7. 확정 결정사항 및 남은 검수 경계
 

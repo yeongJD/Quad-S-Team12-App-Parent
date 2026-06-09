@@ -378,6 +378,7 @@ Rules:
 - 차감 기준은 Bridge 앱 foreground 시간이 아니라 휴대폰 화면 켜짐 시간이다.
 - ledger key는 `childId + yyyy-MM-dd + today-screen-time` 형태다.
 - 같은 날짜/같은 key면 앱 재시작 후에도 남은시간을 복원한다.
+- 같은 날짜에 오늘 배정 시간이 바뀌면 기존 `usedSeconds`는 유지하고 `allocatedSeconds`만 갱신한다.
 - `remainingSeconds <= 0`이면 local에 0을 저장하고 blocker를 호출한다.
 - Accessibility 권한이 꺼져 있으면 백그라운드 추적/차단 모두 약해질 수 있으므로 실기기 검수 전제는 Accessibility on이다.
 
