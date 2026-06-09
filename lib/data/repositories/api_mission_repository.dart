@@ -26,10 +26,16 @@ class ApiMissionRepository implements MissionRepository {
     required String parentId,
     required String childrenId,
   }) async {
+    final int? childId = _positiveNumericId(childrenId);
+    if (childId == null) {
+      return Result<List<TodayMission>>.failure(
+        MissionFailureMessages.invalidChild,
+      );
+    }
     try {
       final Response<dynamic> response = await _dio.get<dynamic>(
         '/api/v1/missions',
-        queryParameters: <String, dynamic>{'childId': childrenId},
+        queryParameters: <String, dynamic>{'childId': childId},
       );
       final List<dynamic> data = _jsonList(response.data);
       final List<TodayMission> missions = <TodayMission>[];
@@ -66,11 +72,15 @@ class ApiMissionRepository implements MissionRepository {
     required String childrenId,
     required TodayMission mission,
   }) async {
+    final int? childId = _positiveNumericId(childrenId);
+    if (childId == null) {
+      return Result<void>.failure(MissionFailureMessages.invalidChild);
+    }
     try {
       await _dio.post<dynamic>(
         '/api/v1/missions',
         data: <String, dynamic>{
-          'childId': _childIdValue(childrenId),
+          'childId': childId,
           'title': mission.title,
           // Backend enums are UPPER_CASE. confirmationMethod {ai,child,parent}
           // maps 1:1 to the backend VerificationType {AI,CHILD,PARENT}.
@@ -163,10 +173,16 @@ class ApiMissionRepository implements MissionRepository {
         parentId: parentId,
         childrenId: childrenId,
       );
-      if (loaded is! Success<List<TodayMission>>) {
-        return Result<void>.failure(MissionFailureMessages.missionNotFound);
+      final List<TodayMission> missions;
+      switch (loaded) {
+        case Success<List<TodayMission>>(:final List<TodayMission> data):
+          missions = data;
+        case Failure<List<TodayMission>>(
+          :final String message,
+          :final Object? cause,
+        ):
+          return Result<void>.failure(message, cause: cause);
       }
-      final List<TodayMission> missions = loaded.data;
       if (index < 0 || index >= missions.length) {
         return Result<void>.failure(MissionFailureMessages.missionNotFound);
       }
@@ -409,10 +425,6 @@ class ApiMissionRepository implements MissionRepository {
       }
     }
     return null;
-  }
-
-  Object _childIdValue(String childrenId) {
-    return int.tryParse(childrenId) ?? childrenId;
   }
 
   int? _positiveNumericId(String id) {

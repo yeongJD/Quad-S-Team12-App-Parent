@@ -67,7 +67,7 @@ void main() {
 
       final Result<List<TodayMission>> result = await repository.loadMissions(
         parentId: 'parent-1',
-        childrenId: 'child-1',
+        childrenId: '22',
       );
 
       expect(result, isA<Success<List<TodayMission>>>());
@@ -136,6 +136,77 @@ void main() {
         ]);
       },
     );
+
+    test('loadMissions rejects non-numeric child id before network', () async {
+      final List<String> calls = <String>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                calls.add('${options.method} ${options.path}');
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: <String, dynamic>{'isSuccess': true},
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+      final Result<List<TodayMission>> result = await repository.loadMissions(
+        parentId: 'parent-1',
+        childrenId: 'child-22',
+      );
+
+      expect(result, isA<Failure<List<TodayMission>>>());
+      expect(
+        (result as Failure<List<TodayMission>>).message,
+        '자녀 정보를 다시 불러와 주세요.',
+      );
+      expect(calls, isEmpty);
+    });
+
+    test('addMission rejects non-numeric child id before network', () async {
+      final List<String> calls = <String>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                calls.add('${options.method} ${options.path}');
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: <String, dynamic>{'isSuccess': true},
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+      final Result<void> result = await repository.addMission(
+        parentId: 'parent-1',
+        childrenId: 'child-22',
+        mission: const TodayMission(
+          title: '방 청소',
+          category: MissionCategory.cleaning,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.parent,
+          rewardMinutes: 30,
+          description: '사진 제출',
+        ),
+      );
+
+      expect(result, isA<Failure<void>>());
+      expect((result as Failure<void>).message, '자녀 정보를 다시 불러와 주세요.');
+      expect(calls, isEmpty);
+    });
 
     test('approveMissionAt loads latest performance before patching', () async {
       final List<String> calls = <String>[];
