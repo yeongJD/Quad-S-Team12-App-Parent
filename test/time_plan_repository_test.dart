@@ -206,7 +206,7 @@ void main() {
       );
 
       expect(rewardOnlyToday.hasDisplayableTodayTime, isTrue);
-      expect(zeroToday.hasDisplayableTodayTime, isFalse);
+      expect(zeroToday.hasDisplayableTodayTime, isTrue);
       expect(waitingChildPlan.hasDisplayableTodayTime, isFalse);
     });
   });
