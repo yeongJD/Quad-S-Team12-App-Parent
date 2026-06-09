@@ -460,6 +460,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
       demo = 'filled';
     } else if (_data.hasConfiguredTime) {
       demo = 'parent-only';
+    } else if (_data.waitingForChildTimePlan) {
+      demo = 'parent-only';
     } else if (widget.showTimeEmptyPreview) {
       demo = 'child-empty';
     } else {

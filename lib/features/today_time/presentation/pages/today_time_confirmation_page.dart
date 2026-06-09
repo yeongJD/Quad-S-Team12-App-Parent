@@ -43,7 +43,8 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     required Future<Result<List<DailyTimeRule>>> Function({
       required String parentId,
       required String childrenId,
-    }) loader,
+    })
+    loader,
   }) async {
     final Result<List<DailyTimeRule>> result = await loader(
       parentId: parentId,
@@ -109,25 +110,25 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
       childrenId: childrenId,
       loader: _timePlanRepository.loadDailyRules,
     );
-    if (parentRules.isEmpty) {
-      return;
-    }
-
     final List<DailyTimeRule> childWeeklyRules = await _loadRules(
       parentId: parentId,
       childrenId: childrenId,
       loader: _timePlanRepository.loadChildWeeklyRules,
     );
-    final int calculatedMonthlyMinutes = _calculateMonthlyMinutes(parentRules);
     final int? savedMonthlyMinutes = await _loadMonthlyTotal(
       parentId: parentId,
       childrenId: childrenId,
     );
-    final int monthlyTotalMinutes =
-        savedMonthlyMinutes == null ||
-            savedMonthlyMinutes < calculatedMonthlyMinutes
+    final int calculatedMonthlyMinutes = parentRules.isEmpty
+        ? 0
+        : _calculateMonthlyMinutes(parentRules);
+    final int savedMinutes = savedMonthlyMinutes ?? 0;
+    final int monthlyTotalMinutes = savedMinutes < calculatedMonthlyMinutes
         ? calculatedMonthlyMinutes
-        : savedMonthlyMinutes;
+        : savedMinutes;
+    if (monthlyTotalMinutes <= 0) {
+      return;
+    }
     if (!mounted) {
       return;
     }
