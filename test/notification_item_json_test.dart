@@ -1,5 +1,7 @@
+import 'package:bridge_p/core/services/fcm_messaging_service.dart';
 import 'package:bridge_p/features/notifications/presentation/models/notification_item.dart';
 import 'package:bridge_p/features/notifications/presentation/models/notification_target_route.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -109,6 +111,26 @@ void main() {
         parentNotificationTargetRoute(item, parentId: 'parent-1'),
         '/notifications?tab=all',
       );
+    });
+  });
+
+  group('FcmMessage.fromRemoteMessage', () {
+    test('uses backend targetRoute when deeplink is absent', () {
+      final FcmMessage message = FcmMessage.fromRemoteMessage(
+        const RemoteMessage(
+          data: <String, dynamic>{
+            'notificationType': 'MISSION_REQUESTED',
+            'notificationId': 'n-1',
+            'childId': '4',
+            'targetRoute': '/today-mission?childrenId=4',
+          },
+        ),
+      );
+
+      expect(message.type, 'MISSION_REQUESTED');
+      expect(message.notificationId, 'n-1');
+      expect(message.childRef, '4');
+      expect(message.deeplink, '/today-mission?childrenId=4');
     });
   });
 }
