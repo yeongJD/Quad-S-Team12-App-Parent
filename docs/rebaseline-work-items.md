@@ -74,6 +74,7 @@
 
 완료/반영:
 - Backend: parent-scoped `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD` 추가.
+- Backend: Parent 전용 자녀 연결/목록/월 총 시간 endpoint는 `AuthMember.asParent()`로 role을 강제해 Child token이 parent service로 들어가지 않도록 보완.
 - Backend: 부모 월 총 시간 설정 시 Child notification inbox row 생성.
 - Backend/Child: 자녀 시간 계획 저장 완료 후 `POST /api/v1/schedules/complete`를 호출해 Parent notification inbox row 생성.
 - Backend: `childPlanExists`를 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부와 weekly budget 합계가 `TimePolicy.baseTime`과 일치하는지로 판정.
