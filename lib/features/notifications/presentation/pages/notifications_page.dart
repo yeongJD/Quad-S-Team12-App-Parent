@@ -377,7 +377,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       barrierDismissible: true,
       barrierLabel: 'notification-delete-dialog',
       barrierColor: const Color.fromRGBO(68, 68, 68, 0.6),
-      pageBuilder: (context, animation, secondaryAnimation) {
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return Material(
           type: MaterialType.transparency,
           child: SafeArea(
@@ -388,20 +388,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 21),
                   child: _DeleteNotificationDialog(
                     onConfirm: () async {
+                      final NavigatorState navigator = Navigator.of(
+                        dialogContext,
+                      );
+                      final ScaffoldMessengerState messenger =
+                          ScaffoldMessenger.of(context);
                       final String? parentId = _parentId;
+                      if (parentId != null && parentId.isNotEmpty) {
+                        final Result<void> result =
+                            await _notificationRepository.hide(
+                              parentId: parentId,
+                              notificationId: item.id,
+                            );
+                        if (!mounted) {
+                          return;
+                        }
+                        switch (result) {
+                          case Success<void>():
+                            break;
+                          case Failure<void>(:final String message):
+                            navigator.pop();
+                            messenger.showSnackBar(
+                              SnackBar(content: Text(message)),
+                            );
+                            return;
+                        }
+                      }
+                      if (!mounted) {
+                        return;
+                      }
                       setState(() {
                         _notifications.removeWhere(
                           (NotificationItem candidate) =>
                               candidate.id == item.id,
                         );
                       });
-                      context.pop();
-                      if (parentId != null && parentId.isNotEmpty) {
-                        await _notificationRepository.hide(
-                          parentId: parentId,
-                          notificationId: item.id,
-                        );
-                      }
+                      navigator.pop();
                     },
                   ),
                 ),
