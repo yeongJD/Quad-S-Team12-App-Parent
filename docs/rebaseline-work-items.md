@@ -106,6 +106,7 @@
 - Child: 알림 읽음 처리 실패 시 local read 상태를 앞질러 바꾸지 않고 실패 메시지를 표시하도록 보완.
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
 - Backend: 이미 승인된 미션의 재제출/다른 pending performance 승인과 이미 심사 대기 중인 미션의 중복 제출을 차단해 reward 중복 지급 여지를 줄임.
+- Backend: 미션 설정 조회 또는 인증 사진 업로드 실패 시 `PENDING` performance가 남지 않도록 저장 순서를 보완.
 - Backend: 오늘 시간 연장은 `TimePolicy.baseTime`이 아니라 `accumulatedRewardTime` reward pool만 차감하도록 보완.
 - Backend: AI 확인 중 AI 서비스 오류가 나면 처리 불가능한 `PENDING`으로 두지 않고 `REJECTED`와 Child 알림으로 정리해 재수행 가능하게 보완.
 - Backend/Child: 자녀 시간 계획 제출 시 각 주차 template 합계가 해당 주차 budget과 맞는지 테스트로 고정.
