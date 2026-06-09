@@ -34,7 +34,7 @@
 | 부모 월 총 시간 설정 후 자녀 계획 전 상태 | Parent 홈에는 회색 안내 문구만 표시한다. 예: `자녀가 아직 시간 설정 이전입니다.` | `waitingChildPlan` 상태를 명확히 만들면 `+` 재진입 꼬임을 막기 좋다. |
 | 오늘의 시간 없음 기준 | 기획 기준은 `자녀 계획 없음`으로 본다. 실제 판정은 부모 제출 데이터인 `TimePolicy`와 자녀 제출 데이터인 `WeeklyBudget`/`WeeklyTimeDistribution`의 차이로 나눈다. | backend daily row 생성 여부는 구현 세부로 보고, product state는 자녀 계획 제출 여부로 판단한다. |
 | 자녀 계획 제출 후 반영 | 부모 승인 없이 즉시 반영한다. | 시간 계획용 approval/status flow를 만들지 않아도 된다. |
-| 남은시간 차감 기준 | 휴대폰 화면 켜짐 시간 기준으로 줄인다. 앱별 추적은 하지 않는다. Child 앱에 날짜별 local screen-time ledger를 두고 재시작/백그라운드를 견디게 한다. | 실제 출시용이 아니므로 UsageStats/App Tracking까지 가지 않고, native 화면 켜짐 추적 + 로컬 저장 + 선택적 backend settle로 효율을 우선한다. |
+| 남은시간 차감 기준 | 휴대폰 화면 켜짐 시간 기준으로 줄인다. 앱별 추적은 하지 않는다. Child 앱에 날짜별 local screen-time ledger를 두고 재시작/백그라운드를 견디게 한다. | 실제 출시용이 아니므로 UsageStats/App Tracking까지 가지 않고, native 화면 켜짐 추적 + 로컬 저장을 우선한다. backend settle은 pause sync가 아니라 후속 후보로 둔다. |
 | 보너스 시간 | 이번 달 reward pool이다. 오늘만의 보너스 시간이 아니다. | backend TimePolicy reward pool과 맞추기 쉽다. 홈 copy/의미가 헷갈리지 않게 확인 필요. |
 | 미션 reward 지급 시점 | 자녀 본인 확인은 제출 즉시, 부모 확인은 부모 승인 시, AI 확인은 AI 승인 시 지급한다. | backend 중복 지급 방지와 performance status 전이가 핵심이다. |
 
@@ -75,7 +75,7 @@
 - timer tick마다 UI는 갱신하되, 저장은 30-60초 간격 또는 pause/inactive 시점에 한다.
 - 앱 재시작 시 같은 자녀/같은 날짜이면 local ledger의 `remainingSeconds`를 복원한다. 없으면 backend daily schedule에서 오늘 배정 시간을 받아 새로 시작한다.
 - `remainingSeconds <= 0`이 되면 local에 0을 저장하고 `DeviceBlockController.applyForRemainingMinutes(0)`을 호출한다.
-- backend sync는 선택 사항으로 둔다. 기존 `/api/v1/schedules/settle`이 실제 "사용량 기록" 의미로 안전한지 확인되면 pause/하루 마감 시 coarse sync만 한다. 의미가 애매하면 데모 단계에서는 local ledger를 source로 삼는다.
+- backend sync는 선택 사항으로 둔다. 현재 `/api/v1/schedules/settle`은 daily allocation을 실제 사용량으로 줄여 잠그는 의미라 pause마다 호출하면 다음 조회 총량이 줄어 조기 차단될 수 있다. 데모 단계에서는 local ledger를 source로 삼고, settle은 하루 마감/후속 확장 후보로만 둔다.
 
 이 방식의 의도:
 - 앱 재시작 초기화 문제를 해결한다.
@@ -165,7 +165,7 @@
 - Child home에서 오늘 시간 표시값이 어디서 계산되는지 추적한다.
 - `GET /api/v1/schedules/daily?date=today` 응답의 `baseMinutes`, `extendedMinutes`, `totalAvailableMinutes` 의미를 확정한다.
 - 휴대폰 화면 켜짐 시간 차감은 우선 Child local screen-time ledger에 기록한다.
-- backend 기록은 기존 settle API 의미가 안전한 경우에만 pause/하루 마감 시점의 선택적 sync로 둔다.
+- backend 기록은 현재 settle 의미상 pause sync로 연결하지 않는다. 필요하면 backend 사용량/남은시간 의미를 먼저 분리한다.
 - 오늘 시간이 0 이하가 되는 순간 `DeviceBlockController`가 호출되는지 확인한다.
 
 ### 1.5 Parent home today time and gear
@@ -254,7 +254,7 @@
 | 자녀 요일별 시간 | backend weekly templates | Child controller draft | 오늘 시간 계산의 핵심 후보 |
 | 자녀 계획 존재 여부 | backend weekly budgets + weekly templates + 부모 월 총량 일치 여부 | 없음 | `TimePolicy`만 있으면 아직 자녀 계획 전 상태 |
 | 오늘 배정 시간 | backend daily schedule 또는 오늘 템플릿 파생값 | Child local display | Parent 조회 경로 필요 여부 확인 |
-| 오늘 실제 사용/남은 시간 | Child local screen-time ledger | 선택적 backend settle | 휴대폰 화면 켜짐 시간 기준. 앱 차단 트리거와 직결 |
+| 오늘 실제 사용/남은 시간 | Child local screen-time ledger | backend settle은 후속 후보 | 휴대폰 화면 켜짐 시간 기준. 앱 차단 트리거와 직결 |
 | 미션 목록/상태 | backend mission/performance | UI cache | 상태 갱신 방식 결정 필요 |
 | 보너스 시간 | backend TimePolicy reward | Child display | 이번 달 reward pool |
 | 알림 | backend notification rows + FCM | local read/delete cache | payload 통일 필요 |
@@ -406,8 +406,8 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
 
 2. 오늘 실제 사용/남은 시간 기록 API 또는 정책
    - 추천: 데모/프로젝트 단계에서는 Child local screen-time ledger를 1차 source로 둔다.
-   - 선택 후보: 기존 `/api/v1/schedules/settle`을 pause/하루 마감 시점에 coarse sync로만 사용
-   - 주의: 기존 settle이 "사용량 누적"이 아니라 배정 시간 값을 바꾸는 의미라면, 남은시간 source로 쓰지 않는다.
+   - 선택 후보: 기존 `/api/v1/schedules/settle`은 하루 마감 또는 후속 확장 후보로만 둔다.
+   - 주의: 현재 settle은 "사용량 누적"이 아니라 배정 시간 값을 바꾸는 의미이므로, pause sync나 남은시간 source로 쓰지 않는다.
    - 목적: 휴대폰 화면 켜짐 시간 기준 차감, 앱 재시작 후 시간 차감 유지, 앱 차단 트리거 안정화
 
 3. Notification payload 확장
@@ -448,12 +448,12 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
    - 결정: 휴대폰 화면 켜짐 시간 기준으로 줄인다. 앱별 추적은 하지 않는다.
    - 구현 기준: Child 앱 local screen-time ledger에 `usedSeconds`/`remainingSeconds`를 저장한다.
    - Flutter foreground lifecycle만으로는 부족하므로 Android native screen on/off 또는 interactive 상태 추적이 필요하다.
-   - backend sync는 기존 settle 의미 확인 후 선택적으로만 붙인다.
+   - backend sync는 현재 settle 의미상 pause마다 붙이지 않는다. 필요하면 backend에 사용량/남은시간 의미를 먼저 분리한다.
 
 7. 앱 재시작 후에도 남은시간이 유지되어야 한다면, backend 갱신 주기는 어느 정도가 적절한가요?
    - 결정: 우선 local persisted countdown으로 유지한다.
    - 저장 주기: 30-60초 간격, pause/inactive 시점, 남은시간 0 도달 시점.
-   - backend sync: 필요하면 pause 또는 하루 마감 settle만 사용한다.
+   - backend sync: 현재 범위에서는 local ledger만 PASS 기준이다. settle은 하루 마감/후속 확장 후보이며 pause sync로 연결하지 않는다.
 
 8. 보너스 시간은 "오늘 바로 쓸 수 있는 시간"인가요, 아니면 "이번 달 reward pool"인가요?
    - 결정: 이번 달 reward pool이다.

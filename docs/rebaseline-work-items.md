@@ -61,7 +61,7 @@
 | P0 | 자녀 시간 제출 | 제출 후 Parent 홈 반영 경로 확보 | `weekly-budgets` -> `templates` -> `routines` 저장 검증 | weekly budget/template 검증 및 plan-exists 판정 |
 | P0 | 주차 정책 확정 | 월 총량은 실제 달 기준 계산값으로 저장 | 주차별 예산 입력/검증은 4주 고정 | Child budget/template 검증은 4주 고정으로 유지 |
 | P0 | 오늘의 시간 표시 | 선택 자녀의 오늘 시간 표시, 회색 대기 문구 처리 | 일별 시간 `HH:MM` 표시, local ledger 복원 | daily schedule 생성 기준과 response 의미 검증 |
-| P0 | 남은시간 차감/차단 트리거 | 오늘 시간은 조회만, 차감 source로 쓰지 않음 | 화면 켜짐 기준 local screen-time ledger, 0 도달 시 blocker 호출 | `settle`은 선택적 coarse sync로만 사용 |
+| P0 | 남은시간 차감/차단 트리거 | 오늘 시간은 조회만, 차감 source로 쓰지 않음 | 화면 켜짐 기준 local screen-time ledger, 0 도달 시 blocker 호출 | `settle`은 pause sync가 아니라 하루 마감/후속 후보 |
 | P1 | 미션 | 생성/승인/반려/상태 반영 | 목록/상세/사진 제출/상태 반영 | reward 지급 시점, 중복 지급 방지 |
 | P1 | 알림 | inbox, unread, 클릭 라우팅 | inbox, unread, 클릭 라우팅 | notification row + FCM payload 통일 |
 | P2 | 화이트리스트 | 리스트 UI/local 저장 유지 | blocker 연동은 후순위 | AppBlock 저장/조회는 후순위 |
@@ -122,7 +122,7 @@
 - Parent에서 child API를 우회 호출하는 대신 parent-scoped time summary API를 기준으로 둔다. 이는 쓰기 flow 추가가 아니라 Parent 표시용 read path다.
 - Child 앱 차단 트리거는 backend 실시간 저장이 아니라 local screen-time ledger의 `remainingSeconds <= 0` 기준으로 둔다.
 - 백그라운드 화면 켜짐 차감은 Flutter lifecycle만으로 처리하지 않고 Android native tracker/AccessibilityService 전제에서 검수한다.
-- `/api/v1/schedules/settle`은 실시간 countdown 저장 API가 아니라 하루 마감 또는 pause 시점의 coarse sync 후보로만 둔다.
+- `/api/v1/schedules/settle`은 실시간 countdown 저장 API가 아니며, 현재 backend 의미상 pause sync에 연결하지 않는다.
 - Parent의 월 총 시간 계산은 실제 달의 요일 개수를 반영한 총량 계산으로 유지한다. "4주 고정"은 Child의 weekly budget/template 분배 행과 backend validation 범위에만 적용한다.
 - Child가 오늘 시간을 연장할 때는 월 총량 `baseTime`을 다시 소비하지 않는다. 연장 가능 재원은 이번 달 reward pool인 `accumulatedRewardTime`으로 제한한다.
 
@@ -324,8 +324,10 @@
 - `remainingSeconds <= 0`이 되면 local에 0을 저장하고 blocker를 호출한다.
 
 backend sync:
-- 기존 `/api/v1/schedules/settle`은 하루 마감 또는 pause 시 coarse sync 후보로만 둔다.
+- 기존 `/api/v1/schedules/settle`은 하루 마감 또는 후속 확장 후보로만 둔다.
 - 현재 리베이스 기준 settle은 실제 사용량을 기록해 daily allocation을 정산/잠금하는 후보이며, 남은 시간을 reward pool으로 환불하지 않는다.
+- 현재 backend `settle`은 daily allocation의 `baseMinutes/extendedMinutes`를 실제 사용량 기준으로 바꾸므로, 중간 pause마다 호출하면 다음 daily 조회의 총 배정 시간이 줄어 조기 차단될 수 있다.
+- 따라서 현재 구현 기준에서는 pause sync로 즉시 연결하지 않고, 남은시간/차단 PASS 기준은 local ledger에 둔다.
 - 이 의미가 실시간 남은시간 저장과 다르므로, 데모 단계에서는 local ledger를 1차 source로 둔다.
 - 따라서 앱 차단 트리거는 backend 실시간 저장 여부와 분리한다. Child local ledger가 0을 기록하는 순간 native blocker를 호출하는 방식이 현재 기준이다.
 
@@ -493,7 +495,8 @@ backend sync:
 작업:
 - 기존 `/api/v1/schedules/settle` 의미를 문서화한다.
 - settle은 "오늘 실제 사용량 확정 + daily allocation 정산" 후보로만 쓰고, 남은 시간을 reward pool에 더하지 않는다.
-- 필요 시 하루 마감 또는 app pause coarse sync로만 사용한다.
+- 현재 backend 의미 그대로라면 app pause coarse sync로 바로 사용하지 않는다.
+- pause sync가 필요해지면 daily allocation 총량을 줄이는 settle이 아니라 `actualUsed/remaining`을 별도 저장하거나, settle response가 앱 표시와 충돌하지 않도록 backend 의미를 먼저 바꾼다.
 
 검수:
 - settle 호출 시 actualUsed가 totalAllocated를 넘으면 실패.
@@ -571,7 +574,7 @@ backend sync:
 - [ ] Child: 재시작 시 같은 날짜 ledger 복원.
 - [ ] Child: 남은시간 0 도달 시 blocker 호출.
 - [ ] Child: 접근성 권한 off 상태 안내.
-- [ ] Backend: settle은 필요 시 하루 마감 sync로만 사용.
+- [ ] Backend: settle은 현재 의미상 pause sync에 연결하지 않고 하루 마감/후속 확장 후보로만 유지.
 
 ### 6.3 미션 플로우
 
