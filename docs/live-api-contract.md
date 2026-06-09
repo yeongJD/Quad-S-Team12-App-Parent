@@ -144,8 +144,8 @@ Response:
 | 상태 | 기준 |
 |---|---|
 | `noParentPolicy` | 해당 자녀/년월 `TimePolicy` 없음 |
-| `waitingChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성 |
-| `available` | `TimePolicy`, 자녀 1~4주차 `WeeklyBudget`, 각 주차별 `WeeklyTimeDistribution`, 오늘 template 있음 |
+| `waitingChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성, 또는 weekly budget 합계가 `TimePolicy.baseTime`과 불일치 |
+| `available` | `TimePolicy`, 자녀 1~4주차 `WeeklyBudget`, 각 주차별 `WeeklyTimeDistribution`, weekly budget 합계와 `TimePolicy.baseTime` 일치, 오늘 template 있음 |
 | `templateMissing` | 자녀 계획은 있으나 오늘 week/day template 없음 |
 
 `DailyTimeAllocation` row 부재는 자녀 계획 없음으로 보지 않는다.
@@ -299,7 +299,7 @@ Child token required.
 
 Rules:
 - 자녀 계획 제출 완료 신호다.
-- 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 존재해야 한다.
+- 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 존재하고, weekly budget 합계가 부모 `TimePolicy.baseTime`과 일치해야 한다.
 - 성공 시 Parent notification inbox row가 생성된다.
 
 Response data: `null`
@@ -379,6 +379,7 @@ Current direction:
 Flutter MethodChannel:
 - `configureScreenTime({ key, allocatedSeconds })`
 - `remainingScreenTimeSeconds()`
+- `clearScreenTime()`
 - `applyForRemainingMinutes(remainingMinutes)`
 
 Rules:
@@ -386,6 +387,7 @@ Rules:
 - ledger key는 `childId + yyyy-MM-dd + today-screen-time` 형태다.
 - 같은 날짜/같은 key면 앱 재시작 후에도 남은시간을 복원한다.
 - 같은 날짜에 오늘 배정 시간이 바뀌면 기존 `usedSeconds`는 유지하고 `allocatedSeconds`만 갱신한다.
+- 오늘 스케줄이 없거나 로드 실패 상태가 되면 `clearScreenTime()`으로 이전 날짜/이전 계획 tracker를 지우고 blocker를 해제한다.
 - `remainingSeconds <= 0`이면 local에 0을 저장하고 blocker를 호출한다.
 - Accessibility 권한이 꺼져 있으면 백그라운드 추적/차단 모두 약해질 수 있으므로 실기기 검수 전제는 Accessibility on이다.
 
