@@ -56,6 +56,14 @@ abstract interface class MissionRepository {
     required int index,
   });
 
+  /// Parent approves a concrete mission performance. Prefer this when the UI
+  /// already has `performanceId` from a mission detail or notification payload.
+  Future<Result<void>> approveMissionPerformance({
+    required String parentId,
+    required String childrenId,
+    required String performanceId,
+  });
+
   /// Parent rejects the child's submission. Backend transitions the
   /// mission's verificationStatus → rejected and surfaces the rejection
   /// to the child.
@@ -63,6 +71,14 @@ abstract interface class MissionRepository {
     required String parentId,
     required String childrenId,
     required int index,
+  });
+
+  /// Parent rejects a concrete mission performance. Prefer this when the UI
+  /// already has `performanceId` from a mission detail or notification payload.
+  Future<Result<void>> rejectMissionPerformance({
+    required String parentId,
+    required String childrenId,
+    required String performanceId,
   });
 }
 

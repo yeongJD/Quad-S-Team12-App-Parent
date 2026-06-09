@@ -398,6 +398,73 @@ void main() {
     expect(find.text('반려'), findsOneWidget);
   });
 
+  testWidgets('parent mission review can approve by performance id', (
+    WidgetTester tester,
+  ) async {
+    const String parentId = 'review-by-performance@example.com';
+    const String childrenId = 'GDG12-1';
+    const TodayMission mission = TodayMission(
+      missionId: 'mission-1',
+      performanceId: 'performance-1',
+      title: 'id 기반 미션',
+      category: MissionCategory.cleaning,
+      resetPeriod: MissionResetPeriod.daily,
+      confirmationMethod: MissionConfirmationMethod.parent,
+      rewardMinutes: 30,
+      description: '알림 상세에서 바로 심사',
+      verificationStatus: MissionVerificationStatus.waitingParentApproval,
+      submittedAtText: '2025.1.21 오후 7:01',
+    );
+
+    await AccountStore.saveAccount(
+      const ParentAccount(
+        parentId: parentId,
+        email: parentId,
+        name: 'review',
+        passwordHash: 'Password1234!',
+      ),
+    );
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: '자녀',
+        childCode: childrenId,
+      ),
+    );
+    await TodayMissionStore.add(
+      parentId: parentId,
+      childrenId: childrenId,
+      mission: mission,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TodayMissionCheckPage(
+          parentId: parentId,
+          childrenId: childrenId,
+          missionIndex: null,
+          initialMission: mission,
+          initialTab: MissionCheckTab.review,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('승인'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('미션 수행완료!'), findsOneWidget);
+    final TodayMission storedMission = (await TodayMissionStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    )).single;
+    expect(storedMission.performanceId, 'performance-1');
+    expect(
+      storedMission.effectiveVerificationStatus,
+      MissionVerificationStatus.approved,
+    );
+  });
+
   testWidgets('parent mission review keeps waiting state when approve fails', (
     WidgetTester tester,
   ) async {

@@ -94,6 +94,20 @@ class MockMissionRepository implements MissionRepository {
   }
 
   @override
+  Future<Result<void>> approveMissionPerformance({
+    required String parentId,
+    required String childrenId,
+    required String performanceId,
+  }) async {
+    return _setVerificationStatusByPerformanceId(
+      parentId: parentId,
+      childrenId: childrenId,
+      performanceId: performanceId,
+      target: MissionVerificationStatus.approved,
+    );
+  }
+
+  @override
   Future<Result<void>> rejectMissionAt({
     required String parentId,
     required String childrenId,
@@ -103,6 +117,20 @@ class MockMissionRepository implements MissionRepository {
       parentId: parentId,
       childrenId: childrenId,
       index: index,
+      target: MissionVerificationStatus.rejected,
+    );
+  }
+
+  @override
+  Future<Result<void>> rejectMissionPerformance({
+    required String parentId,
+    required String childrenId,
+    required String performanceId,
+  }) async {
+    return _setVerificationStatusByPerformanceId(
+      parentId: parentId,
+      childrenId: childrenId,
+      performanceId: performanceId,
       target: MissionVerificationStatus.rejected,
     );
   }
@@ -118,6 +146,35 @@ class MockMissionRepository implements MissionRepository {
       childrenId: childrenId,
     );
     if (index < 0 || index >= missions.length) {
+      return Result<void>.failure(MissionFailureMessages.missionNotFound);
+    }
+    final TodayMission updated = missions[index].copyWith(
+      verificationStatus: target,
+      status: target.legacyStatus,
+    );
+    await TodayMissionStore.updateAt(
+      parentId: parentId,
+      childrenId: childrenId,
+      index: index,
+      mission: updated,
+    );
+    return Result<void>.success(null);
+  }
+
+  Future<Result<void>> _setVerificationStatusByPerformanceId({
+    required String parentId,
+    required String childrenId,
+    required String performanceId,
+    required MissionVerificationStatus target,
+  }) async {
+    final List<TodayMission> missions = await TodayMissionStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    final int index = missions.indexWhere(
+      (TodayMission mission) => mission.performanceId == performanceId,
+    );
+    if (index < 0) {
       return Result<void>.failure(MissionFailureMessages.missionNotFound);
     }
     final TodayMission updated = missions[index].copyWith(

@@ -120,6 +120,15 @@ class ApiMissionRepository implements MissionRepository {
   }
 
   @override
+  Future<Result<void>> approveMissionPerformance({
+    required String parentId,
+    required String childrenId,
+    required String performanceId,
+  }) {
+    return _verifyPerformance(performanceId: performanceId, action: 'approve');
+  }
+
+  @override
   Future<Result<void>> rejectMissionAt({
     required String parentId,
     required String childrenId,
@@ -131,6 +140,15 @@ class ApiMissionRepository implements MissionRepository {
       index: index,
       action: 'reject',
     );
+  }
+
+  @override
+  Future<Result<void>> rejectMissionPerformance({
+    required String parentId,
+    required String childrenId,
+    required String performanceId,
+  }) {
+    return _verifyPerformance(performanceId: performanceId, action: 'reject');
   }
 
   Future<Result<void>> _verifyMission({
@@ -156,26 +174,41 @@ class ApiMissionRepository implements MissionRepository {
         return Result<void>.failure(MissionFailureMessages.invalidState);
       }
 
+      return _verifyPerformance(performanceId: performanceId, action: action);
+    } on DioException catch (e) {
+      return _verifyFailure(e);
+    }
+  }
+
+  Future<Result<void>> _verifyPerformance({
+    required String performanceId,
+    required String action,
+  }) async {
+    try {
       await _dio.patch<dynamic>(
         '/api/v1/missions/performances/$performanceId/$action',
       );
       return Result<void>.success(null);
     } on DioException catch (e) {
-      final String? code = errorCodeOf(e);
-      if (code == 'MISSION_NOT_FOUND') {
-        return Result<void>.failure(
-          MissionFailureMessages.missionNotFound,
-          cause: code,
-        );
-      }
-      if (code == 'INVALID_MISSION_STATE') {
-        return Result<void>.failure(
-          MissionFailureMessages.invalidState,
-          cause: code,
-        );
-      }
-      return failureFromDioException<void>(e);
+      return _verifyFailure(e);
     }
+  }
+
+  Result<void> _verifyFailure(DioException e) {
+    final String? code = errorCodeOf(e);
+    if (code == 'MISSION_NOT_FOUND') {
+      return Result<void>.failure(
+        MissionFailureMessages.missionNotFound,
+        cause: code,
+      );
+    }
+    if (code == 'INVALID_MISSION_STATE') {
+      return Result<void>.failure(
+        MissionFailureMessages.invalidState,
+        cause: code,
+      );
+    }
+    return failureFromDioException<void>(e);
   }
 
   TodayMission? _missionFromJson(Map<String, dynamic> json) {

@@ -78,7 +78,6 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
     final String? parentId = widget.parentId;
     final String? childrenId = widget.childrenId;
     if (mission == null ||
-        missionIndex == null ||
         parentId == null ||
         parentId.isEmpty ||
         childrenId == null ||
@@ -100,26 +99,32 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
     // (idle / waiting*).
     switch (verificationStatus) {
       case MissionVerificationStatus.approved:
-        result = await _missionRepository.approveMissionAt(
+        result = await _approveMission(
           parentId: parentId,
           childrenId: childrenId,
-          index: missionIndex,
+          mission: mission,
+          missionIndex: missionIndex,
         );
       case MissionVerificationStatus.rejected:
-        result = await _missionRepository.rejectMissionAt(
+        result = await _rejectMission(
           parentId: parentId,
           childrenId: childrenId,
-          index: missionIndex,
+          mission: mission,
+          missionIndex: missionIndex,
         );
       case MissionVerificationStatus.idle:
       case MissionVerificationStatus.waitingParentApproval:
       case MissionVerificationStatus.waitingAiVerification:
-        result = await _missionRepository.updateMissionAt(
-          parentId: parentId,
-          childrenId: childrenId,
-          index: missionIndex,
-          mission: updatedMission,
-        );
+        if (missionIndex == null) {
+          result = Result<void>.failure(MissionFailureMessages.invalidState);
+        } else {
+          result = await _missionRepository.updateMissionAt(
+            parentId: parentId,
+            childrenId: childrenId,
+            index: missionIndex,
+            mission: updatedMission,
+          );
+        }
     }
     if (!mounted) {
       return;
@@ -195,6 +200,58 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<Result<void>> _approveMission({
+    required String parentId,
+    required String childrenId,
+    required TodayMission mission,
+    required int? missionIndex,
+  }) {
+    final String? performanceId = mission.performanceId;
+    if (performanceId != null && performanceId.isNotEmpty) {
+      return _missionRepository.approveMissionPerformance(
+        parentId: parentId,
+        childrenId: childrenId,
+        performanceId: performanceId,
+      );
+    }
+    if (missionIndex == null) {
+      return Future<Result<void>>.value(
+        Result<void>.failure(MissionFailureMessages.invalidState),
+      );
+    }
+    return _missionRepository.approveMissionAt(
+      parentId: parentId,
+      childrenId: childrenId,
+      index: missionIndex,
+    );
+  }
+
+  Future<Result<void>> _rejectMission({
+    required String parentId,
+    required String childrenId,
+    required TodayMission mission,
+    required int? missionIndex,
+  }) {
+    final String? performanceId = mission.performanceId;
+    if (performanceId != null && performanceId.isNotEmpty) {
+      return _missionRepository.rejectMissionPerformance(
+        parentId: parentId,
+        childrenId: childrenId,
+        performanceId: performanceId,
+      );
+    }
+    if (missionIndex == null) {
+      return Future<Result<void>>.value(
+        Result<void>.failure(MissionFailureMessages.invalidState),
+      );
+    }
+    return _missionRepository.rejectMissionAt(
+      parentId: parentId,
+      childrenId: childrenId,
+      index: missionIndex,
     );
   }
 }
