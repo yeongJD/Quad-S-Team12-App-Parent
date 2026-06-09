@@ -23,15 +23,13 @@ class ApiNotificationRepository implements NotificationRepository {
       final Response<dynamic> response = await _dio.get<dynamic>(
         '/api/v1/notifications',
       );
-      final dynamic data = response.data;
-      if (data is! List) {
-        return Result<List<NotificationItem>>.success(
-          const <NotificationItem>[],
-        );
-      }
+      final List<dynamic> data = _jsonList(response.data);
       final List<NotificationItem> items = data
-          .whereType<Map<String, dynamic>>()
-          .map<NotificationItem?>(NotificationItem.fromJson)
+          .whereType<Map>()
+          .map<NotificationItem?>(
+            (Map item) =>
+                NotificationItem.fromJson(Map<String, Object?>.from(item)),
+          )
           .whereType<NotificationItem>()
           .toList(growable: false);
       return Result<List<NotificationItem>>.success(items);
@@ -45,9 +43,7 @@ class ApiNotificationRepository implements NotificationRepository {
     final Result<List<NotificationItem>> inbox = await loadInbox(parentId);
     return switch (inbox) {
       Success<List<NotificationItem>>(:final List<NotificationItem> data) =>
-        Result<bool>.success(
-          data.any((NotificationItem item) => !item.isRead),
-        ),
+        Result<bool>.success(data.any((NotificationItem item) => !item.isRead)),
       Failure<List<NotificationItem>>(
         :final String message,
         :final Object? cause,
@@ -63,9 +59,7 @@ class ApiNotificationRepository implements NotificationRepository {
     required String notificationId,
   }) async {
     try {
-      await _dio.patch<dynamic>(
-        '/api/v1/notifications/$notificationId/read',
-      );
+      await _dio.patch<dynamic>('/api/v1/notifications/$notificationId/read');
       return Result<void>.success(null);
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
@@ -78,12 +72,20 @@ class ApiNotificationRepository implements NotificationRepository {
     required String notificationId,
   }) async {
     try {
-      await _dio.delete<dynamic>(
-        '/api/v1/notifications/$notificationId',
-      );
+      await _dio.delete<dynamic>('/api/v1/notifications/$notificationId');
       return Result<void>.success(null);
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
     }
+  }
+
+  List<dynamic> _jsonList(dynamic data) {
+    if (data is Map && data['data'] is List) {
+      return List<dynamic>.from(data['data'] as List);
+    }
+    if (data is List) {
+      return List<dynamic>.from(data);
+    }
+    return const <dynamic>[];
   }
 }

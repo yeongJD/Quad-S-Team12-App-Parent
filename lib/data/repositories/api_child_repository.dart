@@ -32,13 +32,13 @@ class ApiChildRepository implements ChildRepository {
       final Response<dynamic> response = await _dio.get<dynamic>(
         '/api/v1/parents/children',
       );
-      final dynamic data = response.data;
-      if (data is! List) {
-        return Result<List<ChildSummary>>.success(const <ChildSummary>[]);
-      }
+      final List<dynamic> data = _jsonList(response.data);
       final List<ChildSummary> children = data
-          .whereType<Map<String, dynamic>>()
-          .map(ChildSummary.fromJson)
+          .whereType<Map>()
+          .map(
+            (Map child) =>
+                ChildSummary.fromJson(Map<String, dynamic>.from(child)),
+          )
           .toList(growable: false);
       return Result<List<ChildSummary>>.success(children);
     } on DioException catch (e) {
@@ -168,5 +168,15 @@ class ApiChildRepository implements ChildRepository {
       return (subtype: 'webp', ext: 'webp');
     }
     return (subtype: 'jpeg', ext: 'jpg');
+  }
+
+  List<dynamic> _jsonList(dynamic data) {
+    if (data is Map && data['data'] is List) {
+      return List<dynamic>.from(data['data'] as List);
+    }
+    if (data is List) {
+      return List<dynamic>.from(data);
+    }
+    return const <dynamic>[];
   }
 }
