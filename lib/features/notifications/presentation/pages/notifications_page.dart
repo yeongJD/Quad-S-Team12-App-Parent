@@ -50,8 +50,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
       });
       return;
     }
-    final Result<List<NotificationItem>> result =
-        await _notificationRepository.loadInbox(parentId);
+    final Result<List<NotificationItem>> result = await _notificationRepository
+        .loadInbox(parentId);
     if (!mounted) {
       return;
     }
@@ -68,6 +68,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _handleActionTap(NotificationItem item) async {
+    final String? targetRoute = _targetRouteFromPayload(item);
+    if (targetRoute != null) {
+      context.push(targetRoute);
+      await _markNotificationRead(item);
+      return;
+    }
+
     bool didOpen = false;
     switch (item.type) {
       case NotificationType.missionCompleted:
@@ -187,19 +194,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<ChildSummary?> _childFromPayload(NotificationItem item) async {
     final String? parentId = _parentId;
-    final Object? childCode = item.payload?['childCode'];
-    if (parentId == null || parentId.isEmpty || childCode is! String) {
+    final String? childRef = _childRefFromPayload(item);
+    if (parentId == null || parentId.isEmpty || childRef == null) {
       return null;
     }
 
-    final Result<List<ChildSummary>> result =
-        await _childRepository.loadChildren(parentId);
+    final Result<List<ChildSummary>> result = await _childRepository
+        .loadChildren(parentId);
     final List<ChildSummary> children = switch (result) {
       Success<List<ChildSummary>>(:final data) => data,
       Failure<List<ChildSummary>>() => const <ChildSummary>[],
     };
     for (final ChildSummary child in children) {
-      if (child.childCode == childCode || child.childrenId == childCode) {
+      if (child.childCode == childRef || child.childrenId == childRef) {
         return child;
       }
     }
@@ -221,8 +228,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   String? _childCodeFromPayload(NotificationItem item) {
-    final Object? childCode = item.payload?['childCode'];
-    return childCode is String && childCode.isNotEmpty ? childCode : null;
+    return _childRefFromPayload(item);
+  }
+
+  String? _childRefFromPayload(NotificationItem item) {
+    for (final String key in <String>['childrenId', 'childId', 'childCode']) {
+      final Object? value = item.payload?[key];
+      if (value != null && value.toString().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return null;
+  }
+
+  String? _targetRouteFromPayload(NotificationItem item) {
+    for (final String key in <String>['targetRoute', 'deeplink']) {
+      final Object? value = item.payload?[key];
+      final String? route = value?.toString();
+      if (route != null && route.startsWith('/')) {
+        return route;
+      }
+    }
+    return null;
   }
 
   TodayMission _missionMockForNotification(NotificationType type) {

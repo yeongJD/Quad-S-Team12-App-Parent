@@ -97,8 +97,33 @@ class NotificationItem {
       timeAgo: _formatTimeAgo(createdAt),
       actionLabel: actionLabel is String ? actionLabel : '확인하러 가기',
       isRead: isRead is bool ? isRead : false,
-      payload: payload is Map<String, Object?> ? payload : null,
+      payload: _payloadFromJson(json, payload),
     );
+  }
+
+  static Map<String, Object?>? _payloadFromJson(
+    Map<String, Object?> json,
+    Object? rawPayload,
+  ) {
+    final Map<String, Object?> payload = rawPayload is Map
+        ? Map<String, Object?>.from(rawPayload)
+        : <String, Object?>{};
+    for (final String key in <String>[
+      'childId',
+      'childrenId',
+      'childCode',
+      'missionId',
+      'missionIndex',
+      'performanceId',
+      'targetRoute',
+      'deeplink',
+    ]) {
+      final Object? value = json[key];
+      if (value != null) {
+        payload[key] = value;
+      }
+    }
+    return payload.isEmpty ? null : payload;
   }
 
   static String _formatTimeAgo(String createdAt) {
@@ -132,6 +157,7 @@ class NotificationItem {
       case 'MISSION_APPROVED':
         return NotificationType.missionCompleted;
       case 'MISSION_CREATED':
+      case 'MISSION_REQUESTED':
       case 'MISSION_REJECTED':
         return NotificationType.missionConfirmationRequested;
       case 'GENERAL':
