@@ -78,6 +78,7 @@
 - Backend: `childPlanExists`를 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부로 판정.
 - Backend: daily schedule preview/생성 기준을 `yearMonth + weekNumber + dayOfWeek`로 정리.
 - Backend: 이번 작업의 주차 기준은 데모 효율을 우선해 4주 고정으로 적용.
+- Backend: 자녀 주차 예산 저장 시 1~4주차가 모두 양수로 존재하고 합계가 부모 `TimePolicy.baseTime`과 정확히 같아야 하도록 검증.
 - Parent: 홈 오늘의 시간 상태를 local child weekly rule 대신 backend/mock `ChildTimeSummary` 기준으로 전환.
 - Parent: `waitingChildPlan` 상태에서는 `자녀가 아직 시간 설정 이전입니다.` 회색 안내를 표시.
 - Child: 부모 `TimePolicy`가 없으면 시간 설정 진입을 안내 화면으로 차단.
@@ -253,7 +254,7 @@
 - app week index와 backend week number 변환을 검증한다. 앱은 0-based, backend는 1-based다.
 - Backend는 `weekly-budgets` 재저장 시 같은 자녀/년월의 기존 weekly budget과 weekly template을 함께 삭제해 stale template이 섞이지 않게 한다.
 - Child UI에서는 week별 budget 합이 부모 `baseTime`과 같아야 다음 단계로 진행한다.
-- Backend validation은 최소한 week별 budget 합이 부모 `baseTime`을 넘지 않게 막아야 한다.
+- Backend validation은 week별 budget 합이 부모 `baseTime`과 정확히 같아야 하며, 1~4주차가 모두 양수로 존재해야 한다.
 - week template 합이 해당 week budget을 넘지 않게 한다.
 - Child 앱 저장 시 요일별 분배 패턴은 각 주차 budget에 맞춰 비율 조정해 `WeeklyTimeDistribution`으로 저장한다.
 - 제출 성공 후 Child 홈으로 돌아와 오늘의 시간이 보이게 한다.
@@ -461,7 +462,8 @@ backend sync:
 
 작업:
 - `POST /api/v1/schedules/weekly-budgets`가 부모 `TimePolicy`를 선행 조건으로 검증한다.
-- weekly budget 합이 `TimePolicy.baseTime`을 초과하지 않게 한다.
+- weekly budget 합이 `TimePolicy.baseTime`과 정확히 같게 한다.
+- 1~4주차 budget이 모두 한 번씩 존재하고 각 주차가 양수인지 검증한다.
 - `PUT /api/v1/schedules/templates`가 해당 week budget 선행 조건을 검증한다.
 - week template 합이 week budget을 초과하지 않게 한다.
 - 자녀 plan 존재 여부 계산용 repository method를 준비한다.
