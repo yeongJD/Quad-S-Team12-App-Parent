@@ -152,11 +152,27 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
           parentId.isNotEmpty &&
           childrenId != null &&
           childrenId.isNotEmpty) {
-        await _missionRepository.removeMissionAt(
+        final Result<void> result = await _missionRepository.removeMissionAt(
           parentId: parentId,
           childrenId: childrenId,
           index: deleteIndex,
         );
+        if (!mounted) {
+          return;
+        }
+        switch (result) {
+          case Success<void>():
+            break;
+          case Failure<void>(:final String message):
+            setState(() {
+              _showDeleteDialog = false;
+              _pendingDeleteIndex = null;
+            });
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(message)));
+            return;
+        }
       }
     }
     if (!mounted) {

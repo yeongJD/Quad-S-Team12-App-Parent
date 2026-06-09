@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
@@ -54,9 +55,11 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
   MissionResetPeriod? _resetPeriod;
   MissionConfirmationMethod? _confirmationMethod;
   TimeSelection _rewardTime = const TimeSelection(hour: 0, minute: 0);
+  bool _isSubmitting = false;
 
   bool get _canSubmit {
-    return _titleController.text.trim().isNotEmpty &&
+    return !_isSubmitting &&
+        _titleController.text.trim().isNotEmpty &&
         _category != null &&
         _resetPeriod != null &&
         _confirmationMethod != null &&
@@ -156,14 +159,19 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
       return;
     }
 
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    late final Result<void> result;
     if (missionIndex == null) {
-      await _missionRepository.addMission(
+      result = await _missionRepository.addMission(
         parentId: parentId,
         childrenId: childrenId,
         mission: mission,
       );
     } else {
-      await _missionRepository.updateMissionAt(
+      result = await _missionRepository.updateMissionAt(
         parentId: parentId,
         childrenId: childrenId,
         index: missionIndex,
@@ -174,7 +182,17 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
     if (!mounted) {
       return;
     }
-    _handleBack();
+    switch (result) {
+      case Success<void>():
+        _handleBack();
+      case Failure<void>(:final String message):
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   @override
