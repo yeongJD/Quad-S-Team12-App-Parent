@@ -80,6 +80,7 @@
 - Backend: daily schedule preview/생성 기준을 `yearMonth + weekNumber + dayOfWeek`로 정리.
 - Backend: 이번 작업의 주차 기준은 데모 효율을 우선해 4주 고정으로 적용.
 - Backend: 자녀 주차 예산 저장 시 1~4주차가 모두 양수로 존재하고 합계가 부모 `TimePolicy.baseTime`과 정확히 같아야 하도록 검증.
+- Backend: 부모가 기존 월 총 시간의 `baseTime`을 변경하면 해당 월 자녀 `WeeklyBudget`/`WeeklyTimeDistribution`/`DailyTimeAllocation`을 초기화해 다시 `waitingChildPlan` 상태로 돌아가도록 보완.
 - Parent: 홈 오늘의 시간 상태를 local child weekly rule 대신 backend/mock `ChildTimeSummary` 기준으로 전환.
 - Parent: `waitingChildPlan` 상태에서는 `자녀가 아직 시간 설정 이전입니다.` 회색 안내를 표시.
 - Child: 부모 `TimePolicy`가 없으면 시간 설정 진입을 안내 화면으로 차단.
@@ -126,6 +127,7 @@
 - 백그라운드 화면 켜짐 차감은 Flutter lifecycle만으로 처리하지 않고 Android native tracker/AccessibilityService 전제에서 검수한다.
 - `/api/v1/schedules/settle`은 실시간 countdown 저장 API가 아니며, 현재 backend 의미상 pause sync에 연결하지 않는다.
 - Parent의 월 총 시간 계산은 실제 달의 요일 개수를 반영한 총량 계산으로 유지한다. "4주 고정"은 Child의 weekly budget/template 분배 행과 backend validation 범위에만 적용한다.
+- 같은 자녀/년월에서 부모가 월 총량을 다른 값으로 수정하면 기존 자녀 계획은 더 이상 유효하지 않으므로 `waitingChildPlan`으로 되돌린다. 같은 값 재저장은 기존 자녀 계획을 유지한다.
 - Child가 오늘 시간을 연장할 때는 월 총량 `baseTime`을 다시 소비하지 않는다. 연장 가능 재원은 이번 달 reward pool인 `accumulatedRewardTime`으로 제한한다.
 
 주의할 경계:
