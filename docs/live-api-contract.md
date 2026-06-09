@@ -367,6 +367,7 @@ Current direction:
 - 실시간 남은시간 저장 API로 쓰지 않는다.
 - Child local screen-time ledger가 남은시간과 차단 트리거의 1차 source다.
 - `settle`은 하루 마감 또는 pause coarse sync 후보로만 둔다.
+- `settle`은 daily allocation을 실제 사용량으로 정산/잠금할 수 있지만, 남은 시간을 `accumulatedRewardTime`에 더하지 않는다.
 
 ## 3. Local Screen-Time Ledger
 

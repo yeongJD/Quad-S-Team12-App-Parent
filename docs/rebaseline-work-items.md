@@ -311,7 +311,7 @@
 
 backend sync:
 - 기존 `/api/v1/schedules/settle`은 하루 마감 또는 pause 시 coarse sync 후보로만 둔다.
-- 현재 settle은 실제 사용량을 기록한 뒤 남은 시간을 reward pool으로 환불하고 daily allocation 값을 정산된 값으로 바꾼다.
+- 현재 리베이스 기준 settle은 실제 사용량을 기록해 daily allocation을 정산/잠금하는 후보이며, 남은 시간을 reward pool으로 환불하지 않는다.
 - 이 의미가 실시간 남은시간 저장과 다르므로, 데모 단계에서는 local ledger를 1차 source로 둔다.
 - 따라서 앱 차단 트리거는 backend 실시간 저장 여부와 분리한다. Child local ledger가 0을 기록하는 순간 native blocker를 호출하는 방식이 현재 기준이다.
 
@@ -477,12 +477,12 @@ backend sync:
 
 작업:
 - 기존 `/api/v1/schedules/settle` 의미를 문서화한다.
-- settle이 "오늘 실제 사용량 확정 + 남은 시간 reward pool 환불"이라면 실시간 countdown 저장 용도로 쓰지 않는다.
+- settle은 "오늘 실제 사용량 확정 + daily allocation 정산" 후보로만 쓰고, 남은 시간을 reward pool에 더하지 않는다.
 - 필요 시 하루 마감 또는 app pause coarse sync로만 사용한다.
 
 검수:
 - settle 호출 시 actualUsed가 totalAllocated를 넘으면 실패.
-- unused time이 reward pool에 환불됨.
+- settle 후 reward pool이 증가하지 않음.
 - settle 후 daily response가 앱 표시와 충돌하지 않는지 확인.
 
 ### 5.6 Mission/reward
