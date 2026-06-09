@@ -83,7 +83,7 @@ class NotificationItem {
         createdAt is! String ||
         (actionLabel != null && actionLabel is! String) ||
         (isRead != null && isRead is! bool) ||
-        (payload != null && payload is! Map<String, Object?>)) {
+        (payload != null && payload is! Map)) {
       return null;
     }
 
