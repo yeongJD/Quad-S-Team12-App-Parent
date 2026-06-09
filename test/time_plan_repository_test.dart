@@ -47,6 +47,43 @@ void main() {
       expect(calls, <String>['GET /api/v1/parents/children/2/time-summary']);
     });
 
+    test('saves monthly total as parent time policy baseTime', () async {
+      final List<RequestOptions> calls = <RequestOptions>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                calls.add(options);
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: <String, dynamic>{'isSuccess': true, 'data': null},
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiTimePlanRepository repository = ApiTimePlanRepository(dio: dio);
+
+      final Result<void> result = await repository.saveMonthlyTotal(
+        parentId: '1',
+        childrenId: '2',
+        totalMinutes: 600,
+      );
+
+      expect(result, isA<Success<void>>());
+      expect(calls, hasLength(1));
+      expect(calls.single.method, 'POST');
+      expect(calls.single.path, '/api/v1/parents/time-policy');
+      expect(calls.single.data, <String, dynamic>{
+        'childId': 2,
+        'yearMonth': matches(RegExp(r'^\d{4}-\d{2}$')),
+        'baseTime': 600,
+      });
+    });
+
     test('parses policy base and reward pool from time summary', () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
       dio.interceptors.add(
