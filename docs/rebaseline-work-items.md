@@ -97,6 +97,7 @@
 - Child: 부모 월 총 시간 설정 알림이 별도 deeplink 없이도 자녀 시간 설정 화면으로 이어지도록 보완.
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
 - Backend: 이미 승인된 미션의 재제출/다른 pending performance 승인과 이미 심사 대기 중인 미션의 중복 제출을 차단해 reward 중복 지급 여지를 줄임.
+- Backend: 오늘 시간 연장은 `TimePolicy.baseTime`이 아니라 `accumulatedRewardTime` reward pool만 차감하도록 보완.
 
 검증 완료:
 - Parent: `flutter analyze`, `flutter test`, `flutter build apk --debug`.
@@ -122,6 +123,7 @@
 - 백그라운드 화면 켜짐 차감은 Flutter lifecycle만으로 처리하지 않고 Android native tracker/AccessibilityService 전제에서 검수한다.
 - `/api/v1/schedules/settle`은 실시간 countdown 저장 API가 아니라 하루 마감 또는 pause 시점의 coarse sync 후보로만 둔다.
 - Parent의 월 총 시간 계산은 실제 달의 요일 개수를 반영한 총량 계산으로 유지한다. "4주 고정"은 Child의 weekly budget/template 분배 행과 backend validation 범위에만 적용한다.
+- Child가 오늘 시간을 연장할 때는 월 총량 `baseTime`을 다시 소비하지 않는다. 연장 가능 재원은 이번 달 reward pool인 `accumulatedRewardTime`으로 제한한다.
 
 주의할 경계:
 - "로컬 정적 검증 PASS"와 "실제 계정 E2E PASS"를 분리한다. 현재 문서의 완료 항목은 대부분 전자이며, 최종 AWS 배포 전에는 후자를 다시 찍어야 한다.
