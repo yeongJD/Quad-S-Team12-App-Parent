@@ -43,8 +43,8 @@
 |---|---|---|---|
 | `noChild` | 연결된 자녀 없음 | 자녀 추가 유도 | 해당 없음 |
 | `noParentPolicy` | 해당 자녀/년월 `TimePolicy` 없음 | `+`로 월 총 시간 설정 가능 | 시간 설정 진입 차단 |
-| `waitingChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성 | 회색 문구 `자녀가 아직 시간 설정 이전입니다.` | 시간 설정 가능 |
-| `hasChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution` 있음 | 오늘의 시간 표시 | 오늘의 시간 표시 |
+| `waitingChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성, 또는 budget 합계가 `TimePolicy.baseTime`과 불일치 | 회색 문구 `자녀가 아직 시간 설정 이전입니다.` | 시간 설정 가능 |
+| `hasChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 있고 budget 합계가 `TimePolicy.baseTime`과 일치 | 오늘의 시간 표시 | 오늘의 시간 표시 |
 | `todayTemplateMissing` | 자녀 계획은 있으나 오늘 week/day 템플릿 없음 | 오늘 배정 시간 없음 표시 | 오늘 배정 시간 없음 표시 |
 
 중요:
@@ -76,7 +76,7 @@
 - Backend: parent-scoped `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD` 추가.
 - Backend: 부모 월 총 시간 설정 시 Child notification inbox row 생성.
 - Backend/Child: 자녀 시간 계획 저장 완료 후 `POST /api/v1/schedules/complete`를 호출해 Parent notification inbox row 생성.
-- Backend: `childPlanExists`를 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부로 판정.
+- Backend: `childPlanExists`를 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부와 weekly budget 합계가 `TimePolicy.baseTime`과 일치하는지로 판정.
 - Backend: daily schedule preview/생성 기준을 `yearMonth + weekNumber + dayOfWeek`로 정리.
 - Backend: 이번 작업의 주차 기준은 데모 효율을 우선해 4주 고정으로 적용.
 - Backend: 자녀 주차 예산 저장 시 1~4주차가 모두 양수로 존재하고 합계가 부모 `TimePolicy.baseTime`과 정확히 같아야 하도록 검증.
@@ -118,7 +118,7 @@
 2026-06-09 문서 재검수 기준으로 현재 방향은 유지한다. 다만 이후 작업은 "구현 추가"보다 "실제 계정/실기기 검수" 중심으로 읽는다.
 
 유지할 방향:
-- Parent 홈 상태는 `TimePolicy`와 `WeeklyBudget`/`WeeklyTimeDistribution` 차이로 판정한다. daily schedule row 부재를 곧바로 `자녀 계획 없음`으로 보지 않는다.
+- Parent 홈 상태는 `TimePolicy`와 `WeeklyBudget`/`WeeklyTimeDistribution`, weekly budget 합계와 `TimePolicy.baseTime` 일치 여부로 판정한다. daily schedule row 부재를 곧바로 `자녀 계획 없음`으로 보지 않는다.
 - Parent에서 child API를 우회 호출하는 대신 parent-scoped time summary API를 기준으로 둔다. 이는 쓰기 flow 추가가 아니라 Parent 표시용 read path다.
 - Child 앱 차단 트리거는 backend 실시간 저장이 아니라 local screen-time ledger의 `remainingSeconds <= 0` 기준으로 둔다.
 - 백그라운드 화면 켜짐 차감은 Flutter lifecycle만으로 처리하지 않고 Android native tracker/AccessibilityService 전제에서 검수한다.
@@ -416,7 +416,7 @@ backend sync:
 - parent-child 관계 검증 후에만 조회를 허용한다.
 - `TimePolicy` 존재 여부로 `parentPolicyExists`를 계산한다.
 - `basePolicyMinutes`는 부모가 설정한 `TimePolicy.baseTime`이다. Parent 앱은 이번 달 시간 확인/수정 화면에서 이 값을 사용하고, child policy API를 우회 호출하지 않는다.
-- 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부로 `childPlanExists`를 계산한다. 단, 이 값은 "자녀가 계획을 제출했는가"이고 "오늘 시간이 있는가"와는 분리한다.
+- 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부와 weekly budget 합계가 `TimePolicy.baseTime`과 일치하는지로 `childPlanExists`를 계산한다. 단, 이 값은 "자녀가 계획을 제출했는가"이고 "오늘 시간이 있는가"와는 분리한다.
 - `childPlanExists=false`면 daily schedule 생성을 강제로 하지 않아도 된다.
 - `childPlanExists=true`면 오늘 날짜의 schedule 또는 파생 값을 내려준다.
 - 오늘 템플릿이 없으면 `childPlanExists=true`라도 `todayScheduleStatus="templateMissing"`로 내려준다.
@@ -474,7 +474,7 @@ backend sync:
 - `PUT /api/v1/schedules/templates`가 해당 week budget 선행 조건을 검증한다.
 - week template 합이 week budget을 초과하지 않게 한다.
 - 자녀 plan 존재 여부 계산용 repository method를 준비한다.
-- `childPlanExists`는 current yearMonth에 1~4주차 weekly budget과 각 주차별 template이 모두 있는지로 계산한다.
+- `childPlanExists`는 current yearMonth에 1~4주차 weekly budget과 각 주차별 template이 모두 있고, weekly budget 합계가 부모 `TimePolicy.baseTime`과 일치하는지로 계산한다.
 - 오늘 시간이 있는지는 별도 `todayScheduleStatus` 또는 `todayTemplateExists`로 계산한다.
 
 검수:
