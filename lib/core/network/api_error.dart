@@ -113,7 +113,7 @@ const Map<String, String> _backendCodeAliases = <String, String>{
   'MEMBER404_CHILDREN': 'INVALID_CHILD_CODE',
   'MEMBER409_CHILDREN': 'CHILD_ALREADY_LINKED',
   'MISSION404': 'MISSION_NOT_FOUND',
-  'MISSION400': 'INVALID_MISSION_STATE',
+  'MISSION400': 'MISSION_ALREADY_COMPLETED',
 };
 
 /// Returns the `error.code` from a [DioException] response body (translated to
