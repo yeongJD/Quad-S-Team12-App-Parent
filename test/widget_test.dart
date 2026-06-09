@@ -398,6 +398,40 @@ void main() {
     expect(find.text('반려'), findsOneWidget);
   });
 
+  testWidgets('parent mission review keeps waiting state when approve fails', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TodayMissionCheckPage(
+          parentId: 'parent@example.com',
+          childrenId: 'GDG12-1',
+          missionIndex: 0,
+          initialMission: TodayMission(
+            title: '저장되지 않은 미션',
+            category: MissionCategory.cleaning,
+            resetPeriod: MissionResetPeriod.daily,
+            confirmationMethod: MissionConfirmationMethod.parent,
+            rewardMinutes: 30,
+            description: '저장소에는 없는 미션',
+            verificationStatus: MissionVerificationStatus.waitingParentApproval,
+            submittedAtText: '2025.1.21 오후 7:01',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('수행확인'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('승인'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('미션을 찾을 수 없어요.'), findsOneWidget);
+    expect(find.text('부모 확인 대기중'), findsOneWidget);
+    expect(find.text('미션 수행완료!'), findsNothing);
+  });
+
   testWidgets('AI verification waiting state hides manual action buttons', (
     WidgetTester tester,
   ) async {

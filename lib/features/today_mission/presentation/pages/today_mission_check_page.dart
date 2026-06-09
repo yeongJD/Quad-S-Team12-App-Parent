@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/repositories/mission_repository.dart';
@@ -55,6 +56,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
   final MissionRepository _missionRepository = createMissionRepository();
   late TodayMission? _mission = widget.initialMission;
   late int _selectedTabIndex = widget.initialTab.index;
+  bool _isUpdatingVerification = false;
 
   void _handleBack() {
     final GoRouter router = GoRouter.of(context);
@@ -68,6 +70,9 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
   Future<void> _updateVerificationStatus(
     MissionVerificationStatus verificationStatus,
   ) async {
+    if (_isUpdatingVerification) {
+      return;
+    }
     final TodayMission? mission = _mission;
     final int? missionIndex = widget.missionIndex;
     final String? parentId = widget.parentId;
@@ -81,22 +86,27 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
       return;
     }
 
+    setState(() {
+      _isUpdatingVerification = true;
+    });
+
     final TodayMission updatedMission = mission.copyWith(
       verificationStatus: verificationStatus,
       submittedAtText: mission.submittedAtText ?? _fallbackSubmittedAt,
     );
+    late final Result<void> result;
     // Use dedicated approve/reject endpoints when the status transition is a
     // verdict; fall back to a generic updateAt for the in-progress states
     // (idle / waiting*).
     switch (verificationStatus) {
       case MissionVerificationStatus.approved:
-        await _missionRepository.approveMissionAt(
+        result = await _missionRepository.approveMissionAt(
           parentId: parentId,
           childrenId: childrenId,
           index: missionIndex,
         );
       case MissionVerificationStatus.rejected:
-        await _missionRepository.rejectMissionAt(
+        result = await _missionRepository.rejectMissionAt(
           parentId: parentId,
           childrenId: childrenId,
           index: missionIndex,
@@ -104,7 +114,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
       case MissionVerificationStatus.idle:
       case MissionVerificationStatus.waitingParentApproval:
       case MissionVerificationStatus.waitingAiVerification:
-        await _missionRepository.updateMissionAt(
+        result = await _missionRepository.updateMissionAt(
           parentId: parentId,
           childrenId: childrenId,
           index: missionIndex,
@@ -114,9 +124,23 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
     if (!mounted) {
       return;
     }
-    setState(() {
-      _mission = updatedMission;
-    });
+
+    switch (result) {
+      case Success<void>():
+        setState(() {
+          _mission = updatedMission;
+          _isUpdatingVerification = false;
+        });
+      case Failure<void>(:final message):
+        setState(() {
+          _isUpdatingVerification = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
