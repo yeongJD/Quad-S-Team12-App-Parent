@@ -18,17 +18,30 @@ import '../models/notification_target_route.dart';
 import '../widgets/notification_card.dart';
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
+  const NotificationsPage({
+    super.key,
+    NotificationRepository? notificationRepository,
+    ChildRepository? childRepository,
+    MissionRepository? missionRepository,
+  }) : _notificationRepository = notificationRepository,
+       _childRepository = childRepository,
+       _missionRepository = missionRepository;
+
+  final NotificationRepository? _notificationRepository;
+  final ChildRepository? _childRepository;
+  final MissionRepository? _missionRepository;
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final NotificationRepository _notificationRepository =
-      createNotificationRepository();
-  final ChildRepository _childRepository = createChildRepository();
-  final MissionRepository _missionRepository = createMissionRepository();
+  late final NotificationRepository _notificationRepository =
+      widget._notificationRepository ?? createNotificationRepository();
+  late final ChildRepository _childRepository =
+      widget._childRepository ?? createChildRepository();
+  late final MissionRepository _missionRepository =
+      widget._missionRepository ?? createMissionRepository();
 
   List<NotificationItem> _notifications = <NotificationItem>[];
   bool _isLoading = true;
@@ -109,17 +122,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  Future<void> _markNotificationRead(NotificationItem item) async {
+  Future<bool> _markNotificationRead(NotificationItem item) async {
     final String? parentId = _parentId;
     if (parentId != null && parentId.isNotEmpty) {
-      await _notificationRepository.markRead(
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      final Result<void> result = await _notificationRepository.markRead(
         parentId: parentId,
         notificationId: item.id,
       );
+      if (!mounted) {
+        return false;
+      }
+      switch (result) {
+        case Success<void>():
+          break;
+        case Failure<void>(:final String message):
+          messenger.showSnackBar(SnackBar(content: Text(message)));
+          return false;
+      }
     }
 
     if (!mounted) {
-      return;
+      return false;
     }
     setState(() {
       _notifications = _notifications
@@ -130,6 +154,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           )
           .toList(growable: false);
     });
+    return true;
   }
 
   Future<bool> _openMissionNotification(NotificationItem item) async {
