@@ -496,11 +496,14 @@ Parent token required.
 
 Rules:
 - Parent app must call by `performanceId`, not `missionId`.
+- Parent approve/reject is only valid for `PARENT` verification performances whose status is `PENDING`.
+- `AI` and `CHILD` verification performances cannot be manually approved/rejected by Parent.
 - Reward 지급 시점은 verification type에 따라 다르다.
   - `CHILD`: 제출 즉시.
   - `PARENT`: approve 시.
   - `AI`: AI 승인 시.
-- 중복 approve/reward 방지는 backend E2E 검수 대상이다.
+- Invalid state returns `INVALID_MISSION_STATE`.
+- 중복 approve/reward 방지는 backend unit test로 1차 방어했고, 실제 approve/reject 반복 E2E는 추가 검수 대상이다.
 
 ## 5. Notifications
 
