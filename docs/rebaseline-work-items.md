@@ -88,6 +88,7 @@
 - Parent: notification `targetRoute`/`deeplink` 클릭 시 현재 세션 `parentId`와 payload `childrenId`를 보강해 시간/미션/리포트 화면으로 이동하도록 정리.
 - Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
 - Child: FCM push payload에서 `deeplink`가 없고 `targetRoute`만 있는 경우도 tap route로 사용하도록 보완.
+- Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
 
 검증 완료:
 - Parent: `flutter analyze`, `flutter test`, `flutter build apk --debug`.

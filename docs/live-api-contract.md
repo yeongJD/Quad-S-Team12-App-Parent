@@ -462,6 +462,23 @@ Form fields:
 
 Response is `AiVerificationResponse`.
 
+```json
+{
+  "isAccepted": false,
+  "reason": "부모님 확인 대기중입니다.",
+  "status": "PENDING",
+  "performanceId": 200
+}
+```
+
+Notes:
+- `isAccepted` and `reason` are kept for backward compatibility.
+- Child app should prefer `status` when present:
+  - `PENDING` means reviewing for `PARENT`/`AI` verification.
+  - `ACCEPTED` means completed.
+  - `REJECTED` means rejected.
+- `performanceId` identifies the created submission and is useful for later review/notification paths.
+
 ### Mission Performance
 
 `GET /api/v1/missions/{missionId}/performance`
