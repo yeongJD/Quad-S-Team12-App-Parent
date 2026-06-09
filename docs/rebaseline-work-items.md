@@ -97,6 +97,7 @@
 - Parent: notification `targetRoute`/`deeplink` 클릭 시 현재 세션 `parentId`와 payload `childrenId`를 보강하는 route 정규화 기준을 정리.
 - Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
 - Parent: 미션 알림에 `missionId`/`performanceId`가 있으면 generic `targetRoute`보다 미션 심사 상세 진입을 우선하도록 보완.
+- Parent: 실제 계정의 빈 미션 상태에서는 mock `demo=empty` 목록이 아니라 live `/today-mission` 경로로 진입하도록 보완.
 - Parent: 이번 달 시간 확인/수정 화면이 child policy API를 우회 호출하지 않고 parent-scoped summary의 `basePolicyMinutes`를 사용하도록 보완.
 - Parent: 이번 달 시간 확인/수정 화면이 저장된 `basePolicyMinutes`를 local draft 재계산값보다 우선 표시하도록 보완.
 - Parent: AI/자녀 확인으로 이미 지급된 미션에는 backend가 지원하지 않는 수동 반려 버튼을 숨기고, 부모 확인 대기 미션에서만 승인/반려를 표시하도록 보완.
