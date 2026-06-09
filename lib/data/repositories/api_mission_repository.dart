@@ -70,7 +70,7 @@ class ApiMissionRepository implements MissionRepository {
       await _dio.post<dynamic>(
         '/api/v1/missions',
         data: <String, dynamic>{
-          'childId': childrenId,
+          'childId': _childIdValue(childrenId),
           'title': mission.title,
           // Backend enums are UPPER_CASE. confirmationMethod {ai,child,parent}
           // maps 1:1 to the backend VerificationType {AI,CHILD,PARENT}.
@@ -405,5 +405,9 @@ class ApiMissionRepository implements MissionRepository {
       }
     }
     return null;
+  }
+
+  Object _childIdValue(String childrenId) {
+    return int.tryParse(childrenId) ?? childrenId;
   }
 }

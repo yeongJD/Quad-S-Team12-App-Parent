@@ -6,6 +6,48 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ApiMissionRepository', () {
+    test(
+      'addMission posts numeric childId when childrenId is numeric',
+      () async {
+        Map<String, dynamic>? postedBody;
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  postedBody = Map<String, dynamic>.from(options.data as Map);
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{'isSuccess': true},
+                    ),
+                  );
+                },
+          ),
+        );
+        final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+        final Result<void> result = await repository.addMission(
+          parentId: 'parent-1',
+          childrenId: '22',
+          mission: const TodayMission(
+            title: '방 청소',
+            category: MissionCategory.cleaning,
+            resetPeriod: MissionResetPeriod.daily,
+            confirmationMethod: MissionConfirmationMethod.parent,
+            rewardMinutes: 30,
+            description: '사진 제출',
+          ),
+        );
+
+        expect(result, isA<Success<void>>());
+        expect(postedBody?['childId'], 22);
+        expect(postedBody?['verificationType'], 'PARENT');
+        expect(postedBody?['resetCycle'], 'DAILY');
+      },
+    );
+
     test('maps pending performances by verification type', () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
       dio.interceptors.add(
