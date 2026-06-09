@@ -12,12 +12,14 @@ class TodayTimeSection extends StatelessWidget {
     super.key,
     required this.timeSummary,
     this.waitingForChildPlan = false,
+    this.emptyMessage,
     required this.onSetup,
     required this.onAdd,
   });
 
   final TimeSummary? timeSummary;
   final bool waitingForChildPlan;
+  final String? emptyMessage;
   final VoidCallback onSetup;
   final VoidCallback onAdd;
 
@@ -46,8 +48,10 @@ class TodayTimeSection extends StatelessWidget {
           ),
           child: _hasData
               ? _TimeSummaryContent(summary: timeSummary!)
-              : waitingForChildPlan
-              ? const _WaitingTimePlanMessage()
+              : waitingForChildPlan || emptyMessage != null
+              ? _WaitingTimePlanMessage(
+                  message: emptyMessage ?? '자녀가 아직 시간 설정 이전입니다.',
+                )
               : Center(child: _PrimaryAddButton(onTap: onAdd)),
         ),
       ],
@@ -56,13 +60,15 @@ class TodayTimeSection extends StatelessWidget {
 }
 
 class _WaitingTimePlanMessage extends StatelessWidget {
-  const _WaitingTimePlanMessage();
+  const _WaitingTimePlanMessage({required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        '자녀가 아직 이번주\n시간규칙을 설정하지 않았습니다',
+        message,
         textAlign: TextAlign.center,
         style: AppTypography.heading2Bold.copyWith(
           fontSize: 16,

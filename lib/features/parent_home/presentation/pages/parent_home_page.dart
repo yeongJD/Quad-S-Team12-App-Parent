@@ -11,7 +11,6 @@ import '../../../../data/repositories/notification_repository.dart';
 import '../../../../data/repositories/time_plan_repository.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
-import '../../../today_time/presentation/models/daily_time_rule.dart';
 import '../../../common/presentation/widgets/confirmation_dialog.dart';
 import '../models/parent_home_models.dart';
 import '../widgets/child_selector_section.dart';
@@ -84,36 +83,20 @@ class _ParentHomePageState extends State<ParentHomePage> {
       data = ParentHomeData.sampleFilled();
       savedMissions = <TodayMission>[];
       _connectedChildren = const <ChildSummary>[
-        ChildSummary(
-          childrenId: 'GDG12-1',
-          name: '박진아',
-          childCode: 'GDG12-1',
-        ),
-        ChildSummary(
-          childrenId: 'GDG12-2',
-          name: '박진아',
-          childCode: 'GDG12-2',
-        ),
+        ChildSummary(childrenId: 'GDG12-1', name: '박진아', childCode: 'GDG12-1'),
+        ChildSummary(childrenId: 'GDG12-2', name: '박진아', childCode: 'GDG12-2'),
       ];
     } else if (widget.showTimeEmptyPreview) {
       data = ParentHomeData.sampleTimeEmpty();
       savedMissions = <TodayMission>[];
       _connectedChildren = const <ChildSummary>[
-        ChildSummary(
-          childrenId: 'GDG12-1',
-          name: '박진아',
-          childCode: 'GDG12-1',
-        ),
+        ChildSummary(childrenId: 'GDG12-1', name: '박진아', childCode: 'GDG12-1'),
       ];
     } else if (widget.showLinkedChildPreview) {
       data = ParentHomeData.withLinkedChild(name: '홍길동');
       savedMissions = <TodayMission>[];
       _connectedChildren = const <ChildSummary>[
-        ChildSummary(
-          childrenId: 'GDG12-1',
-          name: '홍길동',
-          childCode: 'GDG12-1',
-        ),
+        ChildSummary(childrenId: 'GDG12-1', name: '홍길동', childCode: 'GDG12-1'),
       ];
     } else {
       final _StoredParentHomeData storedData =
@@ -164,27 +147,17 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
     _selectedChildIndex = _selectedChildIndex.clamp(0, children.length - 1);
     final ChildSummary selectedChild = children[_selectedChildIndex];
-    final List<DailyTimeRule> savedTimeRules = await _loadRuleList(
+    final ChildTimeSummary childTimeSummary = await _loadChildTimeSummary(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
-      loader: _timePlanRepository.loadDailyRules,
-    );
-    final List<DailyTimeRule> childWeeklyRules = await _loadRuleList(
-      parentId: parentId,
-      childrenId: selectedChild.childrenId,
-      loader: _timePlanRepository.loadChildWeeklyRules,
     );
     final List<TodayMission> savedMissions = await _loadMissions(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
 
-    final bool hasParentRules = savedTimeRules.isNotEmpty;
-    final bool hasChildTimePlan = childWeeklyRules.isNotEmpty;
-
-    final TimeSummary? timeSummary = hasChildTimePlan
-        ? _timeSummaryFromRules(childWeeklyRules)
-        : null;
+    final TimeSummary? timeSummary = _timeSummaryFromBackend(childTimeSummary);
+    final String? timeEmptyMessage = _timeEmptyMessageFor(childTimeSummary);
 
     final List<MissionItem> missions = savedMissions
         .map(MissionItem.fromTodayMission)
@@ -197,8 +170,10 @@ class _ParentHomePageState extends State<ParentHomePage> {
             .map((ChildSummary child) => child.profileImageUrl)
             .toList(),
         timeSummary: timeSummary,
-        waitingForChildTimePlan: hasParentRules && !hasChildTimePlan,
-        hasChildTimePlan: hasChildTimePlan,
+        waitingForChildTimePlan:
+            childTimeSummary.todayScheduleStatus == 'waitingChildPlan',
+        hasChildTimePlan: childTimeSummary.childPlanExists,
+        timeEmptyMessage: timeEmptyMessage,
         missions: missions,
         hasUnreadNotification: hasUnreadNotification,
       ),
@@ -226,21 +201,27 @@ class _ParentHomePageState extends State<ParentHomePage> {
     };
   }
 
-  Future<List<DailyTimeRule>> _loadRuleList({
+  Future<ChildTimeSummary> _loadChildTimeSummary({
     required String parentId,
     required String childrenId,
-    required Future<Result<List<DailyTimeRule>>> Function({
-      required String parentId,
-      required String childrenId,
-    }) loader,
   }) async {
-    final Result<List<DailyTimeRule>> result = await loader(
-      parentId: parentId,
-      childrenId: childrenId,
-    );
+    final Result<ChildTimeSummary> result = await _timePlanRepository
+        .loadChildTimeSummary(
+          parentId: parentId,
+          childrenId: childrenId,
+          date: DateTime.now(),
+        );
     return switch (result) {
-      Success<List<DailyTimeRule>>(:final data) => data,
-      Failure<List<DailyTimeRule>>() => const <DailyTimeRule>[],
+      Success<ChildTimeSummary>(:final data) => data,
+      Failure<ChildTimeSummary>() => const ChildTimeSummary(
+        parentPolicyExists: false,
+        childPlanExists: false,
+        todayScheduleStatus: 'noParentPolicy',
+        baseMinutes: 0,
+        extendedMinutes: 0,
+        totalAvailableMinutes: 0,
+        rewardPoolMinutes: 0,
+      ),
     };
   }
 
@@ -256,37 +237,25 @@ class _ParentHomePageState extends State<ParentHomePage> {
     };
   }
 
-  TimeSummary? _timeSummaryFromRules(List<DailyTimeRule> rules) {
-    if (rules.isEmpty) {
-      return null;
-    }
-
-    final DateTime now = DateTime.now();
-    final int weekdayIndex = now.weekday - 1; // 0 for Monday, 6 for Sunday
-
-    DailyTimeRule? todayRule;
-    for (final DailyTimeRule rule in rules) {
-      if (rule.days.contains(weekdayIndex)) {
-        todayRule = rule;
-        break;
-      }
-    }
-
-    if (todayRule == null) {
-      return null;
-    }
-
-    final int minutes = todayRule.time.hour * 60 + todayRule.time.minute;
-    if (minutes <= 0) {
+  TimeSummary? _timeSummaryFromBackend(ChildTimeSummary summary) {
+    if (!summary.hasTodaySchedule || summary.baseMinutes <= 0) {
       return null;
     }
 
     return TimeSummary(
-      basicTime: _formatTime(minutes),
-      bonusTime: _formatTime(0),
+      basicTime: _formatTime(summary.baseMinutes),
+      bonusTime: _formatTime(summary.rewardPoolMinutes),
       basicProgress: 1.0,
-      bonusProgress: 0.0,
+      bonusProgress: summary.rewardPoolMinutes > 0 ? 1.0 : 0.0,
     );
+  }
+
+  String? _timeEmptyMessageFor(ChildTimeSummary summary) {
+    return switch (summary.todayScheduleStatus) {
+      'waitingChildPlan' => '자녀가 아직 시간 설정 이전입니다.',
+      'templateMissing' => '오늘 배정 시간이 없습니다.',
+      _ => null,
+    };
   }
 
   String _formatTime(int totalMinutes) {
@@ -572,6 +541,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                           TodayTimeSection(
                             timeSummary: _data.timeSummary,
                             waitingForChildPlan: _data.waitingForChildTimePlan,
+                            emptyMessage: _data.timeEmptyMessage,
                             onSetup: _openTimeSettingsEntry,
                             onAdd: _openTimeSetup,
                           ),

@@ -127,6 +127,31 @@ class ApiTimePlanRepository implements TimePlanRepository {
   }
 
   @override
+  Future<Result<ChildTimeSummary>> loadChildTimeSummary({
+    required String parentId,
+    required String childrenId,
+    DateTime? date,
+  }) async {
+    try {
+      final Response<dynamic> response = await _dio.get<dynamic>(
+        '/api/v1/parents/children/$childrenId/time-summary',
+        queryParameters: <String, dynamic>{
+          if (date != null) 'date': _yyyyMmDd(date),
+        },
+      );
+      final dynamic data = response.data;
+      if (data is! Map) {
+        return Result<ChildTimeSummary>.success(_emptySummary());
+      }
+      return Result<ChildTimeSummary>.success(
+        _timeSummaryFromJson(Map<String, dynamic>.from(data)),
+      );
+    } on DioException catch (e) {
+      return failureFromDioException<ChildTimeSummary>(e);
+    }
+  }
+
+  @override
   Future<Result<Set<String>>> loadWhitelist({
     required String parentId,
     required String childrenId,
@@ -158,5 +183,51 @@ class ApiTimePlanRepository implements TimePlanRepository {
     final DateTime now = DateTime.now();
     return '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}';
+  }
+
+  String _yyyyMmDd(DateTime date) {
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+  }
+
+  ChildTimeSummary _timeSummaryFromJson(Map<String, dynamic> json) {
+    final Map<String, dynamic> todaySchedule = json['todaySchedule'] is Map
+        ? Map<String, dynamic>.from(json['todaySchedule'] as Map)
+        : const <String, dynamic>{};
+    final int baseMinutes = _intValue(todaySchedule['baseMinutes']);
+    final int extendedMinutes = _intValue(todaySchedule['extendedMinutes']);
+    return ChildTimeSummary(
+      parentPolicyExists: json['parentPolicyExists'] == true,
+      childPlanExists: json['childPlanExists'] == true,
+      todayScheduleStatus:
+          json['todayScheduleStatus']?.toString() ?? 'noParentPolicy',
+      baseMinutes: baseMinutes,
+      extendedMinutes: extendedMinutes,
+      totalAvailableMinutes: _intValue(
+        todaySchedule['totalAvailableMinutes'],
+        fallback: baseMinutes + extendedMinutes,
+      ),
+      rewardPoolMinutes: _intValue(json['rewardPoolMinutes']),
+    );
+  }
+
+  ChildTimeSummary _emptySummary() {
+    return const ChildTimeSummary(
+      parentPolicyExists: false,
+      childPlanExists: false,
+      todayScheduleStatus: 'noParentPolicy',
+      baseMinutes: 0,
+      extendedMinutes: 0,
+      totalAvailableMinutes: 0,
+      rewardPoolMinutes: 0,
+    );
+  }
+
+  int _intValue(Object? value, {int fallback = 0}) {
+    if (value is num) {
+      return value.toInt();
+    }
+    return fallback;
   }
 }

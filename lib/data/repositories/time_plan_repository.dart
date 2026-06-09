@@ -4,6 +4,28 @@ import '../../features/today_time/presentation/models/daily_time_rule.dart';
 import 'api_time_plan_repository.dart';
 import 'mock_time_plan_repository.dart';
 
+class ChildTimeSummary {
+  const ChildTimeSummary({
+    required this.parentPolicyExists,
+    required this.childPlanExists,
+    required this.todayScheduleStatus,
+    required this.baseMinutes,
+    required this.extendedMinutes,
+    required this.totalAvailableMinutes,
+    required this.rewardPoolMinutes,
+  });
+
+  final bool parentPolicyExists;
+  final bool childPlanExists;
+  final String todayScheduleStatus;
+  final int baseMinutes;
+  final int extendedMinutes;
+  final int totalAvailableMinutes;
+  final int rewardPoolMinutes;
+
+  bool get hasTodaySchedule => todayScheduleStatus == 'available';
+}
+
 /// Repository contract for the per-child time-plan domain.
 ///
 /// One repository for four logically related but independently editable
@@ -49,6 +71,12 @@ abstract interface class TimePlanRepository {
     required String parentId,
     required String childrenId,
     required int totalMinutes,
+  });
+
+  Future<Result<ChildTimeSummary>> loadChildTimeSummary({
+    required String parentId,
+    required String childrenId,
+    DateTime? date,
   });
 
   Future<Result<Set<String>>> loadWhitelist({

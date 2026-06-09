@@ -89,6 +89,85 @@ class MockTimePlanRepository implements TimePlanRepository {
   }
 
   @override
+  Future<Result<ChildTimeSummary>> loadChildTimeSummary({
+    required String parentId,
+    required String childrenId,
+    DateTime? date,
+  }) async {
+    final int? monthlyTotal = await MonthlyTotalTimeStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    final bool hasParentPolicy = monthlyTotal != null && monthlyTotal > 0;
+    if (!hasParentPolicy) {
+      return Result<ChildTimeSummary>.success(
+        const ChildTimeSummary(
+          parentPolicyExists: false,
+          childPlanExists: false,
+          todayScheduleStatus: 'noParentPolicy',
+          baseMinutes: 0,
+          extendedMinutes: 0,
+          totalAvailableMinutes: 0,
+          rewardPoolMinutes: 0,
+        ),
+      );
+    }
+
+    final List<DailyTimeRule> rules = await ChildWeeklyTimePlanStore.load(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    if (rules.isEmpty) {
+      return Result<ChildTimeSummary>.success(
+        const ChildTimeSummary(
+          parentPolicyExists: true,
+          childPlanExists: false,
+          todayScheduleStatus: 'waitingChildPlan',
+          baseMinutes: 0,
+          extendedMinutes: 0,
+          totalAvailableMinutes: 0,
+          rewardPoolMinutes: 0,
+        ),
+      );
+    }
+
+    final int weekdayIndex = (date ?? DateTime.now()).weekday - 1;
+    DailyTimeRule? todayRule;
+    for (final DailyTimeRule rule in rules) {
+      if (rule.days.contains(weekdayIndex)) {
+        todayRule = rule;
+        break;
+      }
+    }
+    if (todayRule == null) {
+      return Result<ChildTimeSummary>.success(
+        const ChildTimeSummary(
+          parentPolicyExists: true,
+          childPlanExists: true,
+          todayScheduleStatus: 'templateMissing',
+          baseMinutes: 0,
+          extendedMinutes: 0,
+          totalAvailableMinutes: 0,
+          rewardPoolMinutes: 0,
+        ),
+      );
+    }
+
+    final int baseMinutes = todayRule.time.hour * 60 + todayRule.time.minute;
+    return Result<ChildTimeSummary>.success(
+      ChildTimeSummary(
+        parentPolicyExists: true,
+        childPlanExists: true,
+        todayScheduleStatus: 'available',
+        baseMinutes: baseMinutes,
+        extendedMinutes: 0,
+        totalAvailableMinutes: baseMinutes,
+        rewardPoolMinutes: 0,
+      ),
+    );
+  }
+
+  @override
   Future<Result<Set<String>>> loadWhitelist({
     required String parentId,
     required String childrenId,
