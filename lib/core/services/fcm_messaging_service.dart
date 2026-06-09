@@ -32,10 +32,7 @@ class FcmMessage {
           _dataString(data, 'notificationType') ??
           _dataString(data, 'type') ??
           '',
-      deeplink:
-          _dataString(data, 'deeplink') ??
-          _dataString(data, 'targetRoute') ??
-          '/notifications',
+      deeplink: _deeplinkFromData(data),
       notificationId: _dataString(data, 'notificationId'),
       childId: _dataString(data, 'childId'),
       childrenId: _dataString(data, 'childrenId'),
@@ -165,4 +162,17 @@ String? _dataString(Map<String, dynamic> data, String key) {
   final Object? value = data[key];
   final String? stringValue = value?.toString();
   return stringValue == null || stringValue.isEmpty ? null : stringValue;
+}
+
+String _deeplinkFromData(Map<String, dynamic> data) {
+  final String? explicitRoute =
+      _dataString(data, 'deeplink') ?? _dataString(data, 'targetRoute');
+  if (explicitRoute != null && explicitRoute.startsWith('/')) {
+    return explicitRoute;
+  }
+  if (_dataString(data, 'missionId') != null ||
+      _dataString(data, 'performanceId') != null) {
+    return '/today-mission';
+  }
+  return '/notifications';
 }

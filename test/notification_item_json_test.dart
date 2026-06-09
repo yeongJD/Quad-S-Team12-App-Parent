@@ -244,5 +244,26 @@ void main() {
       expect(message.performanceId, '33');
       expect(message.deeplink, '/today-mission?childrenId=4');
     });
+
+    test('derives mission review route when ids exist without target route', () {
+      final FcmMessage message = FcmMessage.fromRemoteMessage(
+        const RemoteMessage(
+          data: <String, dynamic>{
+            'notificationType': 'MISSION_REQUESTED',
+            'notificationId': 'n-2',
+            'childId': '4',
+            'missionId': '21',
+            'performanceId': '33',
+          },
+        ),
+      );
+
+      expect(message.type, 'MISSION_REQUESTED');
+      expect(message.notificationId, 'n-2');
+      expect(message.childRef, '4');
+      expect(message.missionId, '21');
+      expect(message.performanceId, '33');
+      expect(message.deeplink, '/today-mission');
+    });
   });
 }
