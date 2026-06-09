@@ -58,8 +58,12 @@ class ApiNotificationRepository implements NotificationRepository {
     required String parentId,
     required String notificationId,
   }) async {
+    final int? id = _positiveNumericId(notificationId);
+    if (id == null) {
+      return Result<void>.failure('알림 정보를 다시 불러와 주세요.');
+    }
     try {
-      await _dio.patch<dynamic>('/api/v1/notifications/$notificationId/read');
+      await _dio.patch<dynamic>('/api/v1/notifications/$id/read');
       return Result<void>.success(null);
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
@@ -71,8 +75,12 @@ class ApiNotificationRepository implements NotificationRepository {
     required String parentId,
     required String notificationId,
   }) async {
+    final int? id = _positiveNumericId(notificationId);
+    if (id == null) {
+      return Result<void>.failure('알림 정보를 다시 불러와 주세요.');
+    }
     try {
-      await _dio.delete<dynamic>('/api/v1/notifications/$notificationId');
+      await _dio.delete<dynamic>('/api/v1/notifications/$id');
       return Result<void>.success(null);
     } on DioException catch (e) {
       return failureFromDioException<void>(e);
@@ -87,5 +95,13 @@ class ApiNotificationRepository implements NotificationRepository {
       return List<dynamic>.from(data);
     }
     return const <dynamic>[];
+  }
+
+  int? _positiveNumericId(String id) {
+    final int? parsed = int.tryParse(id.trim());
+    if (parsed == null || parsed <= 0) {
+      return null;
+    }
+    return parsed;
   }
 }

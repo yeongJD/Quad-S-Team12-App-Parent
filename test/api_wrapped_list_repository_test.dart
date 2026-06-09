@@ -163,6 +163,41 @@ void main() {
     expect(calls, <String>['PATCH /api/v1/notifications/17/read']);
   });
 
+  test(
+    'ApiNotificationRepository rejects invalid read id before network',
+    () async {
+      final List<String> calls = <String>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                calls.add('${options.method} ${options.path}');
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: <String, dynamic>{'isSuccess': true},
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiNotificationRepository repository = ApiNotificationRepository(
+        dio: dio,
+      );
+
+      final Result<void> result = await repository.markRead(
+        parentId: 'parent-1',
+        notificationId: 'n-17',
+      );
+
+      expect(result, isA<Failure<void>>());
+      expect((result as Failure<void>).message, '알림 정보를 다시 불러와 주세요.');
+      expect(calls, isEmpty);
+    },
+  );
+
   test('ApiNotificationRepository deletes notification endpoint', () async {
     final List<String> calls = <String>[];
     final ApiNotificationRepository repository = ApiNotificationRepository(
@@ -181,6 +216,41 @@ void main() {
     expect(result, isA<Success<void>>());
     expect(calls, <String>['DELETE /api/v1/notifications/17']);
   });
+
+  test(
+    'ApiNotificationRepository rejects invalid delete id before network',
+    () async {
+      final List<String> calls = <String>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                calls.add('${options.method} ${options.path}');
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: <String, dynamic>{'isSuccess': true},
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiNotificationRepository repository = ApiNotificationRepository(
+        dio: dio,
+      );
+
+      final Result<void> result = await repository.hide(
+        parentId: 'parent-1',
+        notificationId: ' ',
+      );
+
+      expect(result, isA<Failure<void>>());
+      expect((result as Failure<void>).message, '알림 정보를 다시 불러와 주세요.');
+      expect(calls, isEmpty);
+    },
+  );
 
   test(
     'ApiDeviceRepository posts FCM token and unwraps response data',
