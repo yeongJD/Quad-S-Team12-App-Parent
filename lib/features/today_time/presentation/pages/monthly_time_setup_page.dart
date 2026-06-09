@@ -58,31 +58,12 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
   @override
   void initState() {
     super.initState();
-    _minimumTotalMinutes = _calculateMonthlyMinutes(widget.rules);
+    _minimumTotalMinutes = calculateMonthlyMinutesForRules(widget.rules);
     _selectedTotalMinutes =
         widget.initialMonthlyTotalMinutes == null ||
             widget.initialMonthlyTotalMinutes! < _minimumTotalMinutes
         ? _minimumTotalMinutes
         : widget.initialMonthlyTotalMinutes!;
-  }
-
-  int _calculateMonthlyMinutes(List<DailyTimeRule> rules) {
-    final DateTime now = DateTime.now();
-    final int lastDay = DateTime(now.year, now.month + 1, 0).day;
-    final List<int> weekdayCounts = List<int>.filled(7, 0);
-    for (int day = 1; day <= lastDay; day++) {
-      final int weekdayIndex = DateTime(now.year, now.month, day).weekday - 1;
-      weekdayCounts[weekdayIndex]++;
-    }
-
-    int total = 0;
-    for (final DailyTimeRule rule in rules) {
-      final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
-      for (final int dayIndex in rule.days) {
-        total += dailyMinutes * weekdayCounts[dayIndex];
-      }
-    }
-    return total;
   }
 
   TimeSelection _timeFromMinutes(int minutes) {

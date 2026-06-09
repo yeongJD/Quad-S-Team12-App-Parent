@@ -20,7 +20,10 @@ class TodayTimeConfirmationPage extends StatefulWidget {
     this.childrenId,
     this.demo,
     this.initialData,
-  });
+    TimePlanRepository? timePlanRepository,
+  }) : _timePlanRepository = timePlanRepository;
+
+  final TimePlanRepository? _timePlanRepository;
 
   final String? parentId;
   final String? childrenId;
@@ -33,7 +36,8 @@ class TodayTimeConfirmationPage extends StatefulWidget {
 }
 
 class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
-  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
+  late final TimePlanRepository _timePlanRepository =
+      widget._timePlanRepository ?? createTimePlanRepository();
   late TimePlanConfirmationData _data;
   late bool _childRevisionAllowed;
 
@@ -119,13 +123,11 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
       parentId: parentId,
       childrenId: childrenId,
     );
-    final int calculatedMonthlyMinutes = parentRules.isEmpty
-        ? 0
-        : _calculateMonthlyMinutes(parentRules);
-    final int savedMinutes = savedMonthlyMinutes ?? 0;
-    final int monthlyTotalMinutes = savedMinutes < calculatedMonthlyMinutes
-        ? calculatedMonthlyMinutes
-        : savedMinutes;
+    final int monthlyTotalMinutes =
+        savedMonthlyMinutes ??
+        (parentRules.isEmpty
+            ? 0
+            : calculateMonthlyMinutesForRules(parentRules));
     if (monthlyTotalMinutes <= 0) {
       return;
     }
@@ -222,28 +224,6 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
           'childrenId': childrenId,
       },
     ).toString();
-  }
-
-  int _calculateMonthlyMinutes(List<DailyTimeRule> rules) {
-    final DateTime now = DateTime.now();
-    final int lastDay = DateTime(now.year, now.month + 1, 0).day;
-    final List<int> weekdayCounts = List<int>.filled(DateTime.daysPerWeek, 0);
-    for (int day = 1; day <= lastDay; day++) {
-      final int weekdayIndex = DateTime(now.year, now.month, day).weekday - 1;
-      weekdayCounts[weekdayIndex]++;
-    }
-
-    int total = 0;
-    for (final DailyTimeRule rule in rules) {
-      final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
-      for (final int dayIndex in rule.days) {
-        if (dayIndex < 0 || dayIndex >= weekdayCounts.length) {
-          continue;
-        }
-        total += dailyMinutes * weekdayCounts[dayIndex];
-      }
-    }
-    return total;
   }
 
   int _calculateWeeklyMinutes(List<DailyTimeRule> rules) {
