@@ -39,7 +39,8 @@ class WhitelistSetupPage extends StatefulWidget {
     required this.rules,
     this.categories = WhitelistAppMockData.appleCategories,
     this.initialSelectedAppIds,
-  });
+    TimePlanRepository? timePlanRepository,
+  }) : _timePlanRepository = timePlanRepository;
 
   final String? parentId;
   final String? childrenId;
@@ -47,6 +48,7 @@ class WhitelistSetupPage extends StatefulWidget {
   final List<DailyTimeRule> rules;
   final List<WhitelistAppCategory> categories;
   final Set<String>? initialSelectedAppIds;
+  final TimePlanRepository? _timePlanRepository;
 
   @override
   State<WhitelistSetupPage> createState() => _WhitelistSetupPageState();
@@ -57,7 +59,8 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
 
   final TextEditingController _searchController = TextEditingController();
   final Set<String> _expandedCategoryIds = <String>{};
-  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
+  late final TimePlanRepository _timePlanRepository =
+      widget._timePlanRepository ?? createTimePlanRepository();
   late final Set<String> _selectedAppIds;
   String _query = '';
 
@@ -210,11 +213,16 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
         parentId.isNotEmpty &&
         childrenId != null &&
         childrenId.isNotEmpty) {
-      await _timePlanRepository.saveWhitelist(
-        parentId: parentId,
-        childrenId: childrenId,
-        appIds: Set<String>.from(_selectedAppIds),
-      );
+      try {
+        await _timePlanRepository.saveWhitelist(
+          parentId: parentId,
+          childrenId: childrenId,
+          appIds: Set<String>.from(_selectedAppIds),
+        );
+      } catch (_) {
+        // Whitelist is local-only in this phase; completion should not be
+        // blocked after the monthly time policy has already been saved.
+      }
     }
     if (!mounted) {
       return;

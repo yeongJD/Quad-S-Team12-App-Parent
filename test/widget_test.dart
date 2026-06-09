@@ -4,6 +4,8 @@ import 'package:bridge_p/app/app.dart';
 import 'package:bridge_p/core/auth/account_store.dart';
 import 'package:bridge_p/core/auth/auth_session.dart';
 import 'package:bridge_p/core/child/child_connection_store.dart';
+import 'package:bridge_p/core/models/result.dart';
+import 'package:bridge_p/data/repositories/time_plan_repository.dart';
 import 'package:bridge_p/features/child_add/presentation/pages/child_add_page.dart';
 import 'package:bridge_p/features/home/presentation/pages/landing_page.dart';
 import 'package:bridge_p/features/login/presentation/pages/login_complete_page.dart';
@@ -19,7 +21,11 @@ import 'package:bridge_p/features/today_mission/presentation/pages/today_mission
 import 'package:bridge_p/features/today_time/presentation/data/daily_time_rule_store.dart';
 import 'package:bridge_p/features/today_time/presentation/data/whitelist_app_store.dart';
 import 'package:bridge_p/features/today_time/presentation/models/daily_time_rule.dart';
+import 'package:bridge_p/features/today_time/presentation/models/whitelist_app.dart';
+import 'package:bridge_p/features/today_time/presentation/pages/today_time_complete_page.dart';
 import 'package:bridge_p/features/today_time/presentation/pages/today_time_setup_page.dart';
+import 'package:bridge_p/features/today_time/presentation/pages/whitelist_setup_page.dart';
+import 'package:bridge_p/features/today_time/presentation/routes/today_time_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -894,6 +900,42 @@ void main() {
     expect(find.text('1시간 5분'), findsOneWidget);
   });
 
+  testWidgets('whitelist save failure does not block completion', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = GoRouter(
+      initialLocation: TodayTimeRoutes.whitelist,
+      routes: <RouteBase>[
+        GoRoute(
+          path: TodayTimeRoutes.whitelist,
+          builder: (context, state) => WhitelistSetupPage(
+            parentId: 'parent-1',
+            childrenId: 'child-1',
+            total: const TimeSelection(hour: 1, minute: 0),
+            rules: const <DailyTimeRule>[],
+            categories: const <WhitelistAppCategory>[],
+            timePlanRepository: _ThrowingWhitelistRepository(),
+          ),
+        ),
+        GoRoute(
+          path: TodayTimeRoutes.complete,
+          builder: (context, state) => TodayTimeCompletePage(
+            data: state.extra as TodayTimeCompleteData?,
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('확인'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('시간 설정 완료!'), findsOneWidget);
+  });
+
   testWidgets('child add screen toggles tooltip and enables submit', (
     WidgetTester tester,
   ) async {
@@ -959,4 +1001,94 @@ void main() {
     expect(find.text('이름은 2자 이상 10자 이내로 입력해주세요'), findsOneWidget);
     expect(find.byIcon(Icons.cancel), findsOneWidget);
   });
+}
+
+class _ThrowingWhitelistRepository implements TimePlanRepository {
+  @override
+  Future<Result<List<DailyTimeRule>>> loadDailyRules({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    return Result<List<DailyTimeRule>>.success(const <DailyTimeRule>[]);
+  }
+
+  @override
+  Future<Result<void>> saveDailyRules({
+    required String parentId,
+    required String childrenId,
+    required List<DailyTimeRule> rules,
+  }) async {
+    return Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<List<DailyTimeRule>>> loadChildWeeklyRules({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    return Result<List<DailyTimeRule>>.success(const <DailyTimeRule>[]);
+  }
+
+  @override
+  Future<Result<void>> saveChildWeeklyRules({
+    required String parentId,
+    required String childrenId,
+    required List<DailyTimeRule> rules,
+  }) async {
+    return Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<int?>> loadMonthlyTotal({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    return Result<int?>.success(null);
+  }
+
+  @override
+  Future<Result<void>> saveMonthlyTotal({
+    required String parentId,
+    required String childrenId,
+    required int totalMinutes,
+  }) async {
+    return Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<ChildTimeSummary>> loadChildTimeSummary({
+    required String parentId,
+    required String childrenId,
+    DateTime? date,
+  }) async {
+    return Result<ChildTimeSummary>.success(
+      const ChildTimeSummary(
+        parentPolicyExists: false,
+        childPlanExists: false,
+        todayScheduleStatus: 'noParentPolicy',
+        basePolicyMinutes: 0,
+        baseMinutes: 0,
+        extendedMinutes: 0,
+        totalAvailableMinutes: 0,
+        rewardPoolMinutes: 0,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<Set<String>>> loadWhitelist({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    return Result<Set<String>>.success(<String>{});
+  }
+
+  @override
+  Future<Result<void>> saveWhitelist({
+    required String parentId,
+    required String childrenId,
+    required Set<String> appIds,
+  }) async {
+    throw StateError('whitelist storage unavailable');
+  }
 }
