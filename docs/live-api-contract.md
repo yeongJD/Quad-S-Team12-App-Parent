@@ -338,6 +338,7 @@ Response:
   "childPlanExists": true,
   "todayScheduleStatus": "available",
   "yearMonth": "2026-06",
+  "basePolicyMinutes": 600,
   "todaySchedule": {
     "id": null,
     "targetDate": "2026-06-09",
@@ -351,6 +352,7 @@ Response:
 
 Rules:
 - Parent 홈은 이 API로 `noParentPolicy`, `waitingChildPlan`, `available`, `templateMissing`을 판정한다.
+- Parent의 이번 달 총 시간 확인/수정 화면도 이 API의 `basePolicyMinutes`를 사용한다. Parent token으로 child policy API를 우회 호출하지 않는다.
 - `waitingChildPlan`이면 회색 문구 `자녀가 아직 시간 설정 이전입니다.`를 표시한다.
 - `available`일 때만 오늘의 시간을 표시한다.
 

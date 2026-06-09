@@ -58,7 +58,7 @@
 
 권장 판정:
 - "오늘의 시간 없음"을 곧바로 daily schedule 조회 실패로 판단하지 않는다.
-- Parent 홈은 parent token으로 읽을 수 있는 별도 요약 API가 있으면 가장 깔끔하다. 최소 응답은 `parentPolicyExists`, `childPlanExists`, `todaySchedule` 정도면 된다.
+- Parent 홈은 parent token으로 읽을 수 있는 별도 요약 API가 있으면 가장 깔끔하다. 최소 응답은 `parentPolicyExists`, `childPlanExists`, `basePolicyMinutes`, `todaySchedule` 정도면 된다.
 - backend 수정 없이 우회하려면 Parent가 기존 policy만 보고 `waitingChildPlan`까지는 구분할 수 있지만, 자녀가 제출한 `WeeklyBudget`/`WeeklyTimeDistribution`은 현재 child schedule API가 child token 기준이라 정확한 `hasChildPlan` 판정이 어렵다.
 - 따라서 정확한 Parent 홈 표시까지 목표라면 parent-scoped read API가 최소 backend 변경 후보로 남는다. 단, 변경 범위는 "쓰기 플로우 추가"가 아니라 "자녀 계획 존재 여부/오늘 시간 요약 조회"에 한정한다.
 
@@ -400,7 +400,7 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
 
 1. Parent가 특정 자녀의 시간 상태 요약을 읽는 API
    - 후보: `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD`
-   - 최소 필드: `parentPolicyExists`, `childPlanExists`, `todaySchedule`
+   - 최소 필드: `parentPolicyExists`, `childPlanExists`, `basePolicyMinutes`, `todaySchedule`
    - 내부 판정: `TimePolicy` 존재 여부 + `WeeklyBudget`/`WeeklyTimeDistribution` 존재 여부
    - 목적: Parent 홈의 `noParentPolicy`/`waitingChildPlan`/`hasChildPlan` 상태와 오늘 시간을 정확히 표시
 

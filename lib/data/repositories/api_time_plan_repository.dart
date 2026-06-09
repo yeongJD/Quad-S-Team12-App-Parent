@@ -81,19 +81,22 @@ class ApiTimePlanRepository implements TimePlanRepository {
     required String parentId,
     required String childrenId,
   }) async {
-    // Backend has no /time-plan/monthly-total; the child's monthly base time is
-    // read from the policy snapshot (GET /api/v1/children/{id}/policies). We
-    // surface `baseTime` (the parent-set pure base) as the monthly total.
+    // Backend has no /time-plan/monthly-total. Parent reads the same
+    // parent-scoped summary used by the home screen; do not call the child
+    // policy API here because that endpoint is child-token scoped.
     try {
       final Response<dynamic> response = await _dio.get<dynamic>(
-        '/api/v1/children/$childrenId/policies',
+        '/api/v1/parents/children/$childrenId/time-summary',
+        queryParameters: <String, dynamic>{'date': _yyyyMmDd(DateTime.now())},
       );
       final dynamic data = response.data;
       if (data is! Map) {
         return Result<int?>.success(null);
       }
-      final dynamic value = data['baseTime'];
-      return Result<int?>.success(value is num ? value.toInt() : null);
+      final int basePolicyMinutes = _intValue(data['basePolicyMinutes']);
+      return Result<int?>.success(
+        basePolicyMinutes > 0 ? basePolicyMinutes : null,
+      );
     } on DioException catch (e) {
       return failureFromDioException<int?>(e);
     }
@@ -202,6 +205,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
       childPlanExists: json['childPlanExists'] == true,
       todayScheduleStatus:
           json['todayScheduleStatus']?.toString() ?? 'noParentPolicy',
+      basePolicyMinutes: _intValue(json['basePolicyMinutes']),
       baseMinutes: baseMinutes,
       extendedMinutes: extendedMinutes,
       totalAvailableMinutes: _intValue(
@@ -217,6 +221,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
       parentPolicyExists: false,
       childPlanExists: false,
       todayScheduleStatus: 'noParentPolicy',
+      basePolicyMinutes: 0,
       baseMinutes: 0,
       extendedMinutes: 0,
       totalAvailableMinutes: 0,

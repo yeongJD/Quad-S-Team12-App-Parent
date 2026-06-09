@@ -139,7 +139,7 @@
 
 필요 API:
 - 우선 후보: `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD`
-- 최소 필드: `parentPolicyExists`, `childPlanExists`, `todayScheduleStatus`, `todaySchedule`
+- 최소 필드: `parentPolicyExists`, `childPlanExists`, `todayScheduleStatus`, `basePolicyMinutes`, `todaySchedule`
 
 검수:
 - 자녀 없음.
@@ -380,6 +380,7 @@ backend sync:
   "childPlanExists": true,
   "todayScheduleStatus": "available",
   "yearMonth": "2026-06",
+  "basePolicyMinutes": 600,
   "todaySchedule": {
     "date": "2026-06-09",
     "baseMinutes": 60,
@@ -393,6 +394,7 @@ backend sync:
 작업:
 - parent-child 관계 검증 후에만 조회를 허용한다.
 - `TimePolicy` 존재 여부로 `parentPolicyExists`를 계산한다.
+- `basePolicyMinutes`는 부모가 설정한 `TimePolicy.baseTime`이다. Parent 앱은 이번 달 시간 확인/수정 화면에서 이 값을 사용하고, child policy API를 우회 호출하지 않는다.
 - `WeeklyBudget` + `WeeklyTimeDistribution` 존재 여부로 `childPlanExists`를 계산한다. 단, 이 값은 "자녀가 계획을 제출했는가"이고 "오늘 시간이 있는가"와는 분리한다.
 - `childPlanExists=false`면 daily schedule 생성을 강제로 하지 않아도 된다.
 - `childPlanExists=true`면 오늘 날짜의 schedule 또는 파생 값을 내려준다.

@@ -101,10 +101,11 @@ class MockTimePlanRepository implements TimePlanRepository {
     final bool hasParentPolicy = monthlyTotal != null && monthlyTotal > 0;
     if (!hasParentPolicy) {
       return Result<ChildTimeSummary>.success(
-        const ChildTimeSummary(
+        ChildTimeSummary(
           parentPolicyExists: false,
           childPlanExists: false,
           todayScheduleStatus: 'noParentPolicy',
+          basePolicyMinutes: 0,
           baseMinutes: 0,
           extendedMinutes: 0,
           totalAvailableMinutes: 0,
@@ -119,10 +120,11 @@ class MockTimePlanRepository implements TimePlanRepository {
     );
     if (rules.isEmpty) {
       return Result<ChildTimeSummary>.success(
-        const ChildTimeSummary(
+        ChildTimeSummary(
           parentPolicyExists: true,
           childPlanExists: false,
           todayScheduleStatus: 'waitingChildPlan',
+          basePolicyMinutes: monthlyTotal,
           baseMinutes: 0,
           extendedMinutes: 0,
           totalAvailableMinutes: 0,
@@ -141,10 +143,11 @@ class MockTimePlanRepository implements TimePlanRepository {
     }
     if (todayRule == null) {
       return Result<ChildTimeSummary>.success(
-        const ChildTimeSummary(
+        ChildTimeSummary(
           parentPolicyExists: true,
           childPlanExists: true,
           todayScheduleStatus: 'templateMissing',
+          basePolicyMinutes: monthlyTotal,
           baseMinutes: 0,
           extendedMinutes: 0,
           totalAvailableMinutes: 0,
@@ -159,6 +162,7 @@ class MockTimePlanRepository implements TimePlanRepository {
         parentPolicyExists: true,
         childPlanExists: true,
         todayScheduleStatus: 'available',
+        basePolicyMinutes: monthlyTotal,
         baseMinutes: baseMinutes,
         extendedMinutes: 0,
         totalAvailableMinutes: baseMinutes,

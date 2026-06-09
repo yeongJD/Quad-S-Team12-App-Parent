@@ -217,6 +217,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
         parentPolicyExists: false,
         childPlanExists: false,
         todayScheduleStatus: 'noParentPolicy',
+        basePolicyMinutes: 0,
         baseMinutes: 0,
         extendedMinutes: 0,
         totalAvailableMinutes: 0,

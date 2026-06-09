@@ -9,6 +9,7 @@ class ChildTimeSummary {
     required this.parentPolicyExists,
     required this.childPlanExists,
     required this.todayScheduleStatus,
+    required this.basePolicyMinutes,
     required this.baseMinutes,
     required this.extendedMinutes,
     required this.totalAvailableMinutes,
@@ -18,6 +19,7 @@ class ChildTimeSummary {
   final bool parentPolicyExists;
   final bool childPlanExists;
   final String todayScheduleStatus;
+  final int basePolicyMinutes;
   final int baseMinutes;
   final int extendedMinutes;
   final int totalAvailableMinutes;
