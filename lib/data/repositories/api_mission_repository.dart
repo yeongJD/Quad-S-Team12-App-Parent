@@ -31,14 +31,15 @@ class ApiMissionRepository implements MissionRepository {
         '/api/v1/missions',
         queryParameters: <String, dynamic>{'childId': childrenId},
       );
-      final dynamic data = response.data;
-      if (data is! List) {
-        return Result<List<TodayMission>>.success(const <TodayMission>[]);
-      }
+      final List<dynamic> data = _jsonList(response.data);
       final List<TodayMission> missions = <TodayMission>[];
-      for (final Map<String, dynamic> entry
-          in data.whereType<Map<String, dynamic>>()) {
-        final TodayMission? mission = _missionFromJson(entry);
+      for (final dynamic entry in data) {
+        if (entry is! Map) {
+          continue;
+        }
+        final TodayMission? mission = _missionFromJson(
+          Map<String, dynamic>.from(entry),
+        );
         if (mission == null) {
           continue;
         }
@@ -381,6 +382,16 @@ class ApiMissionRepository implements MissionRepository {
       return Map<String, dynamic>.from(data);
     }
     return null;
+  }
+
+  List<dynamic> _jsonList(dynamic data) {
+    if (data is Map && data['data'] is List) {
+      return List<dynamic>.from(data['data'] as List);
+    }
+    if (data is List) {
+      return List<dynamic>.from(data);
+    }
+    return const <dynamic>[];
   }
 
   T? _decodeEnum<T extends Enum>(List<T> values, String name) {

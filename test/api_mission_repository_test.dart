@@ -40,10 +40,7 @@ void main() {
         byId['parent-mission']!.effectiveVerificationStatus,
         MissionVerificationStatus.waitingParentApproval,
       );
-      expect(
-        byId['parent-mission']!.resetPeriod,
-        MissionResetPeriod.weekly,
-      );
+      expect(byId['parent-mission']!.resetPeriod, MissionResetPeriod.weekly);
       expect(
         byId['parent-mission']!.effectiveStatus,
         TodayMissionStatus.reviewing,
@@ -67,11 +64,14 @@ void main() {
 
 dynamic _missionResponseFor(String path) {
   if (path == '/api/v1/missions') {
-    return <Map<String, dynamic>>[
-      _missionJson('parent-mission', 'PARENT'),
-      _missionJson('ai-mission', 'AI'),
-      _missionJson('child-mission', 'CHILD'),
-    ];
+    return <String, dynamic>{
+      'isSuccess': true,
+      'data': <Map<String, dynamic>>[
+        _missionJson('parent-mission', 'PARENT'),
+        _missionJson('ai-mission', 'AI'),
+        _missionJson('child-mission', 'CHILD'),
+      ],
+    };
   }
 
   final RegExpMatch? performanceMatch = RegExp(
@@ -79,9 +79,12 @@ dynamic _missionResponseFor(String path) {
   ).firstMatch(path);
   if (performanceMatch != null) {
     return <String, dynamic>{
-      'performanceId': '${performanceMatch.group(1)}-performance',
-      'status': 'PENDING',
-      'proofImageUrl': 'https://test.local/proof.jpg',
+      'isSuccess': true,
+      'data': <String, dynamic>{
+        'performanceId': '${performanceMatch.group(1)}-performance',
+        'status': 'PENDING',
+        'proofImageUrl': 'https://test.local/proof.jpg',
+      },
     };
   }
 
@@ -95,7 +98,10 @@ dynamic _missionResponseFor(String path) {
       'child-mission' => 'CHILD',
       _ => 'PARENT',
     };
-    return _missionJson(missionId, verificationType);
+    return <String, dynamic>{
+      'isSuccess': true,
+      'data': _missionJson(missionId, verificationType),
+    };
   }
 
   throw StateError('Unexpected request path: $path');
