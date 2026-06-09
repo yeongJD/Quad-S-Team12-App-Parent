@@ -506,6 +506,7 @@ backend sync:
 - self 미션 제출 즉시 reward 증가.
 - parent 미션 제출 시 pending, 승인 시 reward 증가.
 - AI 미션 승인 후 reward 증가.
+- AI 미션 승인/반려 후 Child 알림 생성.
 - 같은 performance 중복 승인 시 reward 중복 지급 없음.
 
 ### 5.7 Notification/FCM
@@ -579,6 +580,7 @@ backend sync:
 - [ ] Child: 미션 생성 알림.
 - [ ] Parent: 미션 제출 알림.
 - [ ] Child: 승인/반려 알림.
+- [ ] Child: AI 확인 미션 승인/반려 알림.
 - [ ] Parent/Child: inbox unread 표시.
 - [ ] Parent/Child: 알림 클릭 라우팅.
 - [ ] Parent: `missionId`/`performanceId`가 있는 미션 알림 클릭 시 심사 상세 진입.
