@@ -35,10 +35,7 @@ class ApiAuthRepository implements AuthRepository {
     try {
       final Response<dynamic> response = await _dio.post<dynamic>(
         '/auth/parent/login',
-        data: <String, dynamic>{
-          'email': email,
-          'password': password,
-        },
+        data: <String, dynamic>{'email': email, 'password': password},
       );
       final AuthToken token = _parseTokenResponse(
         response.data,
@@ -120,9 +117,7 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> deleteAccount({
-    required String parentId,
-  }) async {
+  Future<Result<void>> deleteAccount({required String parentId}) async {
     try {
       await _dio.delete<dynamic>('/api/v1/members');
       return Result<void>.success(null);
@@ -158,14 +153,24 @@ class ApiAuthRepository implements AuthRepository {
   /// while login/signup include the full profile. We accept both and
   /// substitute placeholder values when missing so refresh callers can
   /// preserve the previously stored session.
-  AuthToken _parseTokenResponse(
-    dynamic data, {
-    required String fallbackEmail,
-  }) {
+  AuthToken _parseTokenResponse(dynamic data, {required String fallbackEmail}) {
     if (data is! Map) {
       throw const FormatException('Auth response was not a JSON object.');
     }
-    final Map<String, dynamic> json = Map<String, dynamic>.from(data);
+    final Map<String, dynamic> envelope = Map<String, dynamic>.from(data);
+    final dynamic payload = envelope['data'] is Map
+        ? envelope['data']
+        : envelope;
+    if (payload is! Map) {
+      return AuthToken(
+        accessToken: '',
+        refreshToken: null,
+        parentId: '',
+        email: fallbackEmail,
+        name: '',
+      );
+    }
+    final Map<String, dynamic> json = Map<String, dynamic>.from(payload);
     return AuthToken(
       // Signup does not auto-login: the backend returns an empty body (no
       // tokens), so accept a missing accessToken as an empty string instead of
@@ -173,9 +178,8 @@ class ApiAuthRepository implements AuthRepository {
       // results to /login.
       accessToken: (json['accessToken'] as String?) ?? '',
       refreshToken: json['refreshToken'] as String?,
-      parentId: json['memberId']?.toString() ??
-          (json['parentId'] as String?) ??
-          '',
+      parentId:
+          json['memberId']?.toString() ?? (json['parentId'] as String?) ?? '',
       email: (json['email'] as String?) ?? fallbackEmail,
       name: (json['name'] as String?) ?? '',
     );
@@ -184,16 +188,10 @@ class ApiAuthRepository implements AuthRepository {
   Failure<AuthToken> _mapAuthLoginError(DioException e) {
     final String? code = errorCodeOf(e);
     if (code == 'INVALID_CREDENTIALS') {
-      return Failure<AuthToken>(
-        AuthFailureMessages.wrongPassword,
-        cause: code,
-      );
+      return Failure<AuthToken>(AuthFailureMessages.wrongPassword, cause: code);
     }
     if (code == 'USER_NOT_FOUND') {
-      return Failure<AuthToken>(
-        AuthFailureMessages.unknownEmail,
-        cause: code,
-      );
+      return Failure<AuthToken>(AuthFailureMessages.unknownEmail, cause: code);
     }
     if (code == 'ACCOUNT_DORMANT') {
       return Failure<AuthToken>(
