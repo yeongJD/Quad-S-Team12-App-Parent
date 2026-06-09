@@ -83,6 +83,44 @@ void main() {
       }
     },
   );
+
+  test('ApiNotificationRepository patches read endpoint', () async {
+    final List<String> calls = <String>[];
+    final ApiNotificationRepository repository = ApiNotificationRepository(
+      dio: _dioRecording(
+        calls,
+        expectedPath: '/api/v1/notifications/17/read',
+        expectedMethod: 'PATCH',
+      ),
+    );
+
+    final Result<void> result = await repository.markRead(
+      parentId: 'parent-1',
+      notificationId: '17',
+    );
+
+    expect(result, isA<Success<void>>());
+    expect(calls, <String>['PATCH /api/v1/notifications/17/read']);
+  });
+
+  test('ApiNotificationRepository deletes notification endpoint', () async {
+    final List<String> calls = <String>[];
+    final ApiNotificationRepository repository = ApiNotificationRepository(
+      dio: _dioRecording(
+        calls,
+        expectedPath: '/api/v1/notifications/17',
+        expectedMethod: 'DELETE',
+      ),
+    );
+
+    final Result<void> result = await repository.hide(
+      parentId: 'parent-1',
+      notificationId: '17',
+    );
+
+    expect(result, isA<Success<void>>());
+    expect(calls, <String>['DELETE /api/v1/notifications/17']);
+  });
 }
 
 Dio _dioForPath(String path, Object? responseData) {
@@ -96,6 +134,41 @@ Dio _dioForPath(String path, Object? responseData) {
               requestOptions: options,
               statusCode: 200,
               data: responseData,
+            ),
+          );
+          return;
+        }
+        handler.reject(
+          DioException(
+            requestOptions: options,
+            response: Response<dynamic>(
+              requestOptions: options,
+              statusCode: 404,
+            ),
+          ),
+        );
+      },
+    ),
+  );
+  return dio;
+}
+
+Dio _dioRecording(
+  List<String> calls, {
+  required String expectedPath,
+  required String expectedMethod,
+}) {
+  final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+        calls.add('${options.method} ${options.path}');
+        if (options.path == expectedPath && options.method == expectedMethod) {
+          handler.resolve(
+            Response<dynamic>(
+              requestOptions: options,
+              statusCode: 200,
+              data: <String, dynamic>{'isSuccess': true, 'data': 'ok'},
             ),
           );
           return;
