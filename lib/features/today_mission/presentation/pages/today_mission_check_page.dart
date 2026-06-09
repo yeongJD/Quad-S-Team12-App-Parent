@@ -37,6 +37,7 @@ class TodayMissionCheckPage extends StatefulWidget {
     required this.missionIndex,
     required this.initialMission,
     this.initialTab = MissionCheckTab.info,
+    this.missionRepository,
   });
 
   final String? parentId;
@@ -44,6 +45,7 @@ class TodayMissionCheckPage extends StatefulWidget {
   final int? missionIndex;
   final TodayMission? initialMission;
   final MissionCheckTab initialTab;
+  final MissionRepository? missionRepository;
 
   @override
   State<TodayMissionCheckPage> createState() => _TodayMissionCheckPageState();
@@ -53,10 +55,16 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
   static const double _horizontalPadding = 24;
   static const String _fallbackSubmittedAt = '2025.1.21 오후 7:01';
 
-  final MissionRepository _missionRepository = createMissionRepository();
+  late final MissionRepository _missionRepository;
   late TodayMission? _mission = widget.initialMission;
   late int _selectedTabIndex = widget.initialTab.index;
   bool _isUpdatingVerification = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _missionRepository = widget.missionRepository ?? createMissionRepository();
+  }
 
   void _handleBack() {
     final GoRouter router = GoRouter.of(context);
@@ -759,8 +767,7 @@ class _MissionReviewContent extends StatelessWidget {
         verificationType == MissionVerificationType.parent
             ? '부모 승인이 완료되어 보상 시간이 지급되었습니다.'
             : '보상 시간이 지급되었습니다.',
-      MissionVerificationStatus.rejected =>
-        '반려가 완료되었습니다.\n보상 시간은 지급되지 않았어요.',
+      MissionVerificationStatus.rejected => '반려가 완료되었습니다.\n보상 시간은 지급되지 않았어요.',
       MissionVerificationStatus.idle => '',
     };
     final String submittedAt =

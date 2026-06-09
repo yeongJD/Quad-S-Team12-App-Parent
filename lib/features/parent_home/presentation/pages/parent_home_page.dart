@@ -36,22 +36,29 @@ class ParentHomePage extends StatefulWidget {
     this.showFilledPreview = false,
     this.showTimeEmptyPreview = false,
     this.showLinkedChildPreview = false,
+    this.childRepository,
+    this.missionRepository,
+    this.notificationRepository,
+    this.timePlanRepository,
   });
 
   final bool showFilledPreview;
   final bool showTimeEmptyPreview;
   final bool showLinkedChildPreview;
+  final ChildRepository? childRepository;
+  final MissionRepository? missionRepository;
+  final NotificationRepository? notificationRepository;
+  final TimePlanRepository? timePlanRepository;
 
   @override
   State<ParentHomePage> createState() => _ParentHomePageState();
 }
 
 class _ParentHomePageState extends State<ParentHomePage> {
-  final ChildRepository _childRepository = createChildRepository();
-  final MissionRepository _missionRepository = createMissionRepository();
-  final NotificationRepository _notificationRepository =
-      createNotificationRepository();
-  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
+  late final ChildRepository _childRepository;
+  late final MissionRepository _missionRepository;
+  late final NotificationRepository _notificationRepository;
+  late final TimePlanRepository _timePlanRepository;
 
   ParentHomeData _data = ParentHomeData.empty();
   bool _isLoading = true;
@@ -78,6 +85,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
   @override
   void initState() {
     super.initState();
+    _childRepository = widget.childRepository ?? createChildRepository();
+    _missionRepository = widget.missionRepository ?? createMissionRepository();
+    _notificationRepository =
+        widget.notificationRepository ?? createNotificationRepository();
+    _timePlanRepository =
+        widget.timePlanRepository ?? createTimePlanRepository();
     _loadParentHomeData();
   }
 

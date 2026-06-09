@@ -5,6 +5,10 @@ import 'package:bridge_p/core/auth/account_store.dart';
 import 'package:bridge_p/core/auth/auth_session.dart';
 import 'package:bridge_p/core/child/child_connection_store.dart';
 import 'package:bridge_p/core/models/result.dart';
+import 'package:bridge_p/data/repositories/mock_child_repository.dart';
+import 'package:bridge_p/data/repositories/mock_mission_repository.dart';
+import 'package:bridge_p/data/repositories/mock_notification_repository.dart';
+import 'package:bridge_p/data/repositories/mock_time_plan_repository.dart';
 import 'package:bridge_p/data/repositories/time_plan_repository.dart';
 import 'package:bridge_p/features/child_add/presentation/pages/child_add_page.dart';
 import 'package:bridge_p/features/home/presentation/pages/landing_page.dart';
@@ -30,6 +34,22 @@ import 'package:bridge_p/features/today_time/presentation/pages/whitelist_setup_
 import 'package:bridge_p/features/today_time/presentation/routes/today_time_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+ParentHomePage _mockParentHomePage({
+  bool showFilledPreview = false,
+  bool showTimeEmptyPreview = false,
+  bool showLinkedChildPreview = false,
+}) {
+  return ParentHomePage(
+    showFilledPreview: showFilledPreview,
+    showTimeEmptyPreview: showTimeEmptyPreview,
+    showLinkedChildPreview: showLinkedChildPreview,
+    childRepository: MockChildRepository(),
+    missionRepository: MockMissionRepository(),
+    notificationRepository: MockNotificationRepository(),
+    timePlanRepository: MockTimePlanRepository(),
+  );
+}
 
 void main() {
   setUp(() {
@@ -380,7 +400,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: TodayMissionCheckPage(
           parentId: 'parent@example.com',
           childrenId: 'GDG12-1',
@@ -448,13 +468,14 @@ void main() {
     );
 
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: TodayMissionCheckPage(
           parentId: parentId,
           childrenId: childrenId,
           missionIndex: null,
           initialMission: mission,
           initialTab: MissionCheckTab.review,
+          missionRepository: MockMissionRepository(),
         ),
       ),
     );
@@ -541,6 +562,7 @@ void main() {
                 state.uri.queryParameters['tab'] == MissionCheckTab.review.name
                 ? MissionCheckTab.review
                 : MissionCheckTab.info,
+            missionRepository: MockMissionRepository(),
           ),
         ),
         GoRoute(
@@ -554,13 +576,15 @@ void main() {
                 missionIndex: extra.index,
                 initialMission: extra.mission,
                 initialTab: extra.initialTab,
+                missionRepository: MockMissionRepository(),
               );
             }
-            return const TodayMissionCheckPage(
+            return TodayMissionCheckPage(
               parentId: null,
               childrenId: null,
               missionIndex: null,
               initialMission: null,
+              missionRepository: MockMissionRepository(),
             );
           },
         ),
@@ -581,7 +605,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: TodayMissionCheckPage(
           parentId: 'parent@example.com',
           childrenId: 'GDG12-1',
@@ -596,6 +620,7 @@ void main() {
             verificationStatus: MissionVerificationStatus.waitingParentApproval,
             submittedAtText: '2025.1.21 오후 7:01',
           ),
+          missionRepository: MockMissionRepository(),
         ),
       ),
     );
@@ -756,7 +781,7 @@ void main() {
         ),
         GoRoute(
           path: '/parent-home',
-          builder: (context, state) => const ParentHomePage(),
+          builder: (context, state) => _mockParentHomePage(),
         ),
       ],
     );
@@ -777,7 +802,7 @@ void main() {
   testWidgets('parent home empty state shows service sections', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: ParentHomePage()));
+    await tester.pumpWidget(MaterialApp(home: _mockParentHomePage()));
     await tester.pumpAndSettle();
 
     expect(find.text('추가'), findsOneWidget);
@@ -844,7 +869,7 @@ void main() {
       routes: <RouteBase>[
         GoRoute(
           path: '/parent-home',
-          builder: (context, state) => const ParentHomePage(),
+          builder: (context, state) => _mockParentHomePage(),
         ),
         GoRoute(
           path: '/today-mission',
@@ -897,7 +922,7 @@ void main() {
         totalMinutes: 600,
       );
 
-      await tester.pumpWidget(const MaterialApp(home: ParentHomePage()));
+      await tester.pumpWidget(MaterialApp(home: _mockParentHomePage()));
       await tester.pumpAndSettle();
 
       expect(find.text('대기 자녀'), findsOneWidget);
@@ -946,7 +971,7 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(const MaterialApp(home: ParentHomePage()));
+      await tester.pumpWidget(MaterialApp(home: _mockParentHomePage()));
       await tester.pumpAndSettle();
 
       expect(find.text('템플릿 자녀'), findsOneWidget);
@@ -1042,7 +1067,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(const MaterialApp(home: ParentHomePage()));
+      await tester.pumpWidget(MaterialApp(home: _mockParentHomePage()));
       await tester.pumpAndSettle();
 
       expect(find.text('첫째'), findsOneWidget);

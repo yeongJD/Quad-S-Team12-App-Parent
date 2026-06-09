@@ -24,6 +24,7 @@ class TodayMissionListPage extends StatefulWidget {
     this.initialPerformanceId,
     this.initialMissionIndex,
     this.initialTab = MissionCheckTab.info,
+    this.missionRepository,
   });
 
   final String? parentId;
@@ -33,13 +34,14 @@ class TodayMissionListPage extends StatefulWidget {
   final String? initialPerformanceId;
   final int? initialMissionIndex;
   final MissionCheckTab initialTab;
+  final MissionRepository? missionRepository;
 
   @override
   State<TodayMissionListPage> createState() => _TodayMissionListPageState();
 }
 
 class _TodayMissionListPageState extends State<TodayMissionListPage> {
-  final MissionRepository _missionRepository = createMissionRepository();
+  late final MissionRepository _missionRepository;
 
   List<TodayMission> _missions = <TodayMission>[];
   bool _isLoading = true;
@@ -52,6 +54,7 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
   @override
   void initState() {
     super.initState();
+    _missionRepository = widget.missionRepository ?? createMissionRepository();
     _loadMissions();
   }
 
