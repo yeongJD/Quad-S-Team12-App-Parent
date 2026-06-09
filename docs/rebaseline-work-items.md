@@ -85,6 +85,9 @@
 - Child: 남은시간 표시는 `HH:MM` 형식으로 정리.
 - Child: Android native `AppBlockerService`에 화면 켜짐 기준 local screen-time ledger와 0 도달 blocker 트리거를 연결.
 - Child/Backend: 자녀 미션 상세/목록에서 performance 상태를 조회할 수 있도록 보완.
+- Parent: notification `targetRoute`/`deeplink` 클릭 시 현재 세션 `parentId`와 payload `childrenId`를 보강해 시간/미션/리포트 화면으로 이동하도록 정리.
+- Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
+- Child: FCM push payload에서 `deeplink`가 없고 `targetRoute`만 있는 경우도 tap route로 사용하도록 보완.
 
 검증 완료:
 - Parent: `flutter analyze`, `flutter test`.
@@ -95,7 +98,7 @@
 - Backend: 기본 `java`는 JDK 17이라 Gradle Java 21 toolchain을 찾지 못한다. 로컬 검증 시 위 Java 21 `JAVA_HOME`을 명시해야 한다.
 - Child: Android debug APK build와 실기기 설치는 screen-time ledger/blocker 검수 직전에 별도 확인한다.
 - 실제 기기에서 Accessibility 권한을 켠 뒤 screen-time ledger와 blocker 발동을 확인해야 한다.
-- 알림은 backend row + FCM 시도 구조는 있으나, `childId`/`missionId`/`performanceId`/`targetRoute` payload와 클릭 라우팅은 추가 검수 대상이다.
+- 알림 payload parsing과 앱 내 클릭/FCM tap route 보강은 로컬 테스트로 1차 확인했다. 실제 foreground/background/terminated FCM 수신과 tap 이동은 E2E 추가 검수 대상이다.
 - 미션 reward 중복 지급 방지는 실제 approve/reject 반복 케이스로 E2E 검증이 필요하다.
 
 ### 2.2 진행 방향 재검수 메모
@@ -111,7 +114,7 @@
 
 주의할 경계:
 - "로컬 정적 검증 PASS"와 "실제 계정 E2E PASS"를 분리한다. 현재 문서의 완료 항목은 대부분 전자이며, 최종 AWS 배포 전에는 후자를 다시 찍어야 한다.
-- 알림 클릭 라우팅은 payload parsing만으로 완료 처리하지 않는다. target route가 앱 화면에서 필요한 id를 모두 복원하는지 확인해야 한다.
+- 알림 클릭 라우팅은 앱 parser/route 보강을 완료했지만, 실제 push 수신 상태별 tap 이동은 E2E로 최종 확인해야 한다.
 - 미션 reward는 unit test로 중복 지급을 방어했더라도 실제 self/parent/AI 확인 방식별 E2E에서 reward pool 반영을 다시 확인한다.
 - whitelist는 Parent local only가 확정 범위다. Child blocker의 package-level 허용 목록과 연결하는 작업은 이번 문서 기준 비목표로 유지한다.
 
