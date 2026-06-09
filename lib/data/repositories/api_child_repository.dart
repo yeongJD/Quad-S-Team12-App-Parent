@@ -51,16 +51,18 @@ class ApiChildRepository implements ChildRepository {
     required String parentId,
     required String childCode,
     required String name,
+    int? birthYear,
     String? photoBase64,
   }) async {
     // Backend identifies the parent via JWT, so parentId is not sent. Field
     // names follow RegisterChildRequest {childrenName, childrenCode,
-    // profileImageKey}. childrenBirth is intentionally omitted — see
-    // backend-handoff §2.1 (pinned: childrenBirth optional, response returns
-    // the created child object so it parses as ChildSummary below).
+    // childrenBirth, profileImageKey}. childrenBirth is optional in the
+    // backend, but the screen collects a birth year, so send a stable
+    // YYYY-01-01 value when available.
     final Map<String, dynamic> body = <String, dynamic>{
       'childrenName': name,
       'childrenCode': childCode,
+      if (birthYear != null) 'childrenBirth': '$birthYear-01-01',
     };
     // Profile photos are stored on S3: the picked image is uploaded first to
     // POST /api/v1/files/photos (category=PROFILE), which returns an S3 key the
@@ -77,13 +79,11 @@ class ApiChildRepository implements ChildRepository {
         '/api/v1/parents/children',
         data: body,
       );
-      final dynamic data = response.data;
-      if (data is! Map) {
+      final Map<String, dynamic>? data = _jsonMap(response.data);
+      if (data == null) {
         throw const FormatException('addChild response was not a JSON object.');
       }
-      return Result<ChildSummary>.success(
-        ChildSummary.fromJson(Map<String, dynamic>.from(data)),
-      );
+      return Result<ChildSummary>.success(ChildSummary.fromJson(data));
     } on DioException catch (e) {
       final String? code = errorCodeOf(e);
       if (code == 'INVALID_CHILD_CODE') {
@@ -178,5 +178,15 @@ class ApiChildRepository implements ChildRepository {
       return List<dynamic>.from(data);
     }
     return const <dynamic>[];
+  }
+
+  Map<String, dynamic>? _jsonMap(dynamic data) {
+    if (data is Map && data['data'] is Map) {
+      return Map<String, dynamic>.from(data['data'] as Map);
+    }
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    return null;
   }
 }

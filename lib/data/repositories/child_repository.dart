@@ -25,6 +25,7 @@ abstract interface class ChildRepository {
     required String parentId,
     required String childCode,
     required String name,
+    int? birthYear,
     String? photoBase64,
   });
 

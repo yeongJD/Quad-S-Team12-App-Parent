@@ -40,6 +40,7 @@ class MockChildRepository implements ChildRepository {
     required String parentId,
     required String childCode,
     required String name,
+    int? birthYear,
     String? photoBase64,
   }) async {
     final bool valid = await ChildConnectionStore.validateChildCode(childCode);
@@ -82,10 +83,7 @@ class MockChildRepository implements ChildRepository {
     required String parentId,
     required String childrenId,
   }) async {
-    await AccountStore.removeChild(
-      parentId: parentId,
-      childrenId: childrenId,
-    );
+    await AccountStore.removeChild(parentId: parentId, childrenId: childrenId);
     return Result<void>.success(null);
   }
 }

@@ -175,6 +175,7 @@ class _ChildAddPageState extends State<ChildAddPage> {
       parentId: parentId,
       childCode: _childCodeController.text.trim(),
       name: _nameController.text.trim(),
+      birthYear: _selectedBirthYear,
       photoBase64: _photoBytes == null ? null : base64Encode(_photoBytes!),
     );
     if (!mounted) {

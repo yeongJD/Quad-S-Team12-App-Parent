@@ -42,6 +42,65 @@ void main() {
   );
 
   test(
+    'ApiChildRepository posts selected birth year when adding child',
+    () async {
+      Map<String, dynamic>? postedBody;
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                if (options.path == '/api/v1/parents/children' &&
+                    options.method == 'POST') {
+                  postedBody = Map<String, dynamic>.from(options.data as Map);
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{
+                        'isSuccess': true,
+                        'data': <String, dynamic>{
+                          'childrenId': 22,
+                          'childCode': 'GDG12-1',
+                          'name': '하늘',
+                          'profileImageUrl': null,
+                        },
+                      },
+                    ),
+                  );
+                  return;
+                }
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    response: Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 404,
+                    ),
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiChildRepository repository = ApiChildRepository(dio: dio);
+
+      final Result<ChildSummary> result = await repository.addChild(
+        parentId: 'parent-1',
+        childCode: 'GDG12-1',
+        name: '하늘',
+        birthYear: 2014,
+      );
+
+      expect(result, isA<Success<ChildSummary>>());
+      expect(postedBody, <String, dynamic>{
+        'childrenName': '하늘',
+        'childrenCode': 'GDG12-1',
+        'childrenBirth': '2014-01-01',
+      });
+    },
+  );
+
+  test(
     'ApiNotificationRepository parses AWS ApiResponse-wrapped inbox',
     () async {
       final ApiNotificationRepository repository = ApiNotificationRepository(
