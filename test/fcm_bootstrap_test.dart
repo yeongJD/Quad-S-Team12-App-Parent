@@ -90,6 +90,34 @@ void main() {
     expect(uri.queryParameters['tab'], 'review');
   });
 
+  testWidgets('opened FCM backend mission route keeps review target ids', (
+    WidgetTester tester,
+  ) async {
+    await AuthSession.login(parentId: 'parent-1', email: 'p@test.local');
+    final _FakeFcmMessagingService messaging = _FakeFcmMessagingService();
+
+    await tester.pumpWidget(const BridgePApp());
+    await FcmBootstrap.initialize(messagingService: messaging);
+
+    messaging.openedMessages.add(
+      const FcmMessage(
+        type: 'MISSION_REQUESTED',
+        deeplink: '/today-mission?childrenId=22',
+        missionId: '100',
+        performanceId: '200',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Uri uri = appRouter.routeInformationProvider.value.uri;
+    expect(uri.path, '/today-mission');
+    expect(uri.queryParameters['parentId'], 'parent-1');
+    expect(uri.queryParameters['childrenId'], '22');
+    expect(uri.queryParameters['missionId'], '100');
+    expect(uri.queryParameters['performanceId'], '200');
+    expect(uri.queryParameters['tab'], 'review');
+  });
+
   testWidgets('FCM navigation ignores non-router paths', (
     WidgetTester tester,
   ) async {
