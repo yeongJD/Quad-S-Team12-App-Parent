@@ -222,6 +222,7 @@ Rules:
 - 이번 리베이스는 4주 고정으로 처리한다.
 - 5주차 날짜는 별도 budget/template을 만들지 않고 backend가 4주차로 캡핑해 조회한다.
 - weekly budget 합은 부모 `TimePolicy.baseTime`을 넘지 않아야 한다.
+- 재저장 시 같은 자녀/년월의 기존 weekly budget과 weekly template을 먼저 삭제하고 새 계획을 받는다.
 
 Response data: `null`
 

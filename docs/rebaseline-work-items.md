@@ -247,6 +247,7 @@
 - 저장 순서를 `weekly-budgets` -> `templates` -> `routines`로 유지한다.
 - `yearMonth`는 부모가 저장한 `TimePolicy.yearMonth`와 같은 값을 쓴다.
 - app week index와 backend week number 변환을 검증한다. 앱은 0-based, backend는 1-based다.
+- Backend는 `weekly-budgets` 재저장 시 같은 자녀/년월의 기존 weekly budget과 weekly template을 함께 삭제해 stale template이 섞이지 않게 한다.
 - Child UI에서는 week별 budget 합이 부모 `baseTime`과 같아야 다음 단계로 진행한다.
 - Backend validation은 최소한 week별 budget 합이 부모 `baseTime`을 넘지 않게 막아야 한다.
 - week template 합이 해당 week budget을 넘지 않게 한다.
