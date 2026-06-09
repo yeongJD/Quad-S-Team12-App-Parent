@@ -98,13 +98,17 @@
 - Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
 - Parent: 미션 알림에 `missionId`/`performanceId`가 있으면 generic `targetRoute`보다 미션 심사 상세 진입을 우선하도록 보완.
 - Parent: 이번 달 시간 확인/수정 화면이 child policy API를 우회 호출하지 않고 parent-scoped summary의 `basePolicyMinutes`를 사용하도록 보완.
+- Parent: 이번 달 시간 확인/수정 화면이 저장된 `basePolicyMinutes`를 local draft 재계산값보다 우선 표시하도록 보완.
 - Parent: AI/자녀 확인으로 이미 지급된 미션에는 backend가 지원하지 않는 수동 반려 버튼을 숨기고, 부모 확인 대기 미션에서만 승인/반려를 표시하도록 보완.
+- Parent: 알림 삭제뿐 아니라 읽음 처리도 backend 실패 시 local read 상태를 앞질러 바꾸지 않고 실패 메시지를 표시하도록 보완.
 - Child: FCM push payload에서 `deeplink`가 없고 `targetRoute`만 있는 경우도 tap route로 사용하도록 보완.
 - Child: 부모 월 총 시간 설정 알림이 별도 deeplink 없이도 자녀 시간 설정 화면으로 이어지도록 보완.
+- Child: 알림 읽음 처리 실패 시 local read 상태를 앞질러 바꾸지 않고 실패 메시지를 표시하도록 보완.
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
 - Backend: 이미 승인된 미션의 재제출/다른 pending performance 승인과 이미 심사 대기 중인 미션의 중복 제출을 차단해 reward 중복 지급 여지를 줄임.
 - Backend: 오늘 시간 연장은 `TimePolicy.baseTime`이 아니라 `accumulatedRewardTime` reward pool만 차감하도록 보완.
 - Backend: AI 확인 중 AI 서비스 오류가 나면 처리 불가능한 `PENDING`으로 두지 않고 `REJECTED`와 Child 알림으로 정리해 재수행 가능하게 보완.
+- Backend/Child: 자녀 시간 계획 제출 시 각 주차 template 합계가 해당 주차 budget과 맞는지 테스트로 고정.
 
 검증 완료:
 - Parent: `flutter analyze`, `flutter test`, `flutter build apk --debug`.
