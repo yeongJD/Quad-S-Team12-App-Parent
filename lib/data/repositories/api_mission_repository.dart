@@ -215,7 +215,7 @@ class ApiMissionRepository implements MissionRepository {
     final Object? missionId = json['missionId'];
     final Object? title = json['title'];
     final Object? category = json['category'];
-    final Object? resetPeriod = json['resetPeriod'];
+    final Object? resetPeriod = json['resetPeriod'] ?? json['resetCycle'];
     final Object? confirmationMethod = json['confirmationMethod'];
     final Object? verificationType = json['verificationType'];
     final Object? reward = json['reward'];

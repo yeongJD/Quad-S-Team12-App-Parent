@@ -41,6 +41,10 @@ void main() {
         MissionVerificationStatus.waitingParentApproval,
       );
       expect(
+        byId['parent-mission']!.resetPeriod,
+        MissionResetPeriod.weekly,
+      );
+      expect(
         byId['parent-mission']!.effectiveStatus,
         TodayMissionStatus.reviewing,
       );
@@ -102,7 +106,7 @@ Map<String, dynamic> _missionJson(String missionId, String verificationType) {
     'missionId': missionId,
     'title': '$missionId title',
     'category': 'STUDY',
-    'resetPeriod': 'DAILY',
+    'resetCycle': 'WEEKLY',
     'verificationType': verificationType,
     'reward': 30,
     'description': '$missionId description',
