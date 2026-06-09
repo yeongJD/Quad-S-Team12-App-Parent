@@ -58,7 +58,7 @@
 | P0 | 시간 상태 판정 | local `childWeeklyRules` 의존 제거, `noParentPolicy`/`waitingChildPlan`/`hasChildPlan` UI 분기 | 부모 정책 없을 때 시간 설정 차단 | parent-scoped time summary read API 검토/구현 |
 | P0 | 부모 월 총 시간 설정 | 월 총량만 `POST /api/v1/parents/time-policy` 저장, `+` 재진입 제한 | 정책 조회 결과로 시간 설정 가능 여부 판단 | `TimePolicy` 생성/갱신 검증 |
 | P0 | 자녀 시간 제출 | 제출 후 Parent 홈 반영 경로 확보 | `weekly-budgets` -> `templates` -> `routines` 저장 검증 | weekly budget/template 검증 및 plan-exists 판정 |
-| P0 | 주차 정책 확정 | 월 총량 계산 UI와 맞춤 | 주차별 예산 입력/검증 기준 고정 | 4주 고정/실제 달력 주차 중 하나로 검증 기준 고정 |
+| P0 | 주차 정책 확정 | 월 총량은 실제 달 기준 계산값으로 저장 | 주차별 예산 입력/검증은 4주 고정 | Child budget/template 검증은 4주 고정으로 유지 |
 | P0 | 오늘의 시간 표시 | 선택 자녀의 오늘 시간 표시, 회색 대기 문구 처리 | 일별 시간 `HH:MM` 표시, local ledger 복원 | daily schedule 생성 기준과 response 의미 검증 |
 | P0 | 남은시간 차감/차단 트리거 | 오늘 시간은 조회만, 차감 source로 쓰지 않음 | 화면 켜짐 기준 local screen-time ledger, 0 도달 시 blocker 호출 | `settle`은 선택적 coarse sync로만 사용 |
 | P1 | 미션 | 생성/승인/반려/상태 반영 | 목록/상세/사진 제출/상태 반영 | reward 지급 시점, 중복 지급 방지 |
@@ -87,7 +87,10 @@
 - Child/Backend: 자녀 미션 상세/목록에서 performance 상태를 조회할 수 있도록 보완.
 - Parent: notification `targetRoute`/`deeplink` 클릭 시 현재 세션 `parentId`와 payload `childrenId`를 보강하는 route 정규화 기준을 정리.
 - Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
+- Parent: 미션 알림에 `missionId`/`performanceId`가 있으면 generic `targetRoute`보다 미션 심사 상세 진입을 우선하도록 보완.
+- Parent: 이번 달 시간 확인/수정 화면이 child policy API를 우회 호출하지 않고 parent-scoped summary의 `basePolicyMinutes`를 사용하도록 보완.
 - Child: FCM push payload에서 `deeplink`가 없고 `targetRoute`만 있는 경우도 tap route로 사용하도록 보완.
+- Child: 부모 월 총 시간 설정 알림이 별도 deeplink 없이도 자녀 시간 설정 화면으로 이어지도록 보완.
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
 
 검증 완료:
@@ -100,7 +103,7 @@
 - Child: Android debug APK build는 통과했지만, 실기기 설치와 Accessibility 권한 기반 screen-time ledger/blocker 검수는 별도 확인해야 한다.
 - 실제 기기에서 Accessibility 권한을 켠 뒤 screen-time ledger와 blocker 발동을 확인해야 한다.
 - 알림 payload parsing과 앱 내 클릭/FCM tap route 보강은 로컬 테스트로 1차 확인했다. 실제 foreground/background/terminated FCM 수신과 tap 이동은 E2E 추가 검수 대상이다.
-- Parent 미션 알림은 `missionId`/`performanceId`가 있으면 generic `targetRoute`보다 심사 상세 진입을 우선해야 한다. 목록까지만 열리는 경우는 추가 보완 대상이다.
+- Parent 미션 알림은 로컬 parser/route 보강 기준으로 `missionId`/`performanceId`가 있으면 심사 상세 진입을 우선한다. 실제 inbox row와 FCM tap에서 동일하게 열리는지는 E2E 검수 대상이다.
 - 미션 reward 중복 지급 방지는 실제 approve/reject 반복 케이스로 E2E 검증이 필요하다.
 
 ### 2.2 진행 방향 재검수 메모
@@ -113,6 +116,7 @@
 - Child 앱 차단 트리거는 backend 실시간 저장이 아니라 local screen-time ledger의 `remainingSeconds <= 0` 기준으로 둔다.
 - 백그라운드 화면 켜짐 차감은 Flutter lifecycle만으로 처리하지 않고 Android native tracker/AccessibilityService 전제에서 검수한다.
 - `/api/v1/schedules/settle`은 실시간 countdown 저장 API가 아니라 하루 마감 또는 pause 시점의 coarse sync 후보로만 둔다.
+- Parent의 월 총 시간 계산은 실제 달의 요일 개수를 반영한 총량 계산으로 유지한다. "4주 고정"은 Child의 weekly budget/template 분배 행과 backend validation 범위에만 적용한다.
 
 주의할 경계:
 - "로컬 정적 검증 PASS"와 "실제 계정 E2E PASS"를 분리한다. 현재 문서의 완료 항목은 대부분 전자이며, 최종 AWS 배포 전에는 후자를 다시 찍어야 한다.
@@ -243,21 +247,24 @@
 - 저장 순서를 `weekly-budgets` -> `templates` -> `routines`로 유지한다.
 - `yearMonth`는 부모가 저장한 `TimePolicy.yearMonth`와 같은 값을 쓴다.
 - app week index와 backend week number 변환을 검증한다. 앱은 0-based, backend는 1-based다.
-- week별 budget 합이 부모 `baseTime`을 넘지 않게 한다.
+- Child UI에서는 week별 budget 합이 부모 `baseTime`과 같아야 다음 단계로 진행한다.
+- Backend validation은 최소한 week별 budget 합이 부모 `baseTime`을 넘지 않게 막아야 한다.
 - week template 합이 해당 week budget을 넘지 않게 한다.
 - 제출 성공 후 Child 홈으로 돌아와 오늘의 시간이 보이게 한다.
 - 자녀 계획 제출 후 부모 승인 flow는 만들지 않는다.
 
 검수:
-- 부모 월 총량보다 작은/같은 weekly budget 제출 성공.
+- Child UI에서 부모 월 총량보다 작은 weekly budget 합계는 다음 단계로 진행되지 않음.
+- 부모 월 총량과 같은 weekly budget 제출 성공.
 - 부모 월 총량 초과 시 backend error 표시.
 - 특정 주차 budget 없이 template 저장 시 error 표시.
 - 저장 후 Parent 홈이 `hasChildPlan`으로 바뀜.
 
 결정:
-- 이번 리베이스에서는 5주차가 있는 달도 4주 고정으로 처리한다.
-- 현재 backend repository comment와 앱 UI가 1~4주차 예산을 전제로 읽히므로, 프로젝트/데모 효율 기준에서 가장 작은 변경이다.
-- 실제 달력 주차를 지원하려면 Parent 월 총량 계산 UI, Child weekly budget UI, backend weekly budget validation을 모두 다시 맞춰야 하므로 이번 범위에서는 제외한다.
+- 이번 리베이스에서 Child 시간 계획의 weekly budget/template 입력은 4주 고정으로 처리한다.
+- Parent 월 총 시간 계산 UI는 실제 달의 요일 개수를 반영한 총량 계산으로 유지하고, backend에는 그 결과인 `baseTime`만 저장한다.
+- Child는 부모가 저장한 `baseTime`을 1~4주차 budget 합계로 분배한다. 즉 "4주 고정"은 자녀 분배 모델의 제약이지, Parent 월 총량을 4주치로 강제로 줄인다는 뜻이 아니다.
+- 5주차 날짜가 있는 달의 말일 검수에서는 `templateMissing`이 나올 수 있는 known limitation으로 본다. 실제 달력 주차를 지원하려면 Child weekly budget UI, backend weekly budget validation, daily schedule week mapping을 함께 확장해야 하므로 이번 범위에서는 제외한다.
 
 ### 4.3 Child 홈 오늘의 시간
 
