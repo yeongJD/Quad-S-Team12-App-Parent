@@ -264,7 +264,7 @@
 - 이번 리베이스에서 Child 시간 계획의 weekly budget/template 입력은 4주 고정으로 처리한다.
 - Parent 월 총 시간 계산 UI는 실제 달의 요일 개수를 반영한 총량 계산으로 유지하고, backend에는 그 결과인 `baseTime`만 저장한다.
 - Child는 부모가 저장한 `baseTime`을 1~4주차 budget 합계로 분배한다. 즉 "4주 고정"은 자녀 분배 모델의 제약이지, Parent 월 총량을 4주치로 강제로 줄인다는 뜻이 아니다.
-- 5주차 날짜가 있는 달의 말일 검수에서는 `templateMissing`이 나올 수 있는 known limitation으로 본다. 실제 달력 주차를 지원하려면 Child weekly budget UI, backend weekly budget validation, daily schedule week mapping을 함께 확장해야 하므로 이번 범위에서는 제외한다.
+- 5주차 날짜가 있는 달의 말일은 backend가 4주차 template으로 매핑한다. 실제 달력 주차를 지원하려면 Child weekly budget UI, backend weekly budget validation, daily schedule week mapping을 함께 확장해야 하므로 이번 범위에서는 제외한다.
 
 ### 4.3 Child 홈 오늘의 시간
 
@@ -580,7 +580,7 @@ backend sync:
 ## 7. 확정 결정사항 및 남은 검수 경계
 
 1. 5주차가 있는 달 처리 방식
-   - 결정: 이번 리베이스에서는 4주 고정.
+   - 결정: 이번 리베이스에서는 4주 고정이며, backend는 5주차 날짜를 4주차로 캡핑해 조회한다.
    - 실제 달력 주차 수 또는 남은 일수 자동 계산은 후속 확장 후보.
 
 2. 반려된 미션 재수행 방식

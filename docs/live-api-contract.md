@@ -220,6 +220,7 @@ Request:
 Rules:
 - 앱 week index는 0-based, 백엔드 `weekNumber`는 1-based다.
 - 이번 리베이스는 4주 고정으로 처리한다.
+- 5주차 날짜는 별도 budget/template을 만들지 않고 backend가 4주차로 캡핑해 조회한다.
 - weekly budget 합은 부모 `TimePolicy.baseTime`을 넘지 않아야 한다.
 
 Response data: `null`
@@ -322,7 +323,7 @@ Rules:
 - 오늘의 시간은 이 일별 값 기준으로 표시한다.
 - 월 총량이나 주간 총량을 오늘 시간 fallback으로 표시하지 않는다.
 - `extendedMinutes`는 reward pool 전체가 아니라 오늘 연장된 시간이다.
-- backend daily schedule 조회/생성 기준은 `yearMonth + weekNumber + dayOfWeek`다.
+- backend daily schedule 조회/생성 기준은 `yearMonth + weekNumber + dayOfWeek`다. 현재 `weekNumber`는 1~4로 캡핑된다.
 
 ### Parent Child Time Summary
 
