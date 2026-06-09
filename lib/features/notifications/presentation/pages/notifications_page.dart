@@ -12,6 +12,7 @@ import '../../../../data/repositories/notification_repository.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
 import '../models/notification_item.dart';
+import '../models/notification_target_route.dart';
 import '../widgets/notification_card.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -68,7 +69,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _handleActionTap(NotificationItem item) async {
-    final String? targetRoute = _targetRouteFromPayload(item);
+    final String? targetRoute = parentNotificationTargetRoute(
+      item,
+      parentId: _parentId,
+    );
     if (targetRoute != null) {
       context.push(targetRoute);
       await _markNotificationRead(item);
@@ -236,17 +240,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final Object? value = item.payload?[key];
       if (value != null && value.toString().isNotEmpty) {
         return value.toString();
-      }
-    }
-    return null;
-  }
-
-  String? _targetRouteFromPayload(NotificationItem item) {
-    for (final String key in <String>['targetRoute', 'deeplink']) {
-      final Object? value = item.payload?[key];
-      final String? route = value?.toString();
-      if (route != null && route.startsWith('/')) {
-        return route;
       }
     }
     return null;
