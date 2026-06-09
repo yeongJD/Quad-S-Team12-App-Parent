@@ -108,6 +108,14 @@ class ApiTimePlanRepository implements TimePlanRepository {
     required String childrenId,
     required int totalMinutes,
   }) async {
+    final int? childId = int.tryParse(childrenId);
+    if (childId == null) {
+      return Result<void>.failure('자녀 정보를 다시 불러와 주세요.');
+    }
+    if (totalMinutes <= 0) {
+      return Result<void>.failure('이번 달 총 시간은 0분보다 커야 합니다.');
+    }
+
     // Backend has no /time-plan/monthly-total; the parent sets the child's
     // monthly base time via POST /api/v1/parents/time-policy (parent resolved
     // from JWT). This baseTime is the prerequisite the child's weekly-budget
@@ -118,7 +126,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
       await _dio.post<dynamic>(
         '/api/v1/parents/time-policy',
         data: <String, dynamic>{
-          'childId': int.tryParse(childrenId) ?? childrenId,
+          'childId': childId,
           'yearMonth': _currentYearMonth(),
           'baseTime': totalMinutes,
         },

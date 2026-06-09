@@ -125,6 +125,68 @@ void main() {
       });
     });
 
+    test('rejects invalid monthly total before network call', () async {
+      bool wasCalled = false;
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+            wasCalled = true;
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                message: 'network should not be called',
+              ),
+            );
+          },
+        ),
+      );
+      final ApiTimePlanRepository repository = ApiTimePlanRepository(dio: dio);
+
+      final Result<void> result = await repository.saveMonthlyTotal(
+        parentId: '1',
+        childrenId: '2',
+        totalMinutes: 0,
+      );
+
+      expect(result, isA<Failure<void>>());
+      expect(wasCalled, isFalse);
+      if (result case Failure<void>(:final String message)) {
+        expect(message, contains('0분보다'));
+      }
+    });
+
+    test('rejects non-numeric child id before saving monthly total', () async {
+      bool wasCalled = false;
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+            wasCalled = true;
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                message: 'network should not be called',
+              ),
+            );
+          },
+        ),
+      );
+      final ApiTimePlanRepository repository = ApiTimePlanRepository(dio: dio);
+
+      final Result<void> result = await repository.saveMonthlyTotal(
+        parentId: '1',
+        childrenId: 'GDG12-1',
+        totalMinutes: 600,
+      );
+
+      expect(result, isA<Failure<void>>());
+      expect(wasCalled, isFalse);
+      if (result case Failure<void>(:final String message)) {
+        expect(message, contains('자녀 정보'));
+      }
+    });
+
     test('parses policy base and reward pool from time summary', () async {
       final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
       dio.interceptors.add(
