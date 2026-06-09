@@ -90,13 +90,13 @@
 - Child: FCM push payload에서 `deeplink`가 없고 `targetRoute`만 있는 경우도 tap route로 사용하도록 보완.
 
 검증 완료:
-- Parent: `flutter analyze`, `flutter test`.
-- Child: `flutter analyze`, `flutter test`.
+- Parent: `flutter analyze`, `flutter test`, `flutter build apk --debug`.
+- Child: `flutter analyze`, `flutter test`, `flutter build apk --debug`.
 - Backend: `JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH bash ./gradlew compileJava`, 같은 환경 변수로 `bash ./gradlew test`.
 
 남은 검증/주의:
 - Backend: 기본 `java`는 JDK 17이라 Gradle Java 21 toolchain을 찾지 못한다. 로컬 검증 시 위 Java 21 `JAVA_HOME`을 명시해야 한다.
-- Child: Android debug APK build와 실기기 설치는 screen-time ledger/blocker 검수 직전에 별도 확인한다.
+- Child: Android debug APK build는 통과했지만, 실기기 설치와 Accessibility 권한 기반 screen-time ledger/blocker 검수는 별도 확인해야 한다.
 - 실제 기기에서 Accessibility 권한을 켠 뒤 screen-time ledger와 blocker 발동을 확인해야 한다.
 - 알림 payload parsing과 앱 내 클릭/FCM tap route 보강은 로컬 테스트로 1차 확인했다. 실제 foreground/background/terminated FCM 수신과 tap 이동은 E2E 추가 검수 대상이다.
 - 미션 reward 중복 지급 방지는 실제 approve/reject 반복 케이스로 E2E 검증이 필요하다.
@@ -591,7 +591,7 @@ backend sync:
 2. 실제 계정으로 시간 설정 E2E를 검수한다: Parent 월 총량 설정 -> Child 시간 계획 제출 -> Parent/Child 홈 오늘의 시간 반영.
 3. 4주 고정 정책이 Parent/Child UI와 backend validation에서 모두 같은 의미로 동작하는지 확인한다.
 4. 오늘의 시간 표시가 Parent/Child 모두 일별 기준이고, 월 총량/주간 총량 fallback이 섞이지 않는지 검수한다.
-5. Child Android debug APK를 빌드/설치하고 Accessibility 권한을 켠 뒤 화면 켜짐 local ledger, 재시작 복원, 0 도달 blocker 호출을 확인한다.
+5. Child Android debug APK를 실기기에 설치하고 Accessibility 권한을 켠 뒤 화면 켜짐 local ledger, 재시작 복원, 0 도달 blocker 호출을 확인한다.
 6. 미션 생성/제출/승인/반려/reward pool 반영을 실제 API 기준으로 검수한다.
 7. 알림 row/FCM payload와 클릭 라우팅을 검수한다.
 8. 실제 계정으로 whitelist 선택이 시간 설정 완료를 막지 않는지 검수한다.
