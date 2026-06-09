@@ -15,6 +15,7 @@ import 'package:bridge_p/features/parent_home/presentation/widgets/today_time_se
 import 'package:bridge_p/features/today_mission/presentation/data/today_mission_store.dart';
 import 'package:bridge_p/features/today_mission/presentation/models/today_mission.dart';
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_check_page.dart';
+import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_list_page.dart';
 import 'package:bridge_p/features/today_time/presentation/data/daily_time_rule_store.dart';
 import 'package:bridge_p/features/today_time/presentation/data/whitelist_app_store.dart';
 import 'package:bridge_p/features/today_time/presentation/models/daily_time_rule.dart';
@@ -464,6 +465,108 @@ void main() {
       storedMission.effectiveVerificationStatus,
       MissionVerificationStatus.approved,
     );
+  });
+
+  testWidgets('today mission route target opens matching review detail', (
+    WidgetTester tester,
+  ) async {
+    const String parentId = 'route-mission@example.com';
+    const String childrenId = 'GDG12-1';
+    await AccountStore.saveAccount(
+      const ParentAccount(
+        parentId: parentId,
+        email: parentId,
+        name: 'route',
+        passwordHash: 'Password1234!',
+      ),
+    );
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: '자녀',
+        childCode: childrenId,
+      ),
+    );
+    await TodayMissionStore.save(
+      parentId: parentId,
+      childrenId: childrenId,
+      missions: const <TodayMission>[
+        TodayMission(
+          missionId: 'mission-1',
+          performanceId: 'performance-1',
+          title: '첫 미션',
+          category: MissionCategory.cleaning,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.parent,
+          rewardMinutes: 10,
+          description: '첫 번째',
+          verificationStatus: MissionVerificationStatus.waitingParentApproval,
+          submittedAtText: '2025.1.21 오후 7:01',
+        ),
+        TodayMission(
+          missionId: 'mission-2',
+          performanceId: 'performance-2',
+          title: '대상 미션',
+          category: MissionCategory.study,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.parent,
+          rewardMinutes: 20,
+          description: '라우트 대상',
+          verificationStatus: MissionVerificationStatus.waitingParentApproval,
+          submittedAtText: '2025.1.21 오후 7:01',
+        ),
+      ],
+    );
+
+    final GoRouter router = GoRouter(
+      initialLocation:
+          '/today-mission?parentId=$parentId&childrenId=$childrenId'
+          '&missionId=mission-2&tab=review',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/today-mission',
+          builder: (context, state) => TodayMissionListPage(
+            parentId: state.uri.queryParameters['parentId'],
+            childrenId: state.uri.queryParameters['childrenId'],
+            initialMissionId: state.uri.queryParameters['missionId'],
+            initialTab:
+                state.uri.queryParameters['tab'] == MissionCheckTab.review.name
+                ? MissionCheckTab.review
+                : MissionCheckTab.info,
+          ),
+        ),
+        GoRoute(
+          path: '/today-mission/check',
+          builder: (context, state) {
+            final Object? extra = state.extra;
+            if (extra is TodayMissionCheckArgs) {
+              return TodayMissionCheckPage(
+                parentId: extra.parentId,
+                childrenId: extra.childrenId,
+                missionIndex: extra.index,
+                initialMission: extra.mission,
+                initialTab: extra.initialTab,
+              );
+            }
+            return const TodayMissionCheckPage(
+              parentId: null,
+              childrenId: null,
+              missionIndex: null,
+              initialMission: null,
+            );
+          },
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    expect(find.text('대상 미션'), findsWidgets);
+    expect(find.text('부모 확인 대기중'), findsOneWidget);
+    expect(find.text('승인'), findsOneWidget);
+    expect(find.text('첫 미션'), findsNothing);
   });
 
   testWidgets('parent mission review keeps waiting state when approve fails', (

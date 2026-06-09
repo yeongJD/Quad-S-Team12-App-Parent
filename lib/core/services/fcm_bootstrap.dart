@@ -71,6 +71,8 @@ abstract final class FcmBootstrap {
       message.deeplink,
       parentId: parentId,
       childrenId: message.childRef,
+      missionId: message.missionId,
+      performanceId: message.performanceId,
     );
     if (!route.startsWith('/')) {
       return;

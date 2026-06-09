@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -18,11 +20,19 @@ class TodayMissionListPage extends StatefulWidget {
     this.parentId,
     this.childrenId,
     this.demo,
+    this.initialMissionId,
+    this.initialPerformanceId,
+    this.initialMissionIndex,
+    this.initialTab = MissionCheckTab.info,
   });
 
   final String? parentId;
   final String? childrenId;
   final String? demo;
+  final String? initialMissionId;
+  final String? initialPerformanceId;
+  final int? initialMissionIndex;
+  final MissionCheckTab initialTab;
 
   @override
   State<TodayMissionListPage> createState() => _TodayMissionListPageState();
@@ -33,6 +43,7 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
 
   List<TodayMission> _missions = <TodayMission>[];
   bool _isLoading = true;
+  bool _didOpenInitialMission = false;
   late bool _showDeleteDialog = widget.demo == 'dialog';
   int? _pendingDeleteIndex;
 
@@ -55,6 +66,7 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
       _missions = missions;
       _isLoading = false;
     });
+    _openInitialMissionIfNeeded(missions);
   }
 
   void _handleBack() {
@@ -172,6 +184,53 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
       Success<List<TodayMission>>(:final data) => data,
       Failure<List<TodayMission>>() => const <TodayMission>[],
     };
+  }
+
+  void _openInitialMissionIfNeeded(List<TodayMission> missions) {
+    if (_didOpenInitialMission || missions.isEmpty) {
+      return;
+    }
+    final int? index = _initialMissionIndexFor(missions);
+    if (index == null) {
+      return;
+    }
+    _didOpenInitialMission = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_openCheck(index, widget.initialTab));
+    });
+  }
+
+  int? _initialMissionIndexFor(List<TodayMission> missions) {
+    final String? missionId = widget.initialMissionId;
+    if (missionId != null && missionId.isNotEmpty) {
+      final int index = missions.indexWhere(
+        (TodayMission mission) => mission.missionId == missionId,
+      );
+      if (index >= 0) {
+        return index;
+      }
+    }
+
+    final String? performanceId = widget.initialPerformanceId;
+    if (performanceId != null && performanceId.isNotEmpty) {
+      final int index = missions.indexWhere(
+        (TodayMission mission) => mission.performanceId == performanceId,
+      );
+      if (index >= 0) {
+        return index;
+      }
+    }
+
+    final int? missionIndex = widget.initialMissionIndex;
+    if (missionIndex != null &&
+        missionIndex >= 0 &&
+        missionIndex < missions.length) {
+      return missionIndex;
+    }
+    return null;
   }
 
   String get _missionSetupLocation {

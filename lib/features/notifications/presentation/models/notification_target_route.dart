@@ -17,6 +17,9 @@ String? parentNotificationTargetRoute(
         route,
         parentId: parentId,
         childrenId: _childRefFromPayload(payload),
+        missionId: _payloadString(payload, 'missionId'),
+        performanceId: _payloadString(payload, 'performanceId'),
+        missionIndex: _payloadString(payload, 'missionIndex'),
       );
     }
   }
@@ -27,6 +30,9 @@ String normalizeParentNotificationRoute(
   String route, {
   required String? parentId,
   String? childrenId,
+  String? missionId,
+  String? performanceId,
+  String? missionIndex,
 }) {
   final Uri? uri = Uri.tryParse(route);
   if (uri == null || !route.startsWith('/')) {
@@ -44,6 +50,22 @@ String normalizeParentNotificationRoute(
   }
   if (_isPresent(childrenId) && !_isPresent(queryParameters['childrenId'])) {
     queryParameters['childrenId'] = childrenId!;
+  }
+  if (uri.path == '/today-mission') {
+    if (_isPresent(missionId) && !_isPresent(queryParameters['missionId'])) {
+      queryParameters['missionId'] = missionId!;
+      queryParameters['tab'] = queryParameters['tab'] ?? 'review';
+    }
+    if (_isPresent(performanceId) &&
+        !_isPresent(queryParameters['performanceId'])) {
+      queryParameters['performanceId'] = performanceId!;
+      queryParameters['tab'] = queryParameters['tab'] ?? 'review';
+    }
+    if (_isPresent(missionIndex) &&
+        !_isPresent(queryParameters['missionIndex'])) {
+      queryParameters['missionIndex'] = missionIndex!;
+      queryParameters['tab'] = queryParameters['tab'] ?? 'review';
+    }
   }
 
   return uri
@@ -68,6 +90,12 @@ String? _childRefFromPayload(Map<String, Object?> payload) {
     }
   }
   return null;
+}
+
+String? _payloadString(Map<String, Object?> payload, String key) {
+  final Object? value = payload[key];
+  final String? stringValue = value?.toString();
+  return _isPresent(stringValue) ? stringValue : null;
 }
 
 bool _isPresent(String? value) => value != null && value.isNotEmpty;

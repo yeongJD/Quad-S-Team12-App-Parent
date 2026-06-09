@@ -10,6 +10,8 @@ class FcmMessage {
     this.childId,
     this.childrenId,
     this.childCode,
+    this.missionId,
+    this.performanceId,
   });
 
   final String type;
@@ -18,6 +20,8 @@ class FcmMessage {
   final String? childId;
   final String? childrenId;
   final String? childCode;
+  final String? missionId;
+  final String? performanceId;
 
   String? get childRef => childrenId ?? childId ?? childCode;
 
@@ -36,6 +40,8 @@ class FcmMessage {
       childId: _dataString(data, 'childId'),
       childrenId: _dataString(data, 'childrenId'),
       childCode: _dataString(data, 'childCode'),
+      missionId: _dataString(data, 'missionId'),
+      performanceId: _dataString(data, 'performanceId'),
     );
   }
 }

@@ -77,6 +77,25 @@ void main() {
       expect(normalized.queryParameters['parentId'], 'parent-1');
     });
 
+    test('keeps mission target ids on normalized mission list route', () {
+      final Uri normalized = Uri.parse(
+        normalizeParentNotificationRoute(
+          '/today-mission?childrenId=4',
+          parentId: 'parent-1',
+          childrenId: '4',
+          missionId: '21',
+          performanceId: '33',
+        ),
+      );
+
+      expect(normalized.path, '/today-mission');
+      expect(normalized.queryParameters['childrenId'], '4');
+      expect(normalized.queryParameters['parentId'], 'parent-1');
+      expect(normalized.queryParameters['missionId'], '21');
+      expect(normalized.queryParameters['performanceId'], '33');
+      expect(normalized.queryParameters['tab'], 'review');
+    });
+
     test('keeps existing parent id and fills missing children id', () {
       final NotificationItem item = NotificationItem(
         id: 'route-2',
@@ -211,6 +230,8 @@ void main() {
             'notificationType': 'MISSION_REQUESTED',
             'notificationId': 'n-1',
             'childId': '4',
+            'missionId': '21',
+            'performanceId': '33',
             'targetRoute': '/today-mission?childrenId=4',
           },
         ),
@@ -219,6 +240,8 @@ void main() {
       expect(message.type, 'MISSION_REQUESTED');
       expect(message.notificationId, 'n-1');
       expect(message.childRef, '4');
+      expect(message.missionId, '21');
+      expect(message.performanceId, '33');
       expect(message.deeplink, '/today-mission?childrenId=4');
     });
   });
