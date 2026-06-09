@@ -83,6 +83,7 @@
 - Parent: 홈 오늘의 시간 상태를 local child weekly rule 대신 backend/mock `ChildTimeSummary` 기준으로 전환.
 - Parent: `waitingChildPlan` 상태에서는 `자녀가 아직 시간 설정 이전입니다.` 회색 안내를 표시.
 - Child: 부모 `TimePolicy`가 없으면 시간 설정 진입을 안내 화면으로 차단.
+- Backend: 자녀 정책 조회 API는 인증된 자녀 본인의 `childId`로만 조회 가능하도록 보완.
 - Child: 홈 오늘의 시간은 daily schedule 기준으로만 표시하고, 월 정책 fallback을 오늘 시간으로 쓰지 않음.
 - Child: 남은시간 표시는 `HH:MM` 형식으로 정리.
 - Child: Android native `AppBlockerService`에 화면 켜짐 기준 local screen-time ledger와 0 도달 blocker 트리거를 연결.
