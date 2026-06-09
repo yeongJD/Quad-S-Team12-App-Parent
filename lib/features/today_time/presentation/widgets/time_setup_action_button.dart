@@ -9,16 +9,18 @@ class TimeSetupActionButton extends StatelessWidget {
     required this.label,
     required this.enabled,
     required this.onTap,
+    this.disabledMessage = '필수 항목을 먼저 입력해주세요.',
   });
 
   final String label;
   final bool enabled;
   final VoidCallback onTap;
+  final String disabledMessage;
 
   void _handleDisabledTap(BuildContext context) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('필수 항목을 먼저 입력해주세요.')));
+    ).showSnackBar(SnackBar(content: Text(disabledMessage)));
   }
 
   @override

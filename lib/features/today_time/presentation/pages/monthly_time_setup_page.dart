@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/repositories/time_plan_repository.dart';
@@ -52,6 +53,7 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
   final TimePlanRepository _timePlanRepository = createTimePlanRepository();
   late int _minimumTotalMinutes;
   late int _selectedTotalMinutes;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -119,17 +121,35 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
   }
 
   Future<void> _continueToWhitelist(TimeSelection total) async {
+    if (_isSaving) {
+      return;
+    }
     final String? parentId = widget.parentId;
     final String? childrenId = widget.childrenId;
     if (parentId != null &&
         parentId.isNotEmpty &&
         childrenId != null &&
         childrenId.isNotEmpty) {
-      await _timePlanRepository.saveMonthlyTotal(
+      setState(() {
+        _isSaving = true;
+      });
+      final Result<void> result = await _timePlanRepository.saveMonthlyTotal(
         parentId: parentId,
         childrenId: childrenId,
         totalMinutes: _selectedTotalMinutes,
       );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSaving = false;
+      });
+      if (result case Failure<void>(:final message)) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        return;
+      }
     }
     if (!mounted) {
       return;
@@ -204,8 +224,9 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 31),
                   child: TimeSetupActionButton(
-                    label: '확인',
-                    enabled: true,
+                    label: _isSaving ? '저장중' : '확인',
+                    enabled: !_isSaving,
+                    disabledMessage: '시간 설정을 저장하는 중입니다.',
                     onTap: () => _continueToWhitelist(total),
                   ),
                 ),
