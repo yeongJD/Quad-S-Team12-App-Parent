@@ -84,6 +84,7 @@
 - Child: 홈 오늘의 시간은 daily schedule 기준으로만 표시하고, 월 정책 fallback을 오늘 시간으로 쓰지 않음.
 - Child: 남은시간 표시는 `HH:MM` 형식으로 정리.
 - Child: Android native `AppBlockerService`에 화면 켜짐 기준 local screen-time ledger와 0 도달 blocker 트리거를 연결.
+- Child: 오늘 시간이 있는 상태에서 blocker/화면 추적 권한이 꺼져 있으면 접근성 권한 설정 안내를 표시.
 - Child/Backend: 자녀 미션 상세/목록에서 performance 상태를 조회할 수 있도록 보완.
 - Parent: notification `targetRoute`/`deeplink` 클릭 시 현재 세션 `parentId`와 payload `childrenId`를 보강하는 route 정규화 기준을 정리.
 - Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
