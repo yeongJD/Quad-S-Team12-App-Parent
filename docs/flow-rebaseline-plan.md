@@ -35,15 +35,16 @@
 | 오늘의 시간 없음 기준 | 기획 기준은 `자녀 계획 없음`으로 본다. 실제 판정은 부모 제출 데이터인 `TimePolicy`와 자녀 제출 데이터인 `WeeklyBudget`/`WeeklyTimeDistribution`의 차이로 나눈다. | backend daily row 생성 여부는 구현 세부로 보고, product state는 자녀 계획 제출 여부로 판단한다. |
 | 자녀 계획 제출 후 반영 | 부모 승인 없이 즉시 반영한다. | 시간 계획용 approval/status flow를 만들지 않아도 된다. |
 | 남은시간 차감 기준 | 휴대폰 화면 켜짐 시간 기준으로 줄인다. 앱별 추적은 하지 않는다. Child 앱에 날짜별 local screen-time ledger를 두고 재시작/백그라운드를 견디게 한다. | 실제 출시용이 아니므로 UsageStats/App Tracking까지 가지 않고, native 화면 켜짐 추적 + 로컬 저장을 우선한다. backend settle은 pause sync가 아니라 후속 후보로 둔다. |
-| 보너스 시간 | 이번 달 reward pool이다. 오늘만의 보너스 시간이 아니다. | backend TimePolicy reward pool과 맞추기 쉽다. 홈 copy/의미가 헷갈리지 않게 확인 필요. |
+| 보너스 시간 | 이번 달 reward pool이다. 미션 보상과 미사용 시간 환불이 누적되는 풀로 본다. 오늘만의 보너스 시간이 아니다. | 기존 backend `TimePolicy.accumulatedRewardTime` 설계를 유지한다. 홈 copy/의미가 헷갈리지 않게 확인 필요. |
 | 미션 reward 지급 시점 | 자녀 본인 확인은 제출 즉시, 부모 확인은 부모 승인 시, AI 확인은 AI 승인 시 지급한다. | backend 중복 지급 방지와 performance status 전이가 핵심이다. |
 
 판정/구현 메모:
 - 부모가 제출하는 데이터는 이번 달 총량 정책인 `TimePolicy`다. 이 값만 있으면 `waitingChildPlan` 상태로 본다.
-- 자녀가 제출하는 데이터는 월/주차 예산 `WeeklyBudget`과 요일별 템플릿 `WeeklyTimeDistribution`이다. 1~4주차 budget과 각 주차별 template이 모두 있고, budget 합계가 부모 `TimePolicy.baseTime`과 일치해야 `hasChildPlan` 상태로 본다.
+- 자녀가 제출하는 데이터는 월/주차 예산 `WeeklyBudget`과 요일별 템플릿 `WeeklyTimeDistribution`이다. 1~4주차 budget과 각 주차별 template이 모두 있고, 각 주차 template 합계가 해당 weekly budget과 일치해야 `hasChildPlan` 상태로 본다.
+- backend 설계 기준으로 `TimePolicy.baseTime`은 daily 생성/연장 시 선차감되는 남은 기본 시간 풀로 볼 수 있다. 따라서 자녀 계획 제출 후 원래 월 배정량 표시는 `WeeklyBudget` 합계를 우선 사용한다.
 - `DailyTimeAllocation` 또는 daily schedule row는 오늘 조회 시 생성/파생될 수 있으므로, "자녀 계획 없음"의 1차 판정 기준으로 쓰지 않는다.
 - 휴대폰 화면 켜짐 시간은 Child 앱 native 쪽에서 날짜별 local ledger로 저장한다. 단순 Flutter 화면 timer만으로는 재시작과 백그라운드 상태를 견디기 어렵다.
-- 보너스 시간이 monthly reward pool이면 Child/Parent 홈의 `보너스시간` 라벨이 사용자에게 "오늘 보너스"로 읽히지 않는지 확인이 필요하다.
+- 보너스 시간이 monthly reward pool이면 Child/Parent 홈의 `보너스시간` 라벨이 사용자에게 "오늘 보너스" 또는 "미션 보상만"으로 읽히지 않는지 확인이 필요하다.
 
 ### 0.1 Today Time State 판정 기준
 
@@ -52,8 +53,8 @@
 | 상태 | backend 데이터 기준 | 앱 표시/동작 |
 |---|---|---|
 | `noParentPolicy` | 해당 자녀/년월의 `TimePolicy` 없음 | Parent는 `+`로 월 총 시간 설정 가능. Child는 시간 설정 진입 차단 |
-| `waitingChildPlan` | `TimePolicy` 있음, 하지만 해당 자녀/년월의 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성, 또는 budget 합계가 `TimePolicy.baseTime`과 불일치 | Parent는 회색 문구 `자녀가 아직 시간 설정 이전입니다.` 표시. `+` 재진입은 막음 |
-| `hasChildPlan` | `TimePolicy` 있음, 해당 자녀/년월의 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 있고 budget 합계가 `TimePolicy.baseTime`과 일치 | Parent/Child 홈에서 오늘의 시간 표시. 톱니는 이번 달 시간 상태 확인 |
+| `waitingChildPlan` | `TimePolicy` 있음, 하지만 해당 자녀/년월의 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성, 또는 주차별 template 합계가 budget과 불일치 | Parent는 회색 문구 `자녀가 아직 시간 설정 이전입니다.` 표시. `+` 재진입은 막음 |
+| `hasChildPlan` | `TimePolicy` 있음, 해당 자녀/년월의 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 있고 각 주차별 template 합계가 budget과 일치 | Parent/Child 홈에서 오늘의 시간 표시. 톱니는 이번 달 시간 상태 확인 |
 | `todayTemplateMissing` | 자녀 계획은 있으나 오늘 날짜의 week/day 템플릿 없음 | 예외 상태. 오늘 시간 없음으로 뭉개지 말고 "오늘 배정 시간이 없습니다"에 가까운 상태로 처리 |
 
 권장 판정:
@@ -121,7 +122,7 @@
 
 조사/수정 포인트:
 - Parent 홈에서 위 상태를 계산하는 source of truth를 정한다.
-- 실제 판정은 `TimePolicy` 존재 여부와 자녀 제출 산출물인 `WeeklyBudget`/`WeeklyTimeDistribution` 존재 여부, 그리고 weekly budget 합계와 `TimePolicy.baseTime` 일치 여부를 분리해서 본다.
+- 실제 판정은 `TimePolicy` 존재 여부와 자녀 제출 산출물인 `WeeklyBudget`/`WeeklyTimeDistribution` 존재 여부, 그리고 주차별 template 합계와 해당 weekly budget 일치 여부를 분리해서 본다.
 - Parent time setup 완료 후 같은 설정으로 재진입 가능한 조건을 제한한다.
 - 톱니 버튼은 "이번 달 시간 규칙 확인/수정"으로 고정하되, 실제 노출 내용은 월 총 시간 중심으로 둔다.
 - `+` 버튼은 `noParentPolicy`처럼 부모 설정이 필요한 상태에서만 노출하거나 동작하게 한다.
@@ -256,7 +257,7 @@
 | 오늘 배정 시간 | backend daily schedule 또는 오늘 템플릿 파생값 | Child local display | Parent 조회 경로 필요 여부 확인 |
 | 오늘 실제 사용/남은 시간 | Child local screen-time ledger | backend settle은 후속 후보 | 휴대폰 화면 켜짐 시간 기준. 앱 차단 트리거와 직결 |
 | 미션 목록/상태 | backend mission/performance | UI cache | 상태 갱신 방식 결정 필요 |
-| 보너스 시간 | backend TimePolicy reward | Child display | 이번 달 reward pool |
+| 보너스 시간 | backend TimePolicy reward/refund pool | Child display | 미션 보상 + 미사용 환불이 누적되는 이번 달 reward pool |
 | 알림 | backend notification rows + FCM | local read/delete cache | payload 통일 필요 |
 
 ## 3. Audit And Fix Plan
@@ -401,7 +402,7 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
 1. Parent가 특정 자녀의 시간 상태 요약을 읽는 API
    - 후보: `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD`
    - 최소 필드: `parentPolicyExists`, `childPlanExists`, `basePolicyMinutes`, `todaySchedule`
-   - 내부 판정: `TimePolicy` 존재 여부 + `WeeklyBudget`/`WeeklyTimeDistribution` 존재 여부 + weekly budget 합계와 `TimePolicy.baseTime` 일치 여부
+   - 내부 판정: `TimePolicy` 존재 여부 + `WeeklyBudget`/`WeeklyTimeDistribution` 존재 여부 + 주차별 template 합계와 해당 weekly budget 일치 여부
    - 목적: Parent 홈의 `noParentPolicy`/`waitingChildPlan`/`hasChildPlan` 상태와 오늘 시간을 정확히 표시
 
 2. 오늘 실제 사용/남은 시간 기록 API 또는 정책
@@ -434,7 +435,7 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
 
 3. "오늘의 시간"이 없는 상태의 기준은 무엇인가요?
    - 결정: 기획 기준은 자녀 계획 없음이다.
-   - 구현 기준: 부모 제출 `TimePolicy`만 있으면 `waitingChildPlan`, 자녀 제출 `WeeklyBudget`/`WeeklyTimeDistribution`이 있고 weekly budget 합계가 `TimePolicy.baseTime`과 맞으면 `hasChildPlan`으로 본다.
+   - 구현 기준: 부모 제출 `TimePolicy`만 있으면 `waitingChildPlan`, 자녀 제출 `WeeklyBudget`/`WeeklyTimeDistribution`이 있고 각 주차 template 합계가 해당 weekly budget과 맞으면 `hasChildPlan`으로 본다.
    - daily schedule row는 조회 시 생성/파생될 수 있으므로 "자녀 계획 없음" 판정 기준으로 삼지 않는다.
 
 4. 자녀가 시간 계획을 제출한 뒤 부모 승인 과정이 필요한가요?
@@ -456,7 +457,7 @@ backend 수정 없이 가능한지 먼저 확인하되, 아래는 수정이 필�
    - backend sync: 현재 범위에서는 local ledger만 PASS 기준이다. settle은 하루 마감/후속 확장 후보이며 pause sync로 연결하지 않는다.
 
 8. 보너스 시간은 "오늘 바로 쓸 수 있는 시간"인가요, 아니면 "이번 달 reward pool"인가요?
-   - 결정: 이번 달 reward pool이다.
+   - 결정: 이번 달 reward pool이다. 이 풀은 미션 보상뿐 아니라 하루 정산 시 미사용 시간이 환불되어 누적되는 시간도 포함한다.
 
 9. 미션 확인 방식별 reward 지급 시점은 아래가 맞나요?
    - 결정: 아래 방향이 맞다.

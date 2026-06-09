@@ -43,8 +43,8 @@
 |---|---|---|---|
 | `noChild` | 연결된 자녀 없음 | 자녀 추가 유도 | 해당 없음 |
 | `noParentPolicy` | 해당 자녀/년월 `TimePolicy` 없음 | `+`로 월 총 시간 설정 가능 | 시간 설정 진입 차단 |
-| `waitingChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성, 또는 budget 합계가 `TimePolicy.baseTime`과 불일치 | 회색 문구 `자녀가 아직 시간 설정 이전입니다.` | 시간 설정 가능 |
-| `hasChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 있고 budget 합계가 `TimePolicy.baseTime`과 일치 | 오늘의 시간 표시 | 오늘의 시간 표시 |
+| `waitingChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget` 또는 주차별 `WeeklyTimeDistribution` 미완성, 또는 주차별 template 합계가 budget과 불일치 | 회색 문구 `자녀가 아직 시간 설정 이전입니다.` | 시간 설정 가능 |
+| `hasChildPlan` | `TimePolicy` 있음, 자녀 1~4주차 `WeeklyBudget`과 각 주차별 `WeeklyTimeDistribution`이 있고 주차별 template 합계가 budget과 일치 | 오늘의 시간 표시 | 오늘의 시간 표시 |
 | `todayTemplateMissing` | 자녀 계획은 있으나 오늘 week/day 템플릿 없음 | 오늘 배정 시간 없음 표시 | 오늘 배정 시간 없음 표시 |
 
 중요:
@@ -78,10 +78,10 @@
 - Backend: Parent 전용 자녀 연결/목록/월 총 시간 endpoint는 `AuthMember.asParent()`로 role을 강제해 Child token이 parent service로 들어가지 않도록 보완.
 - Backend: 부모 월 총 시간 설정 시 Child notification inbox row 생성.
 - Backend/Child: 자녀 시간 계획 저장 완료 후 `POST /api/v1/schedules/complete`를 호출해 Parent notification inbox row 생성.
-- Backend: `childPlanExists`를 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부와 weekly budget 합계가 `TimePolicy.baseTime`과 일치하는지로 판정.
+- Backend: `childPlanExists`를 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부와 주차별 template 합계가 해당 weekly budget과 일치하는지로 판정.
 - Backend: daily schedule preview/생성 기준을 `yearMonth + weekNumber + dayOfWeek`로 정리.
 - Backend: 이번 작업의 주차 기준은 데모 효율을 우선해 4주 고정으로 적용.
-- Backend: 자녀 주차 예산 저장 시 1~4주차가 모두 양수로 존재하고 합계가 부모 `TimePolicy.baseTime`과 정확히 같아야 하도록 검증.
+- Backend: 자녀 주차 예산 최초 저장 시 1~4주차가 모두 양수로 존재하고 합계가 현재 `TimePolicy.baseTime`과 정확히 같아야 하도록 검증. 이미 계획이 있는 재저장은 기존 weekly budget 합계를 원 월 배정량 기준으로 사용.
 - Backend: 부모가 기존 월 총 시간의 `baseTime`을 변경하면 해당 월 자녀 `WeeklyBudget`/`WeeklyTimeDistribution`/`DailyTimeAllocation`을 초기화해 다시 `waitingChildPlan` 상태로 돌아가도록 보완.
 - Parent: 홈 오늘의 시간 상태를 local child weekly rule 대신 backend/mock `ChildTimeSummary` 기준으로 전환.
 - Parent: `waitingChildPlan` 상태에서는 `자녀가 아직 시간 설정 이전입니다.` 회색 안내를 표시.
@@ -108,7 +108,7 @@
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
 - Backend: 이미 승인된 미션의 재제출/다른 pending performance 승인과 이미 심사 대기 중인 미션의 중복 제출을 차단해 reward 중복 지급 여지를 줄임.
 - Backend: 미션 설정 조회 또는 인증 사진 업로드 실패 시 `PENDING` performance가 남지 않도록 저장 순서를 보완.
-- Backend: 오늘 시간 연장은 `TimePolicy.baseTime`이 아니라 `accumulatedRewardTime` reward pool만 차감하도록 보완.
+- Backend: 오늘 시간 연장은 기존 시간 은행 설계를 유지해 `TimePolicy.baseTime`에서 먼저 차감하고, 부족한 경우 `accumulatedRewardTime` reward pool에서 차감하도록 보완.
 - Backend: AI 확인 중 AI 서비스 오류가 나면 처리 불가능한 `PENDING`으로 두지 않고 `REJECTED`와 Child 알림으로 정리해 재수행 가능하게 보완.
 - Backend/Child: 자녀 시간 계획 제출 시 각 주차 template 합계가 해당 주차 budget과 맞는지 테스트로 고정.
 
@@ -130,14 +130,15 @@
 2026-06-09 문서 재검수 기준으로 현재 방향은 유지한다. 다만 이후 작업은 "구현 추가"보다 "실제 계정/실기기 검수" 중심으로 읽는다.
 
 유지할 방향:
-- Parent 홈 상태는 `TimePolicy`와 `WeeklyBudget`/`WeeklyTimeDistribution`, weekly budget 합계와 `TimePolicy.baseTime` 일치 여부로 판정한다. daily schedule row 부재를 곧바로 `자녀 계획 없음`으로 보지 않는다.
+- Parent 홈 상태는 `TimePolicy`와 `WeeklyBudget`/`WeeklyTimeDistribution`, 주차별 template 합계와 weekly budget 일치 여부로 판정한다. daily schedule row 부재를 곧바로 `자녀 계획 없음`으로 보지 않는다.
 - Parent에서 child API를 우회 호출하는 대신 parent-scoped time summary API를 기준으로 둔다. 이는 쓰기 flow 추가가 아니라 Parent 표시용 read path다.
 - Child 앱 차단 트리거는 backend 실시간 저장이 아니라 local screen-time ledger의 `remainingSeconds <= 0` 기준으로 둔다.
 - 백그라운드 화면 켜짐 차감은 Flutter lifecycle만으로 처리하지 않고 Android native tracker/AccessibilityService 전제에서 검수한다.
 - `/api/v1/schedules/settle`은 실시간 countdown 저장 API가 아니며, 현재 backend 의미상 pause sync에 연결하지 않는다.
 - Parent의 월 총 시간 계산은 실제 달의 요일 개수를 반영한 총량 계산으로 유지한다. "4주 고정"은 Child의 weekly budget/template 분배 행과 backend validation 범위에만 적용한다.
 - 같은 자녀/년월에서 부모가 월 총량을 다른 값으로 수정하면 기존 자녀 계획은 더 이상 유효하지 않으므로 `waitingChildPlan`으로 되돌린다. 같은 값 재저장은 기존 자녀 계획을 유지한다.
-- Child가 오늘 시간을 연장할 때는 월 총량 `baseTime`을 다시 소비하지 않는다. 연장 가능 재원은 이번 달 reward pool인 `accumulatedRewardTime`으로 제한한다.
+- `TimePolicy.baseTime`은 backend 기존 설계 기준에서 daily 생성/연장 시 선차감되는 남은 기본 시간 풀로 본다. 자녀 계획 제출 후 원래 월 배정량 표시/비교에는 `WeeklyBudget` 합계를 우선 사용한다.
+- Child가 오늘 시간을 연장할 때는 `baseTime`에서 먼저 차감하고, 부족한 경우 이번 달 reward pool인 `accumulatedRewardTime`에서 차감한다.
 
 주의할 경계:
 - "로컬 정적 검증 PASS"와 "실제 계정 E2E PASS"를 분리한다. 현재 문서의 완료 항목은 대부분 전자이며, 최종 AWS 배포 전에는 후자를 다시 찍어야 한다.
@@ -252,9 +253,9 @@
 작업:
 - 시간 설정 진입 전 `GET /api/v1/children/{childId}/policies` 또는 동일 policy 조회를 수행한다.
 - 정책이 없으면 기존 알림/안내 UI를 재활용해 시간 설정을 막는다.
-- 정책이 있으면 원칙적으로 `baseTime`을 월 총량으로 사용한다.
+- 정책이 있고 자녀 계획 제출 전이면 `baseTime`을 월 총량으로 사용한다. 자녀 계획 제출 후 `baseTime`은 선차감된 남은 기본 시간 풀일 수 있으므로 원 월 배정량은 weekly budget 합계를 우선한다.
 - 정책 응답에 `yearMonth`가 있으면 이를 이후 `weekly-budgets`, `templates`, `complete` 저장에 사용한다.
-- `baseTime`이 없는 구버전 응답에서만 `totalAvailableTime - accumulatedRewardTime`으로 fallback한다. reward pool을 자녀 weekly budget에 섞지 않는다.
+- `baseTime`이 없는 구버전 응답에서만 `totalAvailableTime - accumulatedRewardTime`으로 fallback한다. 초기 weekly budget 산정에는 reward pool을 섞지 않는다.
 - policy fallback을 "이미 자녀 계획이 있음"으로 오해하지 않게 한다.
 
 검수:
@@ -274,8 +275,8 @@
 - `yearMonth`는 부모가 저장한 `TimePolicy.yearMonth`와 같은 값을 쓴다.
 - app week index와 backend week number 변환을 검증한다. 앱은 0-based, backend는 1-based다.
 - Backend는 `weekly-budgets` 재저장 시 같은 자녀/년월의 기존 weekly budget과 weekly template을 함께 삭제해 stale template이 섞이지 않게 한다.
-- Child UI에서는 week별 budget 합이 부모 `baseTime`과 같아야 다음 단계로 진행한다.
-- Backend validation은 week별 budget 합이 부모 `baseTime`과 정확히 같아야 하며, 1~4주차가 모두 양수로 존재해야 한다.
+- Child UI에서는 week별 budget 합이 부모가 설정한 월 총 시간과 같아야 다음 단계로 진행한다.
+- Backend validation은 최초 제출 시 week별 budget 합이 현재 `TimePolicy.baseTime`과 정확히 같아야 하며, 이미 계획이 있는 재저장은 기존 weekly budget 합계를 기준으로 한다. 1~4주차는 모두 양수로 존재해야 한다.
 - week template 합이 해당 week budget을 넘지 않게 한다.
 - Child 앱 저장 시 요일별 분배 패턴은 각 주차 budget에 맞춰 비율 조정해 `WeeklyTimeDistribution`으로 저장한다.
 - 제출 성공 후 Child 홈으로 돌아와 오늘의 시간이 보이게 한다.
@@ -291,7 +292,7 @@
 결정:
 - 이번 리베이스에서 Child 시간 계획의 weekly budget/template 입력은 4주 고정으로 처리한다.
 - Parent 월 총 시간 계산 UI는 실제 달의 요일 개수를 반영한 총량 계산으로 유지하고, backend에는 그 결과인 `baseTime`만 저장한다.
-- Child는 부모가 저장한 `baseTime`을 1~4주차 budget 합계로 분배한다. 즉 "4주 고정"은 자녀 분배 모델의 제약이지, Parent 월 총량을 4주치로 강제로 줄인다는 뜻이 아니다.
+- Child는 부모가 저장한 초기 `baseTime`을 1~4주차 budget 합계로 분배한다. 즉 "4주 고정"은 자녀 분배 모델의 제약이지, Parent 월 총량을 4주치로 강제로 줄인다는 뜻이 아니다.
 - 5주차 날짜가 있는 달의 말일은 backend가 4주차 template으로 매핑한다. 실제 달력 주차를 지원하려면 Child weekly budget UI, backend weekly budget validation, daily schedule week mapping을 함께 확장해야 하므로 이번 범위에서는 제외한다.
 
 ### 4.3 Child 홈 오늘의 시간
@@ -339,7 +340,7 @@
 
 backend sync:
 - 기존 `/api/v1/schedules/settle`은 하루 마감 또는 후속 확장 후보로만 둔다.
-- 현재 리베이스 기준 settle은 실제 사용량을 기록해 daily allocation을 정산/잠금하는 후보이며, 남은 시간을 reward pool으로 환불하지 않는다.
+- 현재 backend 설계 기준 settle은 실제 사용량을 기록해 daily allocation을 정산/잠금하고, 남은 시간을 reward pool으로 환불한다.
 - 현재 backend `settle`은 daily allocation의 `baseMinutes/extendedMinutes`를 실제 사용량 기준으로 바꾸므로, 중간 pause마다 호출하면 다음 daily 조회의 총 배정 시간이 줄어 조기 차단될 수 있다.
 - 따라서 현재 구현 기준에서는 pause sync로 즉시 연결하지 않고, 남은시간/차단 PASS 기준은 local ledger에 둔다.
 - 이 의미가 실시간 남은시간 저장과 다르므로, 데모 단계에서는 local ledger를 1차 source로 둔다.
@@ -431,8 +432,8 @@ backend sync:
 작업:
 - parent-child 관계 검증 후에만 조회를 허용한다.
 - `TimePolicy` 존재 여부로 `parentPolicyExists`를 계산한다.
-- `basePolicyMinutes`는 부모가 설정한 `TimePolicy.baseTime`이다. Parent 앱은 이번 달 시간 확인/수정 화면에서 이 값을 사용하고, child policy API를 우회 호출하지 않는다.
-- 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부와 weekly budget 합계가 `TimePolicy.baseTime`과 일치하는지로 `childPlanExists`를 계산한다. 단, 이 값은 "자녀가 계획을 제출했는가"이고 "오늘 시간이 있는가"와는 분리한다.
+- `basePolicyMinutes`는 자녀 계획 전에는 부모가 설정한 초기 `TimePolicy.baseTime`, 자녀 계획 후에는 `WeeklyBudget` 합계로 본다. Parent 앱은 이번 달 시간 확인/수정 화면에서 이 값을 사용하고, child policy API를 우회 호출하지 않는다.
+- 1~4주차 `WeeklyBudget` + 각 주차별 `WeeklyTimeDistribution` 존재 여부와 주차별 template 합계가 해당 weekly budget과 일치하는지로 `childPlanExists`를 계산한다. 단, 이 값은 "자녀가 계획을 제출했는가"이고 "오늘 시간이 있는가"와는 분리한다.
 - `childPlanExists=false`면 daily schedule 생성을 강제로 하지 않아도 된다.
 - `childPlanExists=true`면 오늘 날짜의 schedule 또는 파생 값을 내려준다.
 - 오늘 템플릿이 없으면 `childPlanExists=true`라도 `todayScheduleStatus="templateMissing"`로 내려준다.
@@ -485,12 +486,12 @@ backend sync:
 
 작업:
 - `POST /api/v1/schedules/weekly-budgets`가 부모 `TimePolicy`를 선행 조건으로 검증한다.
-- weekly budget 합이 `TimePolicy.baseTime`과 정확히 같게 한다.
+- weekly budget 최초 합이 현재 `TimePolicy.baseTime`과 정확히 같게 한다. 기존 계획 재저장은 기존 weekly budget 합계를 기준으로 한다.
 - 1~4주차 budget이 모두 한 번씩 존재하고 각 주차가 양수인지 검증한다.
 - `PUT /api/v1/schedules/templates`가 해당 week budget 선행 조건을 검증한다.
 - week template 합이 week budget을 초과하지 않게 한다.
 - 자녀 plan 존재 여부 계산용 repository method를 준비한다.
-- `childPlanExists`는 current yearMonth에 1~4주차 weekly budget과 각 주차별 template이 모두 있고, weekly budget 합계가 부모 `TimePolicy.baseTime`과 일치하는지로 계산한다.
+- `childPlanExists`는 current yearMonth에 1~4주차 weekly budget과 각 주차별 template이 모두 있고, 주차별 template 합계가 해당 weekly budget과 일치하는지로 계산한다.
 - 오늘 시간이 있는지는 별도 `todayScheduleStatus` 또는 `todayTemplateExists`로 계산한다.
 
 검수:
@@ -508,13 +509,13 @@ backend sync:
 
 작업:
 - 기존 `/api/v1/schedules/settle` 의미를 문서화한다.
-- settle은 "오늘 실제 사용량 확정 + daily allocation 정산" 후보로만 쓰고, 남은 시간을 reward pool에 더하지 않는다.
+- settle은 "오늘 실제 사용량 확정 + daily allocation 정산 + 남은 시간 reward pool 환불" 의미로 유지한다.
 - 현재 backend 의미 그대로라면 app pause coarse sync로 바로 사용하지 않는다.
 - pause sync가 필요해지면 daily allocation 총량을 줄이는 settle이 아니라 `actualUsed/remaining`을 별도 저장하거나, settle response가 앱 표시와 충돌하지 않도록 backend 의미를 먼저 바꾼다.
 
 검수:
 - settle 호출 시 actualUsed가 totalAllocated를 넘으면 실패.
-- settle 후 reward pool이 증가하지 않음.
+- settle 후 미사용 시간이 있으면 reward pool이 증가함.
 - settle 후 daily response가 앱 표시와 충돌하지 않는지 확인.
 
 ### 5.6 Mission/reward
