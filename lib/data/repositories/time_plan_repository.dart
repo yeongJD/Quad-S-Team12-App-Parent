@@ -26,6 +26,8 @@ class ChildTimeSummary {
   final int rewardPoolMinutes;
 
   bool get hasTodaySchedule => todayScheduleStatus == 'available';
+  bool get hasDisplayableTodayTime =>
+      hasTodaySchedule && totalAvailableMinutes > 0;
 }
 
 /// Repository contract for the per-child time-plan domain.

@@ -239,7 +239,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
   }
 
   TimeSummary? _timeSummaryFromBackend(ChildTimeSummary summary) {
-    if (!summary.hasTodaySchedule || summary.baseMinutes <= 0) {
+    if (!summary.hasDisplayableTodayTime) {
       return null;
     }
 

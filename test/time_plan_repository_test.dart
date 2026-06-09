@@ -88,5 +88,42 @@ void main() {
       expect(summary.totalAvailableMinutes, 70);
       expect(summary.rewardPoolMinutes, 30);
     });
+
+    test('displayable today time follows total available minutes', () {
+      const ChildTimeSummary rewardOnlyToday = ChildTimeSummary(
+        parentPolicyExists: true,
+        childPlanExists: true,
+        todayScheduleStatus: 'available',
+        basePolicyMinutes: 600,
+        baseMinutes: 0,
+        extendedMinutes: 30,
+        totalAvailableMinutes: 30,
+        rewardPoolMinutes: 120,
+      );
+      const ChildTimeSummary zeroToday = ChildTimeSummary(
+        parentPolicyExists: true,
+        childPlanExists: true,
+        todayScheduleStatus: 'available',
+        basePolicyMinutes: 600,
+        baseMinutes: 0,
+        extendedMinutes: 0,
+        totalAvailableMinutes: 0,
+        rewardPoolMinutes: 120,
+      );
+      const ChildTimeSummary waitingChildPlan = ChildTimeSummary(
+        parentPolicyExists: true,
+        childPlanExists: false,
+        todayScheduleStatus: 'waitingChildPlan',
+        basePolicyMinutes: 600,
+        baseMinutes: 60,
+        extendedMinutes: 0,
+        totalAvailableMinutes: 60,
+        rewardPoolMinutes: 120,
+      );
+
+      expect(rewardOnlyToday.hasDisplayableTodayTime, isTrue);
+      expect(zeroToday.hasDisplayableTodayTime, isFalse);
+      expect(waitingChildPlan.hasDisplayableTodayTime, isFalse);
+    });
   });
 }
