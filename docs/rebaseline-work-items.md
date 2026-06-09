@@ -4,7 +4,8 @@
 
 참조 문서:
 - `docs/flow-rebaseline-plan.md`
-- `docs/api-contract.md`
+- `docs/live-api-contract.md`
+- `docs/api-contract.md` (기존/historical 계약 메모)
 
 범위:
 - Parent Flutter app: `/Users/yeongj/Quad-S-Team12-App-Parent`
@@ -87,14 +88,32 @@
 
 검증 완료:
 - Parent: `flutter analyze`, `flutter test`.
-- Child: `flutter analyze`, `flutter test`, `flutter build apk --debug`.
+- Child: `flutter analyze`, `flutter test`.
 - Backend: `JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH bash ./gradlew compileJava`, 같은 환경 변수로 `bash ./gradlew test`.
 
 남은 검증/주의:
 - Backend: 기본 `java`는 JDK 17이라 Gradle Java 21 toolchain을 찾지 못한다. 로컬 검증 시 위 Java 21 `JAVA_HOME`을 명시해야 한다.
+- Child: Android debug APK build와 실기기 설치는 screen-time ledger/blocker 검수 직전에 별도 확인한다.
 - 실제 기기에서 Accessibility 권한을 켠 뒤 screen-time ledger와 blocker 발동을 확인해야 한다.
 - 알림은 backend row + FCM 시도 구조는 있으나, `childId`/`missionId`/`performanceId`/`targetRoute` payload와 클릭 라우팅은 추가 검수 대상이다.
 - 미션 reward 중복 지급 방지는 실제 approve/reject 반복 케이스로 E2E 검증이 필요하다.
+
+### 2.2 진행 방향 재검수 메모
+
+2026-06-09 문서 재검수 기준으로 현재 방향은 유지한다. 다만 이후 작업은 "구현 추가"보다 "실제 계정/실기기 검수" 중심으로 읽는다.
+
+유지할 방향:
+- Parent 홈 상태는 `TimePolicy`와 `WeeklyBudget`/`WeeklyTimeDistribution` 차이로 판정한다. daily schedule row 부재를 곧바로 `자녀 계획 없음`으로 보지 않는다.
+- Parent에서 child API를 우회 호출하는 대신 parent-scoped time summary API를 기준으로 둔다. 이는 쓰기 flow 추가가 아니라 Parent 표시용 read path다.
+- Child 앱 차단 트리거는 backend 실시간 저장이 아니라 local screen-time ledger의 `remainingSeconds <= 0` 기준으로 둔다.
+- 백그라운드 화면 켜짐 차감은 Flutter lifecycle만으로 처리하지 않고 Android native tracker/AccessibilityService 전제에서 검수한다.
+- `/api/v1/schedules/settle`은 실시간 countdown 저장 API가 아니라 하루 마감 또는 pause 시점의 coarse sync 후보로만 둔다.
+
+주의할 경계:
+- "로컬 정적 검증 PASS"와 "실제 계정 E2E PASS"를 분리한다. 현재 문서의 완료 항목은 대부분 전자이며, 최종 AWS 배포 전에는 후자를 다시 찍어야 한다.
+- 알림 클릭 라우팅은 payload parsing만으로 완료 처리하지 않는다. target route가 앱 화면에서 필요한 id를 모두 복원하는지 확인해야 한다.
+- 미션 reward는 unit test로 중복 지급을 방어했더라도 실제 self/parent/AI 확인 방식별 E2E에서 reward pool 반영을 다시 확인한다.
+- whitelist는 Parent local only가 확정 범위다. Child blocker의 package-level 허용 목록과 연결하는 작업은 이번 문서 기준 비목표로 유지한다.
 
 ## 3. Parent 앱 작업
 
@@ -538,7 +557,7 @@ backend sync:
 - [ ] Parent/Child: inbox unread 표시.
 - [ ] Parent/Child: 알림 클릭 라우팅.
 
-## 7. 남은 결정사항
+## 7. 확정 결정사항 및 남은 검수 경계
 
 1. 5주차가 있는 달 처리 방식
    - 결정: 이번 리베이스에서는 4주 고정.
@@ -556,19 +575,20 @@ backend sync:
 
 4. 알림 범위
    - 현재 구현 방향: backend notification row 생성 + FCM best-effort 발송.
-   - 남은 범위: payload field와 클릭 라우팅 검수.
+   - payload field는 `childId`, `missionId`, `performanceId`, `targetRoute`/`deeplink` 기준으로 맞춘다.
+   - 남은 범위: foreground/background/terminated 수신과 클릭 라우팅 E2E 검수.
 
 5. `docs/api-contract.md` 정리 방식
-   - 기존 문서 보존 후 새 live contract 문서 작성
-   - 기존 문서를 live/current contract 기준으로 재작성
+   - 결정: 기존 `docs/api-contract.md`는 historical note로 보존하고, 현재 구현 기준 계약은 `docs/live-api-contract.md`에서 관리한다.
+   - 이후 API 변경은 `docs/live-api-contract.md`를 먼저 갱신한다.
 
 ## 8. 추천 작업 순서
 
-1. `docs/api-contract.md`를 live/current contract 기준으로 정리하거나, 기존 문서를 보존하고 새 live contract 문서를 만든다.
+1. `docs/live-api-contract.md`를 current API 기준 문서로 삼고, 이후 변경은 이 문서에 먼저 반영한다.
 2. 실제 계정으로 시간 설정 E2E를 검수한다: Parent 월 총량 설정 -> Child 시간 계획 제출 -> Parent/Child 홈 오늘의 시간 반영.
 3. 4주 고정 정책이 Parent/Child UI와 backend validation에서 모두 같은 의미로 동작하는지 확인한다.
 4. 오늘의 시간 표시가 Parent/Child 모두 일별 기준이고, 월 총량/주간 총량 fallback이 섞이지 않는지 검수한다.
-5. Child 실기기에서 Accessibility 권한을 켠 뒤 화면 켜짐 local ledger, 재시작 복원, 0 도달 blocker 호출을 확인한다.
+5. Child Android debug APK를 빌드/설치하고 Accessibility 권한을 켠 뒤 화면 켜짐 local ledger, 재시작 복원, 0 도달 blocker 호출을 확인한다.
 6. 미션 생성/제출/승인/반려/reward pool 반영을 실제 API 기준으로 검수한다.
 7. 알림 row/FCM payload와 클릭 라우팅을 검수한다.
 8. 실제 계정으로 whitelist 선택이 시간 설정 완료를 막지 않는지 검수한다.
