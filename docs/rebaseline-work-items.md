@@ -72,6 +72,7 @@
 완료/반영:
 - Backend: parent-scoped `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD` 추가.
 - Backend: 부모 월 총 시간 설정 시 Child notification inbox row 생성.
+- Backend/Child: 자녀 시간 계획 저장 완료 후 `POST /api/v1/schedules/complete`를 호출해 Parent notification inbox row 생성.
 - Backend: `childPlanExists`를 `WeeklyBudget` + `WeeklyTimeDistribution` 존재 여부로 판정.
 - Backend: daily schedule preview/생성 기준을 `yearMonth + weekNumber + dayOfWeek`로 정리.
 - Backend: 이번 작업의 주차 기준은 데모 효율을 우선해 4주 고정으로 적용.
