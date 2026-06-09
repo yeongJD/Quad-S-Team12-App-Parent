@@ -68,6 +68,7 @@
 ### 2.1 2026-06-09 구현 반영 메모
 
 이번 작업에서 문서 방향을 코드에 반영한 범위다. 아래 항목은 로컬 정적 검증 기준이며, 실제 계정 기반 E2E와 AWS 배포 검증은 별도다.
+이후 작업은 아래 상세 작업표의 모든 항목을 다시 신규 구현 대상으로 보지 않고, 이미 반영된 항목은 실제 계정/실기기 검수 대상으로 읽는다.
 
 완료/반영:
 - Backend: parent-scoped `GET /api/v1/parents/children/{childId}/time-summary?date=YYYY-MM-DD` 추가.
@@ -250,7 +251,7 @@
 
 ### 4.4 화면 켜짐 기준 차감 저장
 
-추천 구현:
+현재 방향:
 - Child 앱 local screen-time ledger를 만든다.
 - 저장소는 `SharedPreferences` 또는 현재 앱에서 이미 쓰는 local storage를 사용한다.
 - key는 `childId + yyyy-MM-dd + scheduleId(or policyMonth)` 조합으로 잡는다.
@@ -260,8 +261,8 @@
 - 차감 기준은 "Bridge 앱이 켜져 있는 시간"이 아니라 "휴대폰 화면이 켜져 있는 시간"으로 둔다.
 - Flutter `resumed` lifecycle만으로는 다른 앱 사용 중인 화면 켜짐 시간을 안정적으로 잴 수 없다.
 - Android는 native 쪽에 screen on/off 또는 interactive 상태 추적을 붙인다.
-- 현재 `AppBlockerService`는 차단 실행용 AccessibilityService다. foreground app을 감지해 막을 수는 있지만, 화면 켜짐 시간 ledger를 저장하는 로직은 아직 없다.
-- 구현 후보는 native service에서 `ACTION_SCREEN_ON`/`ACTION_SCREEN_OFF` 또는 `PowerManager.isInteractive` 기준으로 누적하고, Flutter에는 MethodChannel로 남은 시간을 내려주는 방식이다.
+- `AppBlockerService`는 차단 실행용 AccessibilityService이면서 화면 켜짐 시간 누적 tracker의 실행 지점으로 사용한다.
+- native service에서 `ACTION_SCREEN_ON`/`ACTION_SCREEN_OFF` 또는 `PowerManager.isInteractive` 기준으로 누적하고, Flutter에는 MethodChannel로 남은 시간을 내려주는 방식이다.
 - `ACTION_SCREEN_ON`/`ACTION_SCREEN_OFF`는 manifest receiver에만 맡기지 말고 native service가 살아 있을 때 동적 receiver로 등록하는 쪽을 우선 검토한다.
 - Accessibility 권한이 꺼져 있으면 백그라운드 화면 켜짐 추적과 차단 실행 모두 약해질 수 있으므로, 데모 검수 전제 조건에 Accessibility 권한 on을 포함한다.
 - 백그라운드 실행은 OS 제약을 받으므로, 데모 기준에서는 AccessibilityService가 켜진 상태에서 native tracker를 같이 쓰는 방향이 가장 효율적이다.
@@ -275,6 +276,7 @@ backend sync:
 - 기존 `/api/v1/schedules/settle`은 하루 마감 또는 pause 시 coarse sync 후보로만 둔다.
 - 현재 settle은 실제 사용량을 기록한 뒤 남은 시간을 reward pool으로 환불하고 daily allocation 값을 정산된 값으로 바꾼다.
 - 이 의미가 실시간 남은시간 저장과 다르므로, 데모 단계에서는 local ledger를 1차 source로 둔다.
+- 따라서 앱 차단 트리거는 backend 실시간 저장 여부와 분리한다. Child local ledger가 0을 기록하는 순간 native blocker를 호출하는 방식이 현재 기준이다.
 
 검수:
 - 앱 재시작 후 남은 시간이 초기화되지 않음.
@@ -559,18 +561,15 @@ backend sync:
 
 ## 8. 추천 작업 순서
 
-1. Parent/Child/backend의 현재 API 호출표를 `docs/flow-audit-results.md`로 만든다.
-2. 5주차 처리 방식을 확정한다. 데모 효율 기준 추천은 4주 고정이다.
-3. Backend daily schedule 조회 기준을 `yearMonth + weekNumber + dayOfWeek`로 맞춘다.
-4. Backend에 parent-scoped time summary read API가 필요한지 최종 확정하고, 필요하면 최소 필드만 구현한다.
-5. Parent 홈의 시간 상태 판정을 local store 기준에서 backend summary 기준으로 바꾼다.
-6. Child 시간 설정 진입 조건과 제출 저장 순서를 검수/수정한다.
-7. Child native/홈에 local screen-time ledger를 붙인다.
-8. 오늘의 시간 표시가 Parent/Child 모두 일별 기준으로 맞는지 검수한다.
-9. 미션 생성/제출/승인/reward를 연결한다.
-10. 알림 row/FCM payload와 클릭 라우팅을 맞춘다.
-11. 접근성 권한과 blocker 트리거를 실기기에서 검증한다.
-12. Parent `flutter analyze && flutter test`, Child `flutter analyze && flutter test`, Backend `bash ./gradlew test`를 실행한다.
+1. `docs/api-contract.md`를 live/current contract 기준으로 정리하거나, 기존 문서를 보존하고 새 live contract 문서를 만든다.
+2. 실제 계정으로 시간 설정 E2E를 검수한다: Parent 월 총량 설정 -> Child 시간 계획 제출 -> Parent/Child 홈 오늘의 시간 반영.
+3. 4주 고정 정책이 Parent/Child UI와 backend validation에서 모두 같은 의미로 동작하는지 확인한다.
+4. 오늘의 시간 표시가 Parent/Child 모두 일별 기준이고, 월 총량/주간 총량 fallback이 섞이지 않는지 검수한다.
+5. Child 실기기에서 Accessibility 권한을 켠 뒤 화면 켜짐 local ledger, 재시작 복원, 0 도달 blocker 호출을 확인한다.
+6. 미션 생성/제출/승인/반려/reward pool 반영을 실제 API 기준으로 검수한다.
+7. 알림 row/FCM payload와 클릭 라우팅을 검수한다.
+8. 반려된 미션 재수행 방식과 whitelist 저장 범위만 추가 결정한다.
+9. Parent `flutter analyze && flutter test`, Child `flutter analyze && flutter test`, Backend `JAVA_HOME=/opt/homebrew/opt/openjdk@21 PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH bash ./gradlew test`를 최종 실행한다.
 
 ## 9. 이번 문서 기준의 비목표
 
