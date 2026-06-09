@@ -956,6 +956,114 @@ void main() {
     },
   );
 
+  testWidgets(
+    'parent home reloads time and missions when selected child changes',
+    (WidgetTester tester) async {
+      const String parentId = 'child-switch-parent@example.com';
+      const String firstChildId = 'GDG12-1';
+      const String secondChildId = 'GDG12-2';
+      final int todayIndex = DateTime.now().weekday - 1;
+
+      await AccountStore.saveAccount(
+        const ParentAccount(
+          parentId: parentId,
+          email: parentId,
+          name: 'child-switch-parent',
+          passwordHash: 'Password1234!',
+        ),
+      );
+      await AuthSession.login(parentId: parentId, email: parentId);
+      await ChildConnectionStore.addChild(
+        parentId: parentId,
+        child: ChildConnectionStore.childFromCode(
+          name: '첫째',
+          childCode: firstChildId,
+        ),
+      );
+      await ChildConnectionStore.addChild(
+        parentId: parentId,
+        child: ChildConnectionStore.childFromCode(
+          name: '둘째',
+          childCode: secondChildId,
+        ),
+      );
+      await MonthlyTotalTimeStore.save(
+        parentId: parentId,
+        childrenId: firstChildId,
+        totalMinutes: 600,
+      );
+      await MonthlyTotalTimeStore.save(
+        parentId: parentId,
+        childrenId: secondChildId,
+        totalMinutes: 900,
+      );
+      await ChildWeeklyTimePlanStore.save(
+        parentId: parentId,
+        childrenId: firstChildId,
+        rules: <DailyTimeRule>[
+          DailyTimeRule(
+            days: <int>{todayIndex},
+            time: const TimeSelection(hour: 1, minute: 0),
+          ),
+        ],
+      );
+      await ChildWeeklyTimePlanStore.save(
+        parentId: parentId,
+        childrenId: secondChildId,
+        rules: <DailyTimeRule>[
+          DailyTimeRule(
+            days: <int>{todayIndex},
+            time: const TimeSelection(hour: 2, minute: 30),
+          ),
+        ],
+      );
+      await TodayMissionStore.add(
+        parentId: parentId,
+        childrenId: firstChildId,
+        mission: const TodayMission(
+          title: '첫째 홈 미션',
+          category: MissionCategory.cleaning,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.child,
+          rewardMinutes: 30,
+          description: '',
+        ),
+      );
+      await TodayMissionStore.add(
+        parentId: parentId,
+        childrenId: secondChildId,
+        mission: const TodayMission(
+          title: '둘째 홈 미션',
+          category: MissionCategory.study,
+          resetPeriod: MissionResetPeriod.daily,
+          confirmationMethod: MissionConfirmationMethod.parent,
+          rewardMinutes: 45,
+          description: '',
+        ),
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: ParentHomePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('첫째'), findsOneWidget);
+      expect(find.text('둘째'), findsOneWidget);
+      expect(find.text('01:00'), findsOneWidget);
+      expect(find.text('첫째 홈 미션'), findsOneWidget);
+      expect(find.text('02:30'), findsNothing);
+      expect(find.text('둘째 홈 미션'), findsNothing);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('child-selector-card-1')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('02:30'), findsOneWidget);
+      expect(find.text('둘째 홈 미션'), findsOneWidget);
+      expect(find.text('01:00'), findsNothing);
+      expect(find.text('첫째 홈 미션'), findsNothing);
+    },
+  );
+
   testWidgets('today time section can show load failure message', (
     WidgetTester tester,
   ) async {

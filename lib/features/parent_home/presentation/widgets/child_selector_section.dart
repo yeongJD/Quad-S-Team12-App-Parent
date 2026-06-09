@@ -45,6 +45,7 @@ class ChildSelectorSection extends StatelessWidget {
         children: [
           for (int index = 0; index < children.length; index++) ...[
             _ChildCard(
+              key: ValueKey<String>('child-selector-card-$index'),
               child: children[index],
               isSelected: index == selectedIndex,
               isDeleteVisible: index == deleteIndex,
@@ -62,6 +63,7 @@ class ChildSelectorSection extends StatelessWidget {
 
 class _ChildCard extends StatelessWidget {
   const _ChildCard({
+    super.key,
     required this.child,
     required this.isSelected,
     required this.isDeleteVisible,
