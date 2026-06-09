@@ -8,10 +8,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/models/child/child_summary.dart';
 import '../../../../data/repositories/child_repository.dart';
+import '../../../../data/repositories/mission_repository.dart';
 import '../../../../data/repositories/notification_repository.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
 import '../models/notification_item.dart';
+import '../models/notification_mission_target.dart';
 import '../models/notification_target_route.dart';
 import '../widgets/notification_card.dart';
 
@@ -26,6 +28,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   final NotificationRepository _notificationRepository =
       createNotificationRepository();
   final ChildRepository _childRepository = createChildRepository();
+  final MissionRepository _missionRepository = createMissionRepository();
 
   List<NotificationItem> _notifications = <NotificationItem>[];
   bool _isLoading = true;
@@ -69,6 +72,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _handleActionTap(NotificationItem item) async {
+    if (shouldOpenMissionDetailFromNotification(item)) {
+      final bool didOpen = await _openMissionNotification(item);
+      if (didOpen) {
+        await _markNotificationRead(item);
+        return;
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+
     final String? targetRoute = parentNotificationTargetRoute(
       item,
       parentId: _parentId,
@@ -119,22 +133,65 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<bool> _openMissionNotification(NotificationItem item) async {
-    final String parentId = _parentId?.isNotEmpty == true
-        ? _parentId!
-        : 'mock-parent';
+    final String? parentId = _parentId?.isNotEmpty == true ? _parentId! : null;
 
     final ChildSummary? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
+
+    if (parentId != null && child != null) {
+      final Result<List<TodayMission>> result = await _missionRepository
+          .loadMissions(parentId: parentId, childrenId: child.childrenId);
+      if (!mounted) {
+        return false;
+      }
+
+      if (result case Success<List<TodayMission>>(:final data)) {
+        final int? missionIndex = notificationMissionIndexForMissions(
+          data,
+          item,
+        );
+        if (missionIndex != null) {
+          context.push(
+            '/today-mission/check',
+            extra: TodayMissionCheckArgs(
+              parentId: parentId,
+              childrenId: child.childrenId,
+              index: missionIndex,
+              mission: data[missionIndex],
+              initialTab: MissionCheckTab.review,
+            ),
+          );
+          return true;
+        }
+      }
+
+      _showFallbackMessage();
+      context.push(
+        _missionListLocation(parentId: parentId, childrenId: child.childrenId),
+      );
+      return true;
+    }
+
+    if (parentId != null) {
+      final String? childRef = _childRefFromPayload(item);
+      _showFallbackMessage();
+      context.push(
+        _missionListLocation(parentId: parentId, childrenId: childRef),
+      );
+      return true;
+    }
+
+    final String fallbackParentId = 'mock-parent';
     final String childrenId =
         child?.childrenId ?? _childCodeFromPayload(item) ?? 'GDG12-1';
-    final int missionIndex = _missionIndexFromPayload(item) ?? 0;
+    final int missionIndex = notificationMissionIndex(item) ?? 0;
 
     context.push(
       '/today-mission/check',
       extra: TodayMissionCheckArgs(
-        parentId: parentId,
+        parentId: fallbackParentId,
         childrenId: childrenId,
         index: missionIndex,
         mission: _missionMockForNotification(item.type),
@@ -217,20 +274,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return null;
   }
 
-  int? _missionIndexFromPayload(NotificationItem item) {
-    final Object? missionIndex = item.payload?['missionIndex'];
-    if (missionIndex is int) {
-      return missionIndex;
-    }
-    // FCM `data` payloads are string-only on the wire — the inbox JSON
-    // can echo a real int, but the push variant arrives as "2". Accept
-    // both so the deeplink doesn't fall back to index 0 silently.
-    if (missionIndex is String) {
-      return int.tryParse(missionIndex);
-    }
-    return null;
-  }
-
   String? _childCodeFromPayload(NotificationItem item) {
     return _childRefFromPayload(item);
   }
@@ -303,6 +346,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
   String _usageReportLocation({required String parentId, String? childrenId}) {
     return Uri(
       path: '/usage-report',
+      queryParameters: <String, String>{
+        'parentId': parentId,
+        if (childrenId != null && childrenId.isNotEmpty)
+          'childrenId': childrenId,
+      },
+    ).toString();
+  }
+
+  String _missionListLocation({required String parentId, String? childrenId}) {
+    return Uri(
+      path: '/today-mission',
       queryParameters: <String, String>{
         'parentId': parentId,
         if (childrenId != null && childrenId.isNotEmpty)
