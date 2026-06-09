@@ -533,6 +533,37 @@ void main() {
     expect(find.text('반려'), findsNothing);
   });
 
+  testWidgets('self-approved mission hides unsupported manual rejection', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TodayMissionCheckPage(
+          parentId: 'parent@example.com',
+          childrenId: 'GDG12-1',
+          missionIndex: null,
+          initialTab: MissionCheckTab.review,
+          initialMission: TodayMission(
+            title: '자녀 확인 미션',
+            category: MissionCategory.study,
+            resetPeriod: MissionResetPeriod.daily,
+            confirmationMethod: MissionConfirmationMethod.child,
+            rewardMinutes: 30,
+            description: '자녀 확인',
+            verificationStatus: MissionVerificationStatus.approved,
+            submittedAtText: '2025.1.21 오후 7:01',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('미션 수행완료!'), findsOneWidget);
+    expect(find.text('보상 시간이 지급되었습니다.'), findsOneWidget);
+    expect(find.text('승인'), findsNothing);
+    expect(find.text('반려'), findsNothing);
+  });
+
   testWidgets('home screen renders Bridge entry actions', (
     WidgetTester tester,
   ) async {

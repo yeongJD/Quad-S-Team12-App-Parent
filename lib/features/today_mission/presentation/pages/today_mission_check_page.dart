@@ -739,9 +739,7 @@ class _MissionReviewContent extends StatelessWidget {
         verificationType == MissionVerificationType.parent &&
         verificationStatus == MissionVerificationStatus.waitingParentApproval;
     final bool showRejectButton =
-        verificationStatus == MissionVerificationStatus.waitingParentApproval ||
-        (verificationStatus == MissionVerificationStatus.approved &&
-            verificationType != MissionVerificationType.parent);
+        verificationStatus == MissionVerificationStatus.waitingParentApproval;
     final bool showActionButtons = showApproveButton || showRejectButton;
     final bool showAiLoading =
         verificationStatus == MissionVerificationStatus.waitingAiVerification;
@@ -760,11 +758,9 @@ class _MissionReviewContent extends StatelessWidget {
       MissionVerificationStatus.approved =>
         verificationType == MissionVerificationType.parent
             ? '부모 승인이 완료되어 보상 시간이 지급되었습니다.'
-            : '보상 시간이 지급되었습니다.\n필요하면 사후 반려할 수 있어요.',
+            : '보상 시간이 지급되었습니다.',
       MissionVerificationStatus.rejected =>
-        verificationType == MissionVerificationType.parent
-            ? '반려가 완료되었습니다.\n보상 시간은 지급되지 않았어요.'
-            : '반려가 완료되었습니다.\n지급된 시간은 회수 대상입니다.',
+        '반려가 완료되었습니다.\n보상 시간은 지급되지 않았어요.',
       MissionVerificationStatus.idle => '',
     };
     final String submittedAt =

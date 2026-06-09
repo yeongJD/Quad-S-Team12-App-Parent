@@ -90,9 +90,11 @@
 - Parent: FCM background/terminated tap bootstrap을 추가하고, push payload route도 같은 Parent route 정규화 기준을 타게 함.
 - Parent: 미션 알림에 `missionId`/`performanceId`가 있으면 generic `targetRoute`보다 미션 심사 상세 진입을 우선하도록 보완.
 - Parent: 이번 달 시간 확인/수정 화면이 child policy API를 우회 호출하지 않고 parent-scoped summary의 `basePolicyMinutes`를 사용하도록 보완.
+- Parent: AI/자녀 확인으로 이미 지급된 미션에는 backend가 지원하지 않는 수동 반려 버튼을 숨기고, 부모 확인 대기 미션에서만 승인/반려를 표시하도록 보완.
 - Child: FCM push payload에서 `deeplink`가 없고 `targetRoute`만 있는 경우도 tap route로 사용하도록 보완.
 - Child: 부모 월 총 시간 설정 알림이 별도 deeplink 없이도 자녀 시간 설정 화면으로 이어지도록 보완.
 - Backend/Child: 미션 제출 응답에 `status`/`performanceId`를 추가하고 Child가 이를 우선 사용해 `PENDING`을 심사중으로 표시하도록 보완.
+- Backend: 이미 승인된 미션의 재제출/다른 pending performance 승인과 이미 심사 대기 중인 미션의 중복 제출을 차단해 reward 중복 지급 여지를 줄임.
 
 검증 완료:
 - Parent: `flutter analyze`, `flutter test`, `flutter build apk --debug`.
@@ -105,7 +107,7 @@
 - 실제 기기에서 Accessibility 권한을 켠 뒤 screen-time ledger와 blocker 발동을 확인해야 한다.
 - 알림 payload parsing과 앱 내 클릭/FCM tap route 보강은 로컬 테스트로 1차 확인했다. 실제 foreground/background/terminated FCM 수신과 tap 이동은 E2E 추가 검수 대상이다.
 - Parent 미션 알림은 로컬 parser/route 보강 기준으로 `missionId`/`performanceId`가 있으면 심사 상세 진입을 우선한다. 실제 inbox row와 FCM tap에서 동일하게 열리는지는 E2E 검수 대상이다.
-- 미션 reward 중복 지급 방지는 실제 approve/reject 반복 케이스로 E2E 검증이 필요하다.
+- 미션 reward 중복 지급 방지는 backend unit test로 1차 방어했다. 실제 approve/reject 반복 케이스와 self/parent/AI 지급 시점은 E2E 검증이 필요하다.
 
 ### 2.2 진행 방향 재검수 메모
 
