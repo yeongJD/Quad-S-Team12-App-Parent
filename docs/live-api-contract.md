@@ -116,7 +116,7 @@ Login response:
 ```json
 {
   "childrenName": "자녀",
-  "childrenBirth": "2015-01-01",
+  "childrenBirth": "2015",
   "childrenCode": "ABC123",
   "profileImageKey": null
 }

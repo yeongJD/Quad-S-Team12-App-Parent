@@ -95,7 +95,7 @@ void main() {
       expect(postedBody, <String, dynamic>{
         'childrenName': '하늘',
         'childrenCode': 'GDG12-1',
-        'childrenBirth': '2014-01-01',
+        'childrenBirth': '2014',
       });
     },
   );

@@ -57,12 +57,12 @@ class ApiChildRepository implements ChildRepository {
     // Backend identifies the parent via JWT, so parentId is not sent. Field
     // names follow RegisterChildRequest {childrenName, childrenCode,
     // childrenBirth, profileImageKey}. childrenBirth is optional in the
-    // backend, but the screen collects a birth year, so send a stable
-    // YYYY-01-01 value when available.
+    // backend, and the screen collects a birth year, so send the four-digit
+    // year directly.
     final Map<String, dynamic> body = <String, dynamic>{
       'childrenName': name,
       'childrenCode': childCode,
-      if (birthYear != null) 'childrenBirth': '$birthYear-01-01',
+      if (birthYear != null) 'childrenBirth': '$birthYear',
     };
     // Profile photos are stored on S3: the picked image is uploaded first to
     // POST /api/v1/files/photos (category=PROFILE), which returns an S3 key the
