@@ -19,6 +19,7 @@ import 'package:bridge_p/features/today_mission/presentation/models/today_missio
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_check_page.dart';
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_list_page.dart';
 import 'package:bridge_p/features/today_time/presentation/data/daily_time_rule_store.dart';
+import 'package:bridge_p/features/today_time/presentation/data/monthly_total_time_store.dart';
 import 'package:bridge_p/features/today_time/presentation/data/whitelist_app_store.dart';
 import 'package:bridge_p/features/today_time/presentation/models/daily_time_rule.dart';
 import 'package:bridge_p/features/today_time/presentation/models/whitelist_app.dart';
@@ -813,6 +814,43 @@ void main() {
     expect(find.text('01:30'), findsNothing);
     expect(find.text('00:30'), findsNothing);
   });
+
+  testWidgets(
+    'parent home shows waiting state after only monthly time is set',
+    (WidgetTester tester) async {
+      const String parentId = 'waiting-parent@example.com';
+      const String childrenId = 'GDG12-1';
+      await AccountStore.saveAccount(
+        const ParentAccount(
+          parentId: parentId,
+          email: parentId,
+          name: 'waiting-parent',
+          passwordHash: 'Password1234!',
+        ),
+      );
+      await AuthSession.login(parentId: parentId, email: parentId);
+      await ChildConnectionStore.addChild(
+        parentId: parentId,
+        child: ChildConnectionStore.childFromCode(
+          name: '대기 자녀',
+          childCode: childrenId,
+        ),
+      );
+      await MonthlyTotalTimeStore.save(
+        parentId: parentId,
+        childrenId: childrenId,
+        totalMinutes: 600,
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: ParentHomePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('대기 자녀'), findsOneWidget);
+      expect(find.text('자녀가 아직 시간 설정 이전입니다.'), findsOneWidget);
+      expect(find.text('01:30'), findsNothing);
+      expect(find.text('00:30'), findsNothing);
+    },
+  );
 
   testWidgets('today time section can show load failure message', (
     WidgetTester tester,
