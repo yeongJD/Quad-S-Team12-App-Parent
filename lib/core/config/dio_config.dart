@@ -31,36 +31,36 @@ class DioConfig {
 
     dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (
-          RequestOptions options,
-          RequestInterceptorHandler handler,
-        ) async {
-          final String? token = await AuthSession.accessToken();
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
-        onResponse: (
-          Response<dynamic> response,
-          ResponseInterceptorHandler handler,
-        ) {
-          final dynamic body = response.data;
-          if (body is Map && body.containsKey('isSuccess')) {
-            response.data = body['data'];
-          }
-          handler.next(response);
-        },
+        onRequest:
+            (RequestOptions options, RequestInterceptorHandler handler) async {
+              final String? token = await AuthSession.accessToken();
+              if (token != null && token.isNotEmpty) {
+                options.headers['Authorization'] = 'Bearer $token';
+              }
+              handler.next(options);
+            },
+        onResponse:
+            (Response<dynamic> response, ResponseInterceptorHandler handler) {
+              final dynamic body = response.data;
+              if (body is Map && body.containsKey('isSuccess')) {
+                response.data = body['data'];
+              }
+              handler.next(response);
+            },
         onError: (DioException error, ErrorInterceptorHandler handler) async {
           final dynamic body = error.response?.data;
           if (body is Map &&
               !body.containsKey('error') &&
               body.containsKey('code') &&
               body.containsKey('message')) {
+            final Object? detail = body['data'];
+            final String? detailMessage = detail is String && detail.isNotEmpty
+                ? detail
+                : null;
             error.response!.data = <String, dynamic>{
               'error': <String, dynamic>{
                 'code': body['code'],
-                'message': body['message'],
+                'message': detailMessage ?? body['message'],
               },
             };
           }
@@ -121,8 +121,9 @@ class DioConfig {
       handler.next(error);
       return;
     }
-    final Map<dynamic, dynamic> data =
-        body['data'] is Map ? body['data'] as Map : body;
+    final Map<dynamic, dynamic> data = body['data'] is Map
+        ? body['data'] as Map
+        : body;
     final String? newAccess = data['accessToken'] as String?;
     final String? newRefresh = data['refreshToken'] as String?;
     if (newAccess == null || newAccess.isEmpty) {
@@ -145,10 +146,7 @@ class DioConfig {
       responseType: original.responseType,
       sendTimeout: original.sendTimeout,
       receiveTimeout: original.receiveTimeout,
-      extra: <String, dynamic>{
-        ...original.extra,
-        _kRetriedFlag: true,
-      },
+      extra: <String, dynamic>{...original.extra, _kRetriedFlag: true},
     );
 
     try {

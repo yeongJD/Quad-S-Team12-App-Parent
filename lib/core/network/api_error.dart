@@ -9,11 +9,7 @@ import '../models/result.dart';
 /// class is exposed for the rare case a caller wants the structured
 /// representation (e.g. for matching `code` against UI-specific switches).
 class ApiError {
-  const ApiError({
-    required this.message,
-    this.code,
-    this.cause,
-  });
+  const ApiError({required this.message, this.code, this.cause});
 
   /// Human-readable Korean message — safe to surface in the UI.
   final String message;
@@ -33,10 +29,20 @@ Map<String, dynamic>? _extractErrorPayload(Response<dynamic>? response) {
     return null;
   }
   final dynamic error = data['error'];
-  if (error is! Map) {
-    return null;
+  if (error is Map) {
+    return Map<String, dynamic>.from(error);
   }
-  return Map<String, dynamic>.from(error);
+  if (data.containsKey('code') && data.containsKey('message')) {
+    final Object? detail = data['data'];
+    final String? detailMessage = detail is String && detail.isNotEmpty
+        ? detail
+        : null;
+    return <String, dynamic>{
+      'code': data['code'],
+      'message': detailMessage ?? data['message'],
+    };
+  }
+  return null;
 }
 
 abstract final class _GenericMessages {
