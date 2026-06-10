@@ -140,10 +140,7 @@ abstract final class TodayMissionStore {
       return null;
     }
 
-    final MissionCategory? decodedCategory = _decodeEnum(
-      MissionCategory.values,
-      category,
-    );
+    final MissionCategory? decodedCategory = missionCategoryFromWire(category);
     final MissionResetPeriod? decodedResetPeriod = _decodeEnum(
       MissionResetPeriod.values,
       resetPeriod,

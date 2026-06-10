@@ -254,10 +254,7 @@ class ApiMissionRepository implements MissionRepository {
       return null;
     }
 
-    final MissionCategory? decodedCategory = _decodeEnum(
-      MissionCategory.values,
-      category,
-    );
+    final MissionCategory? decodedCategory = missionCategoryFromWire(category);
     final MissionCategory safeCategory =
         decodedCategory ?? MissionCategory.routine;
     final MissionResetPeriod decodedResetPeriod = resetPeriod is String

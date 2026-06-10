@@ -413,10 +413,11 @@ class _MissionInfoContent extends StatelessWidget {
                     children: [
                       const _SectionTitle('카테고리'),
                       const SizedBox(height: 18),
-                      _ReadOnlyEvenSelectionRow<MissionCategory>(
-                        values: MissionCategory.values,
+                      _ReadOnlySelectionGrid<MissionCategory>(
+                        values: missionCreateCategoryOptions,
                         selectedValue: mission.category,
                         spacing: 8,
+                        columns: 4,
                         labelOf: (MissionCategory value) => value.label,
                       ),
                     ],
@@ -524,6 +525,56 @@ class _ReadOnlyEvenSelectionRow<T> extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ReadOnlySelectionGrid<T> extends StatelessWidget {
+  const _ReadOnlySelectionGrid({
+    required this.values,
+    required this.selectedValue,
+    required this.spacing,
+    required this.columns,
+    required this.labelOf,
+  });
+
+  final List<T> values;
+  final T selectedValue;
+  final double spacing;
+  final int columns;
+  final String Function(T value) labelOf;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int effectiveColumns = values.length < columns
+            ? values.length
+            : columns;
+        final double gridWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final double itemWidth =
+            (gridWidth - spacing * (effectiveColumns - 1)) / effectiveColumns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: <Widget>[
+            for (final T value in values)
+              SizedBox(
+                width: itemWidth,
+                child: _ReadOnlyOptionChip(
+                  label: labelOf(value),
+                  selected: value == selectedValue,
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

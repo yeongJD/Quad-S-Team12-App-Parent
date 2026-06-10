@@ -1,9 +1,24 @@
-enum MissionCategory { routine, study, exercise, cleaning, errand }
+enum MissionCategory { routine, study, exercise, cleaning, errand, etc }
+
+abstract final class MissionCategoryAssetPaths {
+  static const String routine =
+      'assets/icons/\u{1105}\u{116e}\u{1110}\u{1175}\u{11ab}.svg';
+  static const String study =
+      'assets/icons/\u{1112}\u{1161}\u{11a8}\u{1109}\u{1173}\u{11b8}.svg';
+  static const String exercise =
+      'assets/icons/\u{110b}\u{116e}\u{11ab}\u{1103}\u{1169}\u{11bc}.svg';
+  static const String cleaning =
+      'assets/icons/\u{110e}\u{1165}\u{11bc}\u{1109}\u{1169}.svg';
+  static const String errand =
+      'assets/icons/\u{1109}\u{1175}\u{11b7}\u{1107}\u{116e}\u{1105}\u{1173}\u{11b7}.svg';
+  static const String etc = 'assets/icons/icn/light-bulb.svg';
+}
 
 const List<MissionCategory> missionCreateCategoryOptions = <MissionCategory>[
   MissionCategory.study,
   MissionCategory.exercise,
   MissionCategory.cleaning,
+  MissionCategory.etc,
 ];
 
 enum MissionResetPeriod { daily, weekly, monthly }
@@ -198,30 +213,69 @@ extension MissionCategoryLabel on MissionCategory {
       case MissionCategory.routine:
         return '루틴';
       case MissionCategory.study:
-        return '공부';
+        return '학습';
       case MissionCategory.exercise:
         return '운동';
       case MissionCategory.cleaning:
         return '청소';
       case MissionCategory.errand:
         return '심부름';
+      case MissionCategory.etc:
+        return '기타';
     }
   }
 
   String get iconAsset {
     switch (this) {
       case MissionCategory.routine:
-        return 'assets/icons/루틴.svg';
+        return MissionCategoryAssetPaths.routine;
       case MissionCategory.study:
-        return 'assets/icons/학습.svg';
+        return MissionCategoryAssetPaths.study;
       case MissionCategory.exercise:
-        return 'assets/icons/운동.svg';
+        return MissionCategoryAssetPaths.exercise;
       case MissionCategory.cleaning:
-        return 'assets/icons/청소.svg';
+        return MissionCategoryAssetPaths.cleaning;
       case MissionCategory.errand:
-        return 'assets/icons/심부름.svg';
+        return MissionCategoryAssetPaths.errand;
+      case MissionCategory.etc:
+        return MissionCategoryAssetPaths.etc;
     }
   }
+}
+
+MissionCategory? missionCategoryFromWire(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  final String normalized = value.toString().trim().toLowerCase().replaceAll(
+    RegExp(r'[\s_-]+'),
+    '',
+  );
+  return switch (normalized) {
+    'routine' || 'routines' || 'habit' || '루틴' => MissionCategory.routine,
+    'study' ||
+    'studying' ||
+    'learn' ||
+    'learning' ||
+    'education' ||
+    '학습' ||
+    '공부' => MissionCategory.study,
+    'exercise' ||
+    'sport' ||
+    'sports' ||
+    'workout' ||
+    '운동' => MissionCategory.exercise,
+    'cleaning' ||
+    'clean' ||
+    'cleanup' ||
+    'housework' ||
+    'roomcleaning' ||
+    '청소' ||
+    '방청소' => MissionCategory.cleaning,
+    'errand' || 'errands' || '심부름' => MissionCategory.errand,
+    'etc' || '기타' => MissionCategory.etc,
+    _ => null,
+  };
 }
 
 extension MissionCategoryBackendWire on MissionCategory {
@@ -233,6 +287,8 @@ extension MissionCategoryBackendWire on MissionCategory {
         return 'EXERCISE';
       case MissionCategory.cleaning:
         return 'CLEANING';
+      case MissionCategory.etc:
+        return 'ETC';
       case MissionCategory.routine:
       case MissionCategory.errand:
         return null;

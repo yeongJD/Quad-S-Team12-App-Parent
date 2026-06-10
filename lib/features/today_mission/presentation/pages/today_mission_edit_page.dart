@@ -245,10 +245,11 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
                                   children: [
                                     const _SectionTitle('카테고리'),
                                     const SizedBox(height: 18),
-                                    _EvenSelectionRow<MissionCategory>(
+                                    _SelectionGrid<MissionCategory>(
                                       values: missionCreateCategoryOptions,
                                       selectedValue: _category,
                                       spacing: 8,
+                                      columns: 4,
                                       labelOf: (MissionCategory value) =>
                                           value.label,
                                       onSelected: (MissionCategory value) {
@@ -442,6 +443,59 @@ class _EvenSelectionRow<T> extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _SelectionGrid<T> extends StatelessWidget {
+  const _SelectionGrid({
+    required this.values,
+    required this.selectedValue,
+    required this.spacing,
+    required this.columns,
+    required this.labelOf,
+    required this.onSelected,
+  });
+
+  final List<T> values;
+  final T? selectedValue;
+  final double spacing;
+  final int columns;
+  final String Function(T value) labelOf;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int effectiveColumns = values.length < columns
+            ? values.length
+            : columns;
+        final double gridWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final double itemWidth =
+            (gridWidth - spacing * (effectiveColumns - 1)) / effectiveColumns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: <Widget>[
+            for (final T value in values)
+              SizedBox(
+                width: itemWidth,
+                child: _OptionChip(
+                  label: labelOf(value),
+                  selected: value == selectedValue,
+                  onTap: () => onSelected(value),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

@@ -171,8 +171,58 @@ void main() {
       expect(calls, isEmpty);
     });
 
+    test('addMission maps live-backend supported mission categories', () async {
+      final List<String?> postedCategories = <String?>[];
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                final Map<String, dynamic> postedBody =
+                    Map<String, dynamic>.from(options.data as Map);
+                postedCategories.add(postedBody['category'] as String?);
+                handler.resolve(
+                  Response<dynamic>(
+                    requestOptions: options,
+                    statusCode: 200,
+                    data: <String, dynamic>{'isSuccess': true},
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+      final Map<MissionCategory, String> expectedCategories =
+          <MissionCategory, String>{
+            MissionCategory.study: 'STUDY',
+            MissionCategory.exercise: 'EXERCISE',
+            MissionCategory.cleaning: 'CLEANING',
+            MissionCategory.etc: 'ETC',
+          };
+
+      for (final MapEntry<MissionCategory, String> entry
+          in expectedCategories.entries) {
+        final Result<void> result = await repository.addMission(
+          parentId: 'parent-1',
+          childrenId: '22',
+          mission: TodayMission(
+            title: '${entry.key.label} 미션',
+            category: entry.key,
+            resetPeriod: MissionResetPeriod.daily,
+            confirmationMethod: MissionConfirmationMethod.parent,
+            rewardMinutes: 30,
+            description: '사진 제출',
+          ),
+        );
+
+        expect(result, isA<Success<void>>());
+      }
+
+      expect(postedCategories, expectedCategories.values.toList());
+    });
+
     test(
-      'addMission rejects category not supported by deployed backend',
+      'addMission rejects categories blocked by live database constraints',
       () async {
         final List<String> calls = <String>[];
         final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
@@ -193,21 +243,27 @@ void main() {
         );
         final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
 
-        final Result<void> result = await repository.addMission(
-          parentId: 'parent-1',
-          childrenId: '22',
-          mission: const TodayMission(
-            title: '물 마시기',
-            category: MissionCategory.routine,
-            resetPeriod: MissionResetPeriod.daily,
-            confirmationMethod: MissionConfirmationMethod.parent,
-            rewardMinutes: 30,
-            description: '사진 제출',
-          ),
-        );
+        for (final MissionCategory category in <MissionCategory>[
+          MissionCategory.routine,
+          MissionCategory.errand,
+        ]) {
+          final Result<void> result = await repository.addMission(
+            parentId: 'parent-1',
+            childrenId: '22',
+            mission: TodayMission(
+              title: '${category.label} 미션',
+              category: category,
+              resetPeriod: MissionResetPeriod.daily,
+              confirmationMethod: MissionConfirmationMethod.parent,
+              rewardMinutes: 30,
+              description: '사진 제출',
+            ),
+          );
 
-        expect(result, isA<Failure<void>>());
-        expect((result as Failure<void>).message, '현재 지원하지 않는 미션 카테고리예요.');
+          expect(result, isA<Failure<void>>());
+          expect((result as Failure<void>).message, '현재 지원하지 않는 미션 카테고리예요.');
+        }
+
         expect(calls, isEmpty);
       },
     );
