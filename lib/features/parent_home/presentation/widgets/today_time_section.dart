@@ -114,7 +114,7 @@ class _TimeSummaryContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '기본시간',
+                    '오늘 사용 예정 시간',
                     style: AppTypography.labelMedium.copyWith(
                       fontSize: 12.587,
                       height: 1.429,
@@ -134,7 +134,7 @@ class _TimeSummaryContent extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    '보너스시간',
+                    '월간 남은시간',
                     style: AppTypography.labelMedium.copyWith(
                       fontSize: 12.587,
                       height: 1.429,

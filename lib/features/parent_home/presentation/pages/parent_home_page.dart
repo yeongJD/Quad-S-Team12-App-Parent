@@ -257,6 +257,7 @@ class _ParentHomePageState extends State<ParentHomePage>
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 0,
+        monthlyRemainingMinutes: 0,
       ),
     };
   }
@@ -279,10 +280,10 @@ class _ParentHomePageState extends State<ParentHomePage>
     }
 
     return TimeSummary(
-      basicTime: _formatTime(summary.baseMinutes),
-      bonusTime: _formatTime(summary.rewardPoolMinutes),
+      basicTime: _formatTime(summary.totalAvailableMinutes),
+      bonusTime: _formatTime(summary.monthlyRemainingMinutes),
       basicProgress: 1.0,
-      bonusProgress: summary.rewardPoolMinutes > 0 ? 1.0 : 0.0,
+      bonusProgress: summary.monthlyRemainingMinutes > 0 ? 1.0 : 0.0,
     );
   }
 

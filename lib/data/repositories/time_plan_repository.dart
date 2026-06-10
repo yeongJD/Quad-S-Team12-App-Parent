@@ -14,6 +14,7 @@ class ChildTimeSummary {
     required this.extendedMinutes,
     required this.totalAvailableMinutes,
     required this.rewardPoolMinutes,
+    required this.monthlyRemainingMinutes,
   });
 
   final bool parentPolicyExists;
@@ -24,6 +25,7 @@ class ChildTimeSummary {
   final int extendedMinutes;
   final int totalAvailableMinutes;
   final int rewardPoolMinutes;
+  final int monthlyRemainingMinutes;
 
   bool get hasTodaySchedule => todayScheduleStatus == 'available';
   bool get hasDisplayableTodayTime => hasTodaySchedule;

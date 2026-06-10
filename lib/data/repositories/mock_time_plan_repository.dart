@@ -110,6 +110,7 @@ class MockTimePlanRepository implements TimePlanRepository {
           extendedMinutes: 0,
           totalAvailableMinutes: 0,
           rewardPoolMinutes: 0,
+          monthlyRemainingMinutes: 0,
         ),
       );
     }
@@ -129,6 +130,7 @@ class MockTimePlanRepository implements TimePlanRepository {
           extendedMinutes: 0,
           totalAvailableMinutes: 0,
           rewardPoolMinutes: 0,
+          monthlyRemainingMinutes: monthlyTotal,
         ),
       );
     }
@@ -152,6 +154,7 @@ class MockTimePlanRepository implements TimePlanRepository {
           extendedMinutes: 0,
           totalAvailableMinutes: 0,
           rewardPoolMinutes: 0,
+          monthlyRemainingMinutes: monthlyTotal,
         ),
       );
     }
@@ -167,6 +170,7 @@ class MockTimePlanRepository implements TimePlanRepository {
         extendedMinutes: 0,
         totalAvailableMinutes: baseMinutes,
         rewardPoolMinutes: 0,
+        monthlyRemainingMinutes: monthlyTotal,
       ),
     );
   }

@@ -240,6 +240,12 @@ class ApiTimePlanRepository implements TimePlanRepository {
         fallback: baseMinutes + extendedMinutes,
       ),
       rewardPoolMinutes: _intValue(json['rewardPoolMinutes']),
+      monthlyRemainingMinutes: _intValue(
+        json['totalAvailableTime'],
+        fallback:
+            _intValue(json['basePolicyMinutes']) +
+            _intValue(json['rewardPoolMinutes']),
+      ),
     );
   }
 
@@ -253,6 +259,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
       extendedMinutes: 0,
       totalAvailableMinutes: 0,
       rewardPoolMinutes: 0,
+      monthlyRemainingMinutes: 0,
     );
   }
 
@@ -283,6 +290,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 0,
+        monthlyRemainingMinutes: monthlyTotal,
       );
     }
 
@@ -304,6 +312,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 0,
+        monthlyRemainingMinutes: monthlyTotal,
       );
     }
 
@@ -317,6 +326,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
       extendedMinutes: 0,
       totalAvailableMinutes: baseMinutes,
       rewardPoolMinutes: 0,
+      monthlyRemainingMinutes: monthlyTotal,
     );
   }
 
