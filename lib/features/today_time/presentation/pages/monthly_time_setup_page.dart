@@ -175,14 +175,13 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
                           '이번 달 총 시간 설정',
                           style: TimeSetupTextStyles.sectionTitle,
                         ),
-                        const SizedBox(height: 10.789),
+                        const SizedBox(
+                          height: TimeSetupSpacing.titleToDescriptionGap,
+                        ),
                         Text(
                           '일별 시간 설정을 바탕으로 이번 달 총 시간이 계산되었어요\n'
                           '이대로 확정하거나, 여유 시간을 조금 더 보탤 수 있어요.',
                           style: AppTypography.labelMedium.copyWith(
-                            fontSize: 12.587,
-                            height: 1.429,
-                            letterSpacing: 0.1825,
                             color: AppColors.gray500,
                           ),
                         ),
@@ -243,8 +242,8 @@ class _MonthlyTotalField extends StatelessWidget {
           width: double.infinity,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10.789),
-            border: Border.all(color: AppColors.gray200, width: 1.798),
+            borderRadius: BorderRadius.circular(TimeSetupRadius.field),
+            border: Border.all(color: AppColors.gray200),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -288,17 +287,14 @@ class _MonthlyRuleCard extends StatelessWidget {
       padding: const EdgeInsets.all(16.183),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14.385),
+        borderRadius: BorderRadius.circular(TimeSetupRadius.card),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             rule.dayText,
-            style: AppTypography.headlineBold.copyWith(
-              fontSize: 16.183,
-              height: 1.445,
-              letterSpacing: -0.0032,
+            style: AppTypography.bodySemiBold.copyWith(
               color: AppColors.gray800,
             ),
           ),
@@ -310,10 +306,7 @@ class _MonthlyRuleCard extends StatelessWidget {
           ),
           Text(
             rule.time.displayText,
-            style: AppTypography.headlineBold.copyWith(
-              fontSize: 16.183,
-              height: 1.445,
-              letterSpacing: -0.0032,
+            style: AppTypography.bodySemiBold.copyWith(
               color: AppColors.gray800,
             ),
           ),
