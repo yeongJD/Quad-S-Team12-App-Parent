@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
+import '../../theme/app_tokens.dart';
 import '../../theme/app_typography.dart';
 import 'bridge_wheel_picker.dart';
 
@@ -95,8 +96,8 @@ class _BridgeTimeBottomSheetState extends State<BridgeTimeBottomSheet> {
   static const int _visibleItems = 5;
   static const double _wheelTotalHeight = _wheelItemHeight * _visibleItems;
 
-  static const double _sheetHeight = 397;
-  static const double _sheetTopRadius = 24;
+  static const double _sheetHeight = AppTokens.bottomSheetHeight;
+  static const double _sheetTopRadius = AppTokens.bottomSheetTopRadius;
   static const double _handleTop = 8;
   static const double _handleWidth = 40;
   static const double _handleHeight = 4;
@@ -105,7 +106,7 @@ class _BridgeTimeBottomSheetState extends State<BridgeTimeBottomSheet> {
   static const double _bandWidth = 324;
   static const double _bandHeight = 50;
   static const double _ctaBottom = 63;
-  static const double _ctaHorizontalPadding = 24;
+  static const double _ctaHorizontalPadding = AppTokens.pageHorizontal;
   static const double _wheelGap = 80;
 
   late List<String> _hourValues;
@@ -119,8 +120,7 @@ class _BridgeTimeBottomSheetState extends State<BridgeTimeBottomSheet> {
     _buildValues();
     _hourIndex = widget.initialHours.clamp(0, _hourValues.length - 1);
     final int step = widget.minuteStep <= 0 ? 5 : widget.minuteStep;
-    final int snappedMinute =
-        (widget.initialMinutes ~/ step) * step;
+    final int snappedMinute = (widget.initialMinutes ~/ step) * step;
     final int minuteIdx = _minuteValues.indexOf(_format(snappedMinute));
     _minuteIndex = minuteIdx >= 0 ? minuteIdx : 0;
   }
@@ -135,8 +135,7 @@ class _BridgeTimeBottomSheetState extends State<BridgeTimeBottomSheet> {
   }
 
   void _buildValues() {
-    _hourValues =
-        List<String>.generate(widget.maxHours + 1, (i) => _format(i));
+    _hourValues = List<String>.generate(widget.maxHours + 1, (i) => _format(i));
     final int step = widget.minuteStep <= 0 ? 5 : widget.minuteStep;
     final int count = (60 / step).floor();
     _minuteValues = List<String>.generate(count, (i) => _format(i * step));
@@ -233,10 +232,9 @@ class _BridgeTimeBottomSheetState extends State<BridgeTimeBottomSheet> {
               child: IgnorePointer(
                 child: LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
-                    final double bandWidth =
-                        constraints.maxWidth < _bandWidth
-                            ? constraints.maxWidth
-                            : _bandWidth;
+                    final double bandWidth = constraints.maxWidth < _bandWidth
+                        ? constraints.maxWidth
+                        : _bandWidth;
 
                     return Center(
                       child: Opacity(
@@ -358,14 +356,14 @@ class _ConfirmButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primary,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.primary.withValues(alpha: 0.12),
         highlightColor: AppColors.primary.withValues(alpha: 0.18),
         splashColor: AppColors.primary.withValues(alpha: 0.20),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: SizedBox(
           height: 54,
           width: double.infinity,
@@ -373,9 +371,6 @@ class _ConfirmButton extends StatelessWidget {
             child: Text(
               label,
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: 0,
                 color: AppColors.white,
               ),
             ),

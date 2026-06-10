@@ -105,6 +105,9 @@ class PlusIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double stroke = 2;
+    const BorderRadius strokeRadius = BorderRadius.all(
+      Radius.circular(stroke / 2),
+    );
 
     return SizedBox(
       width: size,
@@ -115,18 +118,12 @@ class PlusIcon extends StatelessWidget {
           Container(
             width: stroke,
             height: size * 0.75,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
           Container(
             width: size * 0.75,
             height: stroke,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
         ],
       ),
