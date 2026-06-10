@@ -228,7 +228,7 @@ class DailyPlanRuleCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 67.43,
-      padding: const EdgeInsets.symmetric(horizontal: 16.183, vertical: 13.486),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),

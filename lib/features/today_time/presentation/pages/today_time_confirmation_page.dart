@@ -263,7 +263,9 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                   child: monthlyTotal == null
                       ? const Center(
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 21.58),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: TimeSetupSpacing.horizontalPadding,
+                            ),
                             child: _EmptyNotice(
                               message: '이번달 시간규칙이 설정되지 않았습니다.',
                             ),
@@ -276,9 +278,9 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                             children: [
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
-                                  21.58,
+                                  TimeSetupSpacing.horizontalPadding,
                                   7.64,
-                                  21.58,
+                                  TimeSetupSpacing.horizontalPadding,
                                   0,
                                 ),
                                 child: _MonthlyTimeSection(
@@ -290,14 +292,14 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                               const SizedBox(height: 30.09),
                               Container(
                                 width: double.infinity,
-                                height: 6.294,
-                                color: const Color(0xFFEDEEF1),
+                                height: 7,
+                                color: AppColors.gray150,
                               ),
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
-                                  21.58,
+                                  TimeSetupSpacing.horizontalPadding,
                                   26.33,
-                                  21.58,
+                                  TimeSetupSpacing.horizontalPadding,
                                   0,
                                 ),
                                 child: _WeeklyPlanSection(
@@ -404,12 +406,7 @@ class _EmptyNotice extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: AppTypography.bodyMedium.copyWith(
-          fontSize: 16.183,
-          height: 1.445,
-          letterSpacing: -0.0032,
-          color: AppColors.gray300,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.gray300),
       ),
     );
   }
