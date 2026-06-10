@@ -9,6 +9,7 @@ import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
 import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/models/auth/auth_token.dart';
 import '../../../../data/repositories/auth_repository.dart';
@@ -479,10 +480,7 @@ class _SignupTopBar extends StatelessWidget {
             child: Text(
               '회원가입',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: -0.0036,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -526,8 +524,6 @@ class _SignupField extends StatelessWidget {
           label,
           style: AppTypography.bodyMedium.copyWith(
             fontSize: labelFontSize,
-            height: 1.5,
-            letterSpacing: 0.0912,
             color: AppColors.gray600,
           ),
         ),
@@ -536,7 +532,7 @@ class _SignupField extends StatelessWidget {
           height: 50,
           decoration: BoxDecoration(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             border: Border.all(color: borderColor),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -555,9 +551,6 @@ class _SignupField extends StatelessWidget {
                     inputFormatters: inputFormatters,
                     cursorColor: AppColors.black,
                     style: AppTypography.bodyMedium.copyWith(
-                      fontSize: 16,
-                      height: 1.5,
-                      letterSpacing: 0.0912,
                       color: AppColors.black,
                     ),
                     decoration: const InputDecoration(
@@ -634,7 +627,7 @@ class _SignupToast extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.gray500,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.errorBannerRadius),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -644,12 +637,7 @@ class _SignupToast extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTypography.labelMedium.copyWith(
-                fontSize: 14,
-                height: 1.429,
-                letterSpacing: 0.203,
-                color: AppColors.white,
-              ),
+              style: AppTypography.labelMedium.copyWith(color: AppColors.white),
             ),
           ),
         ],
@@ -673,7 +661,7 @@ class _ToastWarningIcon extends StatelessWidget {
       child: Center(
         child: Text(
           '!',
-          style: AppTypography.captionBold.copyWith(
+          style: AppTypography.captionSemiBold.copyWith(
             fontSize: 12,
             height: 1,
             letterSpacing: 0,
@@ -709,15 +697,13 @@ class _SignupButton extends StatelessWidget {
           disabledBackgroundColor: AppColors.gray200,
           foregroundColor: AppColors.white,
           disabledForegroundColor: AppColors.gray300,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          ),
         ),
         child: Text(
           label,
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: -0.0036,
-            fontWeight: FontWeight.w500,
             color: enabled ? AppColors.white : AppColors.gray300,
           ),
         ),

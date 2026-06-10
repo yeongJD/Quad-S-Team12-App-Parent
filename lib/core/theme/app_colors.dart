@@ -24,6 +24,7 @@ abstract final class AppColors {
 
   static const Color labelStrong = black;
   static const Color labelNormal = Color(0xFF171719);
+  static const Color inkBlack = Color(0xFF050505);
   static const Color lineNormalNeutral = Color(0x2970737C);
 
   static const Color background = gray050;
