@@ -43,6 +43,7 @@ void main() {
 
         expect(result, isA<Success<void>>());
         expect(postedBody?['childId'], 22);
+        expect(postedBody?['category'], 'CLEANING');
         expect(postedBody?['verificationType'], 'PARENT');
         expect(postedBody?['resetCycle'], 'DAILY');
       },
@@ -169,6 +170,47 @@ void main() {
       );
       expect(calls, isEmpty);
     });
+
+    test(
+      'addMission rejects category not supported by deployed backend',
+      () async {
+        final List<String> calls = <String>[];
+        final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest:
+                (RequestOptions options, RequestInterceptorHandler handler) {
+                  calls.add('${options.method} ${options.path}');
+                  handler.resolve(
+                    Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 200,
+                      data: <String, dynamic>{'isSuccess': true},
+                    ),
+                  );
+                },
+          ),
+        );
+        final ApiMissionRepository repository = ApiMissionRepository(dio: dio);
+
+        final Result<void> result = await repository.addMission(
+          parentId: 'parent-1',
+          childrenId: '22',
+          mission: const TodayMission(
+            title: '물 마시기',
+            category: MissionCategory.routine,
+            resetPeriod: MissionResetPeriod.daily,
+            confirmationMethod: MissionConfirmationMethod.parent,
+            rewardMinutes: 30,
+            description: '사진 제출',
+          ),
+        );
+
+        expect(result, isA<Failure<void>>());
+        expect((result as Failure<void>).message, '현재 지원하지 않는 미션 카테고리예요.');
+        expect(calls, isEmpty);
+      },
+    );
 
     test('addMission rejects non-numeric child id before network', () async {
       final List<String> calls = <String>[];

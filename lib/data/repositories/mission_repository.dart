@@ -93,4 +93,5 @@ abstract final class MissionFailureMessages {
   static const String invalidChild = '자녀 정보를 다시 불러와 주세요.';
   static const String invalidState = '지금 상태에서는 이 작업을 할 수 없어요.';
   static const String unsupportedByAws = 'AWS API에 미션 수정/삭제 경로가 없어요.';
+  static const String unsupportedCategory = '현재 지원하지 않는 미션 카테고리예요.';
 }

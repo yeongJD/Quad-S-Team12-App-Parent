@@ -246,7 +246,7 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
                                     const _SectionTitle('카테고리'),
                                     const SizedBox(height: 18),
                                     _EvenSelectionRow<MissionCategory>(
-                                      values: MissionCategory.values,
+                                      values: missionCreateCategoryOptions,
                                       selectedValue: _category,
                                       spacing: 8,
                                       labelOf: (MissionCategory value) =>

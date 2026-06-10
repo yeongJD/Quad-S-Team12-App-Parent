@@ -76,6 +76,10 @@ class ApiMissionRepository implements MissionRepository {
     if (childId == null) {
       return Result<void>.failure(MissionFailureMessages.invalidChild);
     }
+    final String? category = mission.category.backendCreateName;
+    if (category == null) {
+      return Result<void>.failure(MissionFailureMessages.unsupportedCategory);
+    }
     try {
       await _dio.post<dynamic>(
         '/api/v1/missions',
@@ -84,7 +88,7 @@ class ApiMissionRepository implements MissionRepository {
           'title': mission.title,
           // Backend enums are UPPER_CASE. confirmationMethod {ai,child,parent}
           // maps 1:1 to the backend VerificationType {AI,CHILD,PARENT}.
-          'category': mission.category.name.toUpperCase(),
+          'category': category,
           'description': mission.description,
           'reward': mission.rewardMinutes,
           'resetCycle': mission.resetPeriod.name.toUpperCase(),

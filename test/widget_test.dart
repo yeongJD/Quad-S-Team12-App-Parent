@@ -24,6 +24,7 @@ import 'package:bridge_p/features/parent_home/presentation/widgets/today_time_se
 import 'package:bridge_p/features/today_mission/presentation/data/today_mission_store.dart';
 import 'package:bridge_p/features/today_mission/presentation/models/today_mission.dart';
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_check_page.dart';
+import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_edit_page.dart';
 import 'package:bridge_p/features/today_mission/presentation/pages/today_mission_list_page.dart';
 import 'package:bridge_p/features/today_time/presentation/data/daily_time_rule_store.dart';
 import 'package:bridge_p/features/today_time/presentation/data/child_weekly_time_plan_store.dart';
@@ -701,6 +702,23 @@ void main() {
     expect(find.text('보상 시간이 지급되었습니다.'), findsOneWidget);
     expect(find.text('승인'), findsNothing);
     expect(find.text('반려'), findsNothing);
+  });
+
+  testWidgets('mission creation shows only backend-supported categories', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TodayMissionEditPage(parentId: 'parent-1', childrenId: '22'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('공부'), findsOneWidget);
+    expect(find.text('운동'), findsOneWidget);
+    expect(find.text('청소'), findsOneWidget);
+    expect(find.text('루틴'), findsNothing);
+    expect(find.text('심부름'), findsNothing);
   });
 
   testWidgets('home screen renders Bridge entry actions', (

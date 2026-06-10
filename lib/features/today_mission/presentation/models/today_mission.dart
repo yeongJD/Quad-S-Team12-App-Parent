@@ -1,5 +1,11 @@
 enum MissionCategory { routine, study, exercise, cleaning, errand }
 
+const List<MissionCategory> missionCreateCategoryOptions = <MissionCategory>[
+  MissionCategory.study,
+  MissionCategory.exercise,
+  MissionCategory.cleaning,
+];
+
 enum MissionResetPeriod { daily, weekly, monthly }
 
 enum MissionConfirmationMethod { ai, child, parent }
@@ -192,7 +198,7 @@ extension MissionCategoryLabel on MissionCategory {
       case MissionCategory.routine:
         return '루틴';
       case MissionCategory.study:
-        return '학습';
+        return '공부';
       case MissionCategory.exercise:
         return '운동';
       case MissionCategory.cleaning:
@@ -214,6 +220,22 @@ extension MissionCategoryLabel on MissionCategory {
         return 'assets/icons/청소.svg';
       case MissionCategory.errand:
         return 'assets/icons/심부름.svg';
+    }
+  }
+}
+
+extension MissionCategoryBackendWire on MissionCategory {
+  String? get backendCreateName {
+    switch (this) {
+      case MissionCategory.study:
+        return 'STUDY';
+      case MissionCategory.exercise:
+        return 'EXERCISE';
+      case MissionCategory.cleaning:
+        return 'CLEANING';
+      case MissionCategory.routine:
+      case MissionCategory.errand:
+        return null;
     }
   }
 }
