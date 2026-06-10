@@ -117,6 +117,17 @@ class _LoginPageState extends State<LoginPage> {
 
     switch (result) {
       case Success<AuthToken>(:final AuthToken data):
+        if (data.accessToken.isEmpty || data.parentId.isEmpty) {
+          setState(() {
+            _submitting = false;
+            _activeError = null;
+          });
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('로그인 정보를 다시 확인해 주세요.')));
+          return;
+        }
+        await AuthSession.logout();
         await AuthSession.login(parentId: data.parentId, email: data.email);
         final String? refresh = data.refreshToken;
         await AuthSession.saveTokens(

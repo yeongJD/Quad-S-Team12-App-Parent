@@ -22,7 +22,8 @@ abstract final class AuthSession {
   }
 
   static Future<bool> isLoggedIn() async {
-    return (await getCurrentParentId()) != null;
+    final String? parentId = await getCurrentParentId();
+    return parentId != null && parentId.isNotEmpty;
   }
 
   static Future<String?> getCurrentParentId() async {
@@ -39,6 +40,9 @@ abstract final class AuthSession {
     final SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove(currentParentIdKey);
     await preferences.remove(currentEmailKey);
+    await preferences.remove(_accessTokenKey);
+    await preferences.remove(_refreshTokenKey);
+    await preferences.remove(_deviceIdKey);
   }
 
   /// Persist an [accessToken] (and optional [refreshToken]) in

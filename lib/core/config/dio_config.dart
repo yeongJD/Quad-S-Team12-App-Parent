@@ -16,6 +16,12 @@ class DioConfig {
 
   static const String _kRetriedFlag = '__bridge_p_refresh_retried__';
   static const String _kRefreshPath = '/auth/token/refresh';
+  static const Set<String> _unauthenticatedPaths = <String>{
+    '/auth/parent/login',
+    '/auth/parent/signup',
+    '/auth/token/refresh',
+    '/auth/logout',
+  };
 
   static Dio create({EnvironmentConfig? overrideConfig}) {
     final EnvironmentConfig env = overrideConfig ?? currentEnvironment;
@@ -34,7 +40,9 @@ class DioConfig {
         onRequest:
             (RequestOptions options, RequestInterceptorHandler handler) async {
               final String? token = await AuthSession.accessToken();
-              if (token != null && token.isNotEmpty) {
+              if (_shouldAttachAuthorization(options) &&
+                  token != null &&
+                  token.isNotEmpty) {
                 options.headers['Authorization'] = 'Bearer $token';
               }
               handler.next(options);
@@ -75,6 +83,10 @@ class DioConfig {
     );
 
     return dio;
+  }
+
+  static bool _shouldAttachAuthorization(RequestOptions options) {
+    return !_unauthenticatedPaths.any(options.path.endsWith);
   }
 
   static Future<void> _handleError({
@@ -163,7 +175,6 @@ class DioConfig {
   }
 
   static Future<void> _forceLogout() async {
-    await AuthSession.clearTokens();
     await AuthSession.logout();
   }
 }

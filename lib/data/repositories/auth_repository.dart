@@ -37,13 +37,11 @@ abstract interface class AuthRepository {
     required String newPassword,
   });
 
-  Future<Result<void>> deleteAccount({
-    required String parentId,
-  });
+  Future<Result<void>> deleteAccount({required String parentId});
 
   /// Best-effort backend logout — the server invalidates the refresh token.
-  /// Local cleanup (AuthSession.clearTokens / logout) is always the caller's
-  /// responsibility, even when this fails.
+  /// Local cleanup via AuthSession.logout is always the caller's responsibility,
+  /// even when this fails.
   Future<Result<void>> logout({String? refreshToken});
 }
 
