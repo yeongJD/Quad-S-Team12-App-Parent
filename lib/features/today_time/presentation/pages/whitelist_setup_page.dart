@@ -263,23 +263,13 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
                     children: [
                       Text(
                         '화이트 리스트 설정',
-                        style: AppTypography.heading1Bold.copyWith(
-                          fontSize: 24,
-                          height: 1.364,
-                          letterSpacing: 0,
-                          color: AppColors.black,
-                        ),
+                        style: TimeSetupTextStyles.sectionTitle,
                       ),
                       const SizedBox(height: 28),
                       Text(
                         '자녀가 시간을 다 사용하고 나서도\n'
                         '사용가능한 필수앱(ex. 전화, 메모앱)을 선택해주세요.',
-                        style: AppTypography.labelMedium.copyWith(
-                          fontSize: 14,
-                          height: 1.429,
-                          letterSpacing: 0,
-                          color: AppColors.gray500,
-                        ),
+                        style: TimeSetupTextStyles.description,
                       ),
                       const SizedBox(height: 34),
                       _WhitelistSearchField(
@@ -343,18 +333,10 @@ class _WhitelistSearchField extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         textInputAction: TextInputAction.search,
-        style: AppTypography.headlineMedium.copyWith(
-          fontSize: 18,
-          height: 1.445,
-          letterSpacing: 0,
-          color: AppColors.gray800,
-        ),
+        style: AppTypography.headlineMedium.copyWith(color: AppColors.gray800),
         decoration: InputDecoration(
           hintText: '찾기',
           hintStyle: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: 0,
             color: AppColors.gray300,
           ),
           prefixIcon: const Padding(
@@ -369,11 +351,11 @@ class _WhitelistSearchField extends StatelessWidget {
           filled: true,
           fillColor: AppColors.gray050,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(TimeSetupRadius.field),
             borderSide: const BorderSide(color: AppColors.gray200, width: 2),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(TimeSetupRadius.field),
             borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
         ),
@@ -422,10 +404,7 @@ class _WhitelistCategoryTile extends StatelessWidget {
                     category.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.headlineBold.copyWith(
-                      fontSize: 18,
-                      height: 1.445,
-                      letterSpacing: 0,
+                    style: AppTypography.headlineSemiBold.copyWith(
                       color: AppColors.gray800,
                     ),
                   ),
@@ -486,10 +465,7 @@ class _WhitelistAppTile extends StatelessWidget {
               app.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.headlineBold.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: 0,
+              style: AppTypography.headlineSemiBold.copyWith(
                 color: AppColors.gray800,
               ),
             ),
@@ -510,8 +486,8 @@ class _AppIconPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFD5D8DE),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.gray200,
+        borderRadius: BorderRadius.circular(TimeSetupRadius.control),
         boxShadow: const <BoxShadow>[
           BoxShadow(
             color: Color(0x1F000000),
@@ -608,12 +584,7 @@ class _WhitelistEmptyResult extends StatelessWidget {
       child: Text(
         '검색 결과가 없어요.',
         textAlign: TextAlign.center,
-        style: AppTypography.bodyMedium.copyWith(
-          fontSize: 16,
-          height: 1.5,
-          letterSpacing: 0,
-          color: AppColors.gray500,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.gray500),
       ),
     );
   }
