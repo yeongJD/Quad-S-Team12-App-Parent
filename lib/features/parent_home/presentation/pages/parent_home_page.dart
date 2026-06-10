@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -54,7 +56,8 @@ class ParentHomePage extends StatefulWidget {
   State<ParentHomePage> createState() => _ParentHomePageState();
 }
 
-class _ParentHomePageState extends State<ParentHomePage> {
+class _ParentHomePageState extends State<ParentHomePage>
+    with WidgetsBindingObserver {
   late final ChildRepository _childRepository;
   late final MissionRepository _missionRepository;
   late final NotificationRepository _notificationRepository;
@@ -85,6 +88,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _childRepository = widget.childRepository ?? createChildRepository();
     _missionRepository = widget.missionRepository ?? createMissionRepository();
     _notificationRepository =
@@ -92,6 +96,19 @@ class _ParentHomePageState extends State<ParentHomePage> {
     _timePlanRepository =
         widget.timePlanRepository ?? createTimePlanRepository();
     _loadParentHomeData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_usesPreviewData) {
+      unawaited(_loadParentHomeData());
+    }
   }
 
   Future<void> _loadParentHomeData() async {
@@ -525,59 +542,67 @@ class _ParentHomePageState extends State<ParentHomePage> {
               constraints: const BoxConstraints(maxWidth: 375),
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ParentHomeHeader(
-                            hasUnreadNotification: _data.hasUnreadNotification,
-                            onMyTap: () => context.push('/mypage'),
-                            onNotificationTap: () async {
-                              await context.push('/notifications');
-                              if (!mounted) {
-                                return;
-                              }
-                              await _loadParentHomeData();
-                            },
-                          ),
-                          const SizedBox(height: 35),
-                          KeyedSubtree(
-                            key: _childSelectorKey,
-                            child: ChildSelectorSection(
-                              children: _data.children,
-                              selectedIndex: _selectedChildIndex,
-                              deleteIndex: _deleteChildIndex,
-                              onChildTap: _handleChildTap,
-                              onChildDelete: _showDeleteChildDialog,
-                              onAddChildTap: () async {
-                                await context.push('/child/add');
+                  : RefreshIndicator(
+                      color: AppColors.primary,
+                      triggerMode: RefreshIndicatorTriggerMode.anywhere,
+                      onRefresh: _loadParentHomeData,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ParentHomeHeader(
+                              hasUnreadNotification:
+                                  _data.hasUnreadNotification,
+                              onMyTap: () => context.push('/mypage'),
+                              onNotificationTap: () async {
+                                await context.push('/notifications');
                                 if (!mounted) {
                                   return;
                                 }
                                 await _loadParentHomeData();
                               },
                             ),
-                          ),
-                          const SizedBox(height: 36),
-                          TodayTimeSection(
-                            timeSummary: _data.timeSummary,
-                            waitingForChildPlan: _data.waitingForChildTimePlan,
-                            emptyMessage: _data.timeEmptyMessage,
-                            onSetup: _openTimeSettingsEntry,
-                            onAdd: _openTimeSetup,
-                          ),
-                          const SizedBox(height: 36),
-                          TodayMissionSection(
-                            missions: _data.missions,
-                            completedCount: _data.completedMissionCount,
-                            totalCount: _data.missionCount,
-                            onOpen: _openMissionList,
-                            onSetup: _openMissionList,
-                            onAdd: _openMissionSetup,
-                            onMissionTap: _openMissionCheck,
-                          ),
-                        ],
+                            const SizedBox(height: 35),
+                            KeyedSubtree(
+                              key: _childSelectorKey,
+                              child: ChildSelectorSection(
+                                children: _data.children,
+                                selectedIndex: _selectedChildIndex,
+                                deleteIndex: _deleteChildIndex,
+                                onChildTap: _handleChildTap,
+                                onChildDelete: _showDeleteChildDialog,
+                                onAddChildTap: () async {
+                                  await context.push('/child/add');
+                                  if (!mounted) {
+                                    return;
+                                  }
+                                  await _loadParentHomeData();
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 36),
+                            TodayTimeSection(
+                              timeSummary: _data.timeSummary,
+                              waitingForChildPlan:
+                                  _data.waitingForChildTimePlan,
+                              emptyMessage: _data.timeEmptyMessage,
+                              onSetup: _openTimeSettingsEntry,
+                              onAdd: _openTimeSetup,
+                            ),
+                            const SizedBox(height: 36),
+                            TodayMissionSection(
+                              missions: _data.missions,
+                              completedCount: _data.completedMissionCount,
+                              totalCount: _data.missionCount,
+                              onOpen: _openMissionList,
+                              onSetup: _openMissionList,
+                              onAdd: _openMissionSetup,
+                              onMissionTap: _openMissionCheck,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
             ),

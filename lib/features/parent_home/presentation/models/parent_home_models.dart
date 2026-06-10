@@ -36,7 +36,7 @@ class MissionItem {
     required this.title,
     required this.reward,
     required this.status,
-    this.iconAsset = 'assets/icons/청소.svg',
+    this.iconAsset = MissionCategoryAssetPaths.cleaning,
   });
 
   final String title;

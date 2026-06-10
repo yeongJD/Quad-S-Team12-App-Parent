@@ -704,7 +704,7 @@ void main() {
     expect(find.text('반려'), findsNothing);
   });
 
-  testWidgets('mission creation shows only backend-supported categories', (
+  testWidgets('mission creation shows live-backend supported categories', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -714,9 +714,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('공부'), findsOneWidget);
+    expect(find.text('학습'), findsOneWidget);
     expect(find.text('운동'), findsOneWidget);
     expect(find.text('청소'), findsOneWidget);
+    expect(find.text('기타'), findsOneWidget);
     expect(find.text('루틴'), findsNothing);
     expect(find.text('심부름'), findsNothing);
   });
@@ -1135,6 +1136,197 @@ void main() {
     },
   );
 
+  testWidgets('parent home refreshes today time when app resumes', (
+    WidgetTester tester,
+  ) async {
+    const String parentId = 'resume-time-parent@example.com';
+    const String childrenId = 'GDG12-1';
+    final _MutableTimeSummaryRepository timePlanRepository =
+        _MutableTimeSummaryRepository(
+          const ChildTimeSummary(
+            parentPolicyExists: true,
+            childPlanExists: true,
+            todayScheduleStatus: 'available',
+            basePolicyMinutes: 600,
+            baseMinutes: 60,
+            extendedMinutes: 0,
+            totalAvailableMinutes: 60,
+            rewardPoolMinutes: 0,
+          ),
+        );
+
+    await AccountStore.saveAccount(
+      const ParentAccount(
+        parentId: parentId,
+        email: parentId,
+        name: 'resume-time-parent',
+        passwordHash: 'Password1234!',
+      ),
+    );
+    await AuthSession.login(parentId: parentId, email: parentId);
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: '리프레시 자녀',
+        childCode: childrenId,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParentHomePage(
+          childRepository: MockChildRepository(),
+          missionRepository: MockMissionRepository(),
+          notificationRepository: MockNotificationRepository(),
+          timePlanRepository: timePlanRepository,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('01:00'), findsOneWidget);
+    expect(find.text('01:30'), findsNothing);
+
+    timePlanRepository.summary = const ChildTimeSummary(
+      parentPolicyExists: true,
+      childPlanExists: true,
+      todayScheduleStatus: 'available',
+      basePolicyMinutes: 600,
+      baseMinutes: 90,
+      extendedMinutes: 0,
+      totalAvailableMinutes: 90,
+      rewardPoolMinutes: 0,
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(find.text('01:30'), findsOneWidget);
+    expect(find.text('01:00'), findsNothing);
+  });
+
+  testWidgets('parent home renders reward pool minutes as bonus time', (
+    WidgetTester tester,
+  ) async {
+    const String parentId = 'extended-time-parent@example.com';
+    const String childrenId = 'GDG12-1';
+
+    await AccountStore.saveAccount(
+      const ParentAccount(
+        parentId: parentId,
+        email: parentId,
+        name: 'extended-time-parent',
+        passwordHash: 'Password1234!',
+      ),
+    );
+    await AuthSession.login(parentId: parentId, email: parentId);
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: '보너스 자녀',
+        childCode: childrenId,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParentHomePage(
+          childRepository: MockChildRepository(),
+          missionRepository: MockMissionRepository(),
+          notificationRepository: MockNotificationRepository(),
+          timePlanRepository: _MutableTimeSummaryRepository(
+            const ChildTimeSummary(
+              parentPolicyExists: true,
+              childPlanExists: true,
+              todayScheduleStatus: 'available',
+              basePolicyMinutes: 600,
+              baseMinutes: 60,
+              extendedMinutes: 15,
+              totalAvailableMinutes: 75,
+              rewardPoolMinutes: 120,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('01:00'), findsOneWidget);
+    expect(find.text('02:00'), findsOneWidget);
+    expect(find.text('00:15'), findsNothing);
+  });
+
+  testWidgets('parent home pull refresh reloads reward pool bonus time', (
+    WidgetTester tester,
+  ) async {
+    const String parentId = 'refresh-bonus-parent@example.com';
+    const String childrenId = 'GDG12-1';
+    final _MutableTimeSummaryRepository timePlanRepository =
+        _MutableTimeSummaryRepository(
+          const ChildTimeSummary(
+            parentPolicyExists: true,
+            childPlanExists: true,
+            todayScheduleStatus: 'available',
+            basePolicyMinutes: 600,
+            baseMinutes: 60,
+            extendedMinutes: 0,
+            totalAvailableMinutes: 60,
+            rewardPoolMinutes: 0,
+          ),
+        );
+
+    await AccountStore.saveAccount(
+      const ParentAccount(
+        parentId: parentId,
+        email: parentId,
+        name: 'refresh-bonus-parent',
+        passwordHash: 'Password1234!',
+      ),
+    );
+    await AuthSession.login(parentId: parentId, email: parentId);
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: '보너스 갱신 자녀',
+        childCode: childrenId,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParentHomePage(
+          childRepository: MockChildRepository(),
+          missionRepository: MockMissionRepository(),
+          notificationRepository: MockNotificationRepository(),
+          timePlanRepository: timePlanRepository,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RefreshIndicator), findsOneWidget);
+    expect(find.text('00:00'), findsOneWidget);
+    expect(find.text('00:30'), findsNothing);
+
+    timePlanRepository.summary = const ChildTimeSummary(
+      parentPolicyExists: true,
+      childPlanExists: true,
+      todayScheduleStatus: 'available',
+      basePolicyMinutes: 600,
+      baseMinutes: 60,
+      extendedMinutes: 0,
+      totalAvailableMinutes: 60,
+      rewardPoolMinutes: 30,
+    );
+    final RefreshIndicator refreshIndicator = tester.widget(
+      find.byType(RefreshIndicator),
+    );
+    await refreshIndicator.onRefresh();
+    await tester.pumpAndSettle();
+
+    expect(find.text('00:30'), findsOneWidget);
+    expect(find.text('00:00'), findsNothing);
+  });
+
   testWidgets('today time section can show load failure message', (
     WidgetTester tester,
   ) async {
@@ -1411,6 +1603,21 @@ class _ThrowingWhitelistRepository implements TimePlanRepository {
     required Set<String> appIds,
   }) async {
     throw StateError('whitelist storage unavailable');
+  }
+}
+
+class _MutableTimeSummaryRepository extends _ThrowingWhitelistRepository {
+  _MutableTimeSummaryRepository(this.summary);
+
+  ChildTimeSummary summary;
+
+  @override
+  Future<Result<ChildTimeSummary>> loadChildTimeSummary({
+    required String parentId,
+    required String childrenId,
+    DateTime? date,
+  }) async {
+    return Result<ChildTimeSummary>.success(summary);
   }
 }
 
