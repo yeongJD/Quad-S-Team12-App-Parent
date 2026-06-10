@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
 import '../../../today_time/presentation/styles/time_setup_tokens.dart';
@@ -559,19 +560,18 @@ class _OptionChip extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : AppColors.gray050,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.gray200,
           ),
         ),
         child: Text(
           label,
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16,
-            height: 1.445,
-            letterSpacing: 0,
-            color: selected ? AppColors.white : AppColors.gray600,
-          ),
+          style:
+              (selected ? AppTypography.bodySemiBold : AppTypography.bodyMedium)
+                  .copyWith(
+                    color: selected ? AppColors.white : AppColors.gray600,
+                  ),
           maxLines: 1,
           overflow: TextOverflow.visible,
         ),
@@ -675,11 +675,11 @@ class _MissionDescriptionField extends StatelessWidget {
           filled: true,
           fillColor: AppColors.gray100,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.gray200),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.primary),
           ),
         ),
@@ -943,7 +943,7 @@ class _SectionDivider extends StatelessWidget {
       width: double.infinity,
       height: 6,
       margin: const EdgeInsets.symmetric(vertical: 26),
-      color: const Color(0xFFEDEEF1),
+      color: AppColors.gray150,
     );
   }
 }
@@ -957,12 +957,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: AppTypography.headlineBold.copyWith(
-        fontSize: 16,
-        height: 1.445,
-        letterSpacing: 0,
-        color: AppColors.gray800,
-      ),
+      style: AppTypography.headlineSemiBold.copyWith(color: AppColors.gray800),
     );
   }
 }
