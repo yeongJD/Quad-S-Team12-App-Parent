@@ -64,10 +64,7 @@ class _DailyTimeRuleSheetState extends State<DailyTimeRuleSheet> {
       return;
     }
     setState(() {
-      _selectedTime = TimeSelection(
-        hour: result.hours,
-        minute: result.minutes,
-      );
+      _selectedTime = TimeSelection(hour: result.hours, minute: result.minutes);
     });
   }
 
@@ -183,17 +180,15 @@ class DayChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTypography.bodyMedium.copyWith(
-            fontSize: 16,
-            height: 1.5,
-            letterSpacing: 0,
-            color: selected
-                ? AppColors.white
-                : enabled
-                ? AppColors.gray600
-                : AppColors.gray300,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-          ),
+          style:
+              (selected ? AppTypography.bodySemiBold : AppTypography.bodyMedium)
+                  .copyWith(
+                    color: selected
+                        ? AppColors.white
+                        : enabled
+                        ? AppColors.gray600
+                        : AppColors.gray300,
+                  ),
         ),
       ),
     );
@@ -291,10 +286,7 @@ class TimeSelectorPart extends StatelessWidget {
             child: Text(
               label,
               style: AppTypography.headlineRegular.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: 0,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -335,9 +327,6 @@ class PickerColumn extends StatelessWidget {
               child: Text(
                 values[index].toString().padLeft(2, '0'),
                 style: AppTypography.heading2Bold.copyWith(
-                  fontSize: 24,
-                  height: 1.364,
-                  letterSpacing: 0,
                   color: index == selectedIndex
                       ? AppColors.gray800
                       : AppColors.gray200,
@@ -395,12 +384,7 @@ class _PickerUnitLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: AppTypography.headlineMedium.copyWith(
-        fontSize: 18,
-        height: 1.4,
-        letterSpacing: 0,
-        color: const Color(0xFF050505),
-      ),
+      style: AppTypography.headlineMedium.copyWith(color: AppColors.inkBlack),
     );
   }
 }

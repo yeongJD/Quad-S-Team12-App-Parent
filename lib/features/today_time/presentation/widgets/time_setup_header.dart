@@ -70,9 +70,6 @@ class TipButton extends StatelessWidget {
             Text(
               'Tip',
               style: AppTypography.bodyMedium.copyWith(
-                fontSize: 14,
-                height: 1.5,
-                letterSpacing: 0,
                 color: AppColors.primary,
               ),
             ),
