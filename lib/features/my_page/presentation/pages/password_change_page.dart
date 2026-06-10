@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/repositories/auth_repository.dart';
 
@@ -338,10 +339,7 @@ class _PasswordChangeTopBar extends StatelessWidget {
             child: Text(
               '비밀번호 수정',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 16.18,
-                height: 1.445,
-                letterSpacing: -0.0032,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -420,19 +418,14 @@ class _PasswordChangeFieldState extends State<_PasswordChangeField> {
       children: [
         Text(
           widget.label,
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 14.39,
-            height: 1.5,
-            letterSpacing: 0.082,
-            color: AppColors.gray600,
-          ),
+          style: AppTypography.labelMedium.copyWith(color: AppColors.gray600),
         ),
         const SizedBox(height: 9),
         Container(
           height: 44.954,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: widget.borderColor, width: 0.899),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
+            border: Border.all(color: widget.borderColor),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14.385),
           child: Row(
@@ -451,10 +444,7 @@ class _PasswordChangeFieldState extends State<_PasswordChangeField> {
                   ],
                   cursorColor: AppColors.black,
                   style: AppTypography.labelMedium.copyWith(
-                    fontSize: 14.39,
-                    height: 1.5,
-                    letterSpacing: 0.082,
-                    color: const Color(0xFF050505),
+                    color: AppColors.inkBlack,
                   ),
                   decoration: InputDecoration(
                     isDense: true,
@@ -469,9 +459,6 @@ class _PasswordChangeFieldState extends State<_PasswordChangeField> {
                     contentPadding: EdgeInsets.zero,
                     hintText: widget.placeholder,
                     hintStyle: AppTypography.labelMedium.copyWith(
-                      fontSize: 14.39,
-                      height: 1.5,
-                      letterSpacing: 0.082,
                       color: AppColors.gray300,
                     ),
                   ),
@@ -530,14 +517,13 @@ class _PasswordChangeButton extends StatelessWidget {
           elevation: 0,
           backgroundColor: enabled ? AppColors.primary : AppColors.gray200,
           foregroundColor: enabled ? AppColors.white : AppColors.gray300,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          ),
         ),
         child: Text(
           '완료',
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16.18,
-            height: 1.445,
-            letterSpacing: -0.0032,
             color: enabled ? AppColors.white : AppColors.gray300,
           ),
         ),
