@@ -874,6 +874,93 @@ void main() {
     expect(find.text('방청소 하기'), findsNWidgets(4));
   });
 
+  testWidgets('parent home opens completed mission review from card title', (
+    WidgetTester tester,
+  ) async {
+    const String parentId = 'completed-review-parent@example.com';
+    const String childrenId = 'GDG12-1';
+    const TodayMission mission = TodayMission(
+      missionId: 'completed-mission',
+      performanceId: 'completed-performance',
+      title: '사진 완료 미션',
+      category: MissionCategory.cleaning,
+      resetPeriod: MissionResetPeriod.daily,
+      confirmationMethod: MissionConfirmationMethod.child,
+      rewardMinutes: 30,
+      description: '사진을 올리고 자녀가 완료한 미션',
+      verificationStatus: MissionVerificationStatus.approved,
+      submittedAtText: '2026.6.11 오후 8:15',
+      proofImageUrl: 'https://test.local/proof.jpg',
+    );
+
+    await AccountStore.saveAccount(
+      const ParentAccount(
+        parentId: parentId,
+        email: parentId,
+        name: 'completed-review-parent',
+        passwordHash: 'Password1234!',
+      ),
+    );
+    await AuthSession.login(parentId: parentId, email: parentId);
+    await ChildConnectionStore.addChild(
+      parentId: parentId,
+      child: ChildConnectionStore.childFromCode(
+        name: '완료 자녀',
+        childCode: childrenId,
+      ),
+    );
+    await TodayMissionStore.save(
+      parentId: parentId,
+      childrenId: childrenId,
+      missions: const <TodayMission>[mission],
+    );
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/parent-home',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/parent-home',
+          builder: (context, state) => _mockParentHomePage(),
+        ),
+        GoRoute(
+          path: '/today-mission/check',
+          builder: (context, state) {
+            final Object? extra = state.extra;
+            if (extra is TodayMissionCheckArgs) {
+              return TodayMissionCheckPage(
+                parentId: extra.parentId,
+                childrenId: extra.childrenId,
+                missionIndex: extra.index,
+                initialMission: extra.mission,
+                initialTab: extra.initialTab,
+                missionRepository: MockMissionRepository(),
+              );
+            }
+            return TodayMissionCheckPage(
+              parentId: null,
+              childrenId: null,
+              missionIndex: null,
+              initialMission: null,
+              missionRepository: MockMissionRepository(),
+            );
+          },
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('사진 완료 미션'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('미션 수행완료!'), findsOneWidget);
+    expect(find.text('보상 시간이 지급되었습니다.'), findsOneWidget);
+    expect(find.textContaining('2026.6.11 오후 8:15 수행 제출'), findsOneWidget);
+    expect(find.text('이미 완료된 미션이에요.'), findsNothing);
+  });
+
   testWidgets('parent home time-empty state can show time setup entry', (
     WidgetTester tester,
   ) async {
@@ -1152,6 +1239,7 @@ void main() {
             extendedMinutes: 0,
             totalAvailableMinutes: 60,
             rewardPoolMinutes: 0,
+            monthlyRemainingMinutes: 60,
           ),
         );
 
@@ -1196,6 +1284,7 @@ void main() {
       extendedMinutes: 0,
       totalAvailableMinutes: 90,
       rewardPoolMinutes: 0,
+      monthlyRemainingMinutes: 90,
     );
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
@@ -1243,6 +1332,7 @@ void main() {
               extendedMinutes: 15,
               totalAvailableMinutes: 75,
               rewardPoolMinutes: 120,
+              monthlyRemainingMinutes: 120,
             ),
           ),
         ),
@@ -1271,6 +1361,7 @@ void main() {
             extendedMinutes: 0,
             totalAvailableMinutes: 60,
             rewardPoolMinutes: 0,
+            monthlyRemainingMinutes: 60,
           ),
         );
 
@@ -1316,6 +1407,7 @@ void main() {
       extendedMinutes: 0,
       totalAvailableMinutes: 60,
       rewardPoolMinutes: 30,
+      monthlyRemainingMinutes: 90,
     );
     final RefreshIndicator refreshIndicator = tester.widget(
       find.byType(RefreshIndicator),
@@ -1584,6 +1676,7 @@ class _ThrowingWhitelistRepository implements TimePlanRepository {
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 0,
+        monthlyRemainingMinutes: 0,
       ),
     );
   }

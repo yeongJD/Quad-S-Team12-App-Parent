@@ -186,13 +186,7 @@ class _MissionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: isCompleted
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('이미 완료된 미션이에요.')),
-                            );
-                          }
-                        : () => onTap(false),
+                    onTap: () => onTap(isCompleted),
                     hoverColor: feedbackColor.withValues(alpha: 0.06),
                     highlightColor: feedbackColor.withValues(alpha: 0.10),
                     splashColor: feedbackColor.withValues(alpha: 0.12),
