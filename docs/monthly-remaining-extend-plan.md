@@ -32,7 +32,7 @@
 - 홈은 `GET /api/v1/schedules/daily`로 오늘 시간을 가져온다.
 - 홈은 `GET /api/v1/children/{memberId}/policies`의 `accumulatedRewardTime`을 `bonusMinutes`로 저장해 `보너스시간`으로 표시한다.
 - 현재 홈에는 `POST /api/v1/schedules/extend`를 호출하는 버튼/입력 플로우가 없다.
-- 오늘 남은 시간이 0분이면 차단 플로우가 동작하지만, 사용자가 남은 월간 시간을 오늘로 가져오는 UI는 없다.
+- 오늘 남은 시간이 0분이면 차단 플로우가 동작하지만, 사용자가 남은 월간 시간을 오늘로 미리 가져오는 UI는 없다.
 - 현재 사용시간 차감은 앱/네이티브 로컬 tracker에서 이루어진다.
   - Flutter 홈은 daily의 `totalAvailableMinutes`를 초 단위로 바꿔 네이티브에 넘긴다.
   - Android `AppBlockerService`는 같은 tracker id면 기존 `usedSeconds`를 유지하고, 배정 시간만 새 값으로 갱신한다.
@@ -91,7 +91,9 @@
 - 홈 카드의 첫 번째 값은 `remainingSeconds`를 사용하고, 라벨은 `남은시간`으로 표시한다.
 - `monthlyRemainingMinutes`는 `PolicyResponse.totalAvailableTime`을 사용한다.
 - 기존 `보너스시간` 라벨은 `월간 남은시간`으로 변경한다.
-- 오늘 남은 시간이 0분이고 `monthlyRemainingMinutes > 0`이면 시간 연장 버튼을 노출한다.
+- 오늘 시간이 등록되어 있고 `monthlyRemainingMinutes > 0`이면 시간 추가 버튼을 노출한다.
+  - 남은 시간이 0분이 되기 전에도 미리 추가할 수 있어야 한다.
+  - 다른 앱을 사용하던 중 오늘 시간이 모두 소진되어 갑자기 차단되는 불편을 줄이기 위함이다.
 - 버튼 문구 예시: `시간 추가`
 - 버튼을 누르면 시간 선택 바텀시트를 띄운다.
 - 입력 가능 범위는 1분 이상, `monthlyRemainingMinutes` 이하로 제한한다.
