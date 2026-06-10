@@ -116,5 +116,44 @@ void main() {
       expect(token.parentId, isEmpty);
       expect(token.email, 'parent@test.com');
     });
+
+    test('signup maps backend duplicate email response', () async {
+      final Dio dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest:
+              (RequestOptions options, RequestInterceptorHandler handler) {
+                handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    response: Response<dynamic>(
+                      requestOptions: options,
+                      statusCode: 409,
+                      data: <String, dynamic>{
+                        'isSuccess': false,
+                        'code': 'MEMBER409',
+                        'message': '이미 사용 중인 이메일입니다.',
+                        'data': null,
+                      },
+                    ),
+                    type: DioExceptionType.badResponse,
+                  ),
+                );
+              },
+        ),
+      );
+      final ApiAuthRepository repository = ApiAuthRepository(dio: dio);
+
+      final Result<AuthToken> result = await repository.signup(
+        email: 'parent@test.com',
+        name: '박부모',
+        password: 'Password123!',
+      );
+
+      expect(result, isA<Failure<AuthToken>>());
+      final Failure<AuthToken> failure = result as Failure<AuthToken>;
+      expect(failure.message, '이미 사용 중인 이메일이에요.');
+      expect(failure.cause, 'DUPLICATE_EMAIL');
+    });
   });
 }

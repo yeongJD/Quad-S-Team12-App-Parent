@@ -16,6 +16,7 @@ import '../../../../data/repositories/auth_repository.dart';
 enum _SignupErrorType {
   invalidName,
   invalidEmail,
+  duplicateEmail,
   invalidPassword,
   passwordMismatch,
 }
@@ -23,7 +24,10 @@ enum _SignupErrorType {
 enum _CheckState { hidden, inactive, active }
 
 class SignupPage extends StatefulWidget {
-  const SignupPage({super.key});
+  const SignupPage({super.key, AuthRepository? authRepository})
+    : _authRepository = authRepository;
+
+  final AuthRepository? _authRepository;
 
   @override
   State<SignupPage> createState() => _SignupPageState();
@@ -40,7 +44,7 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController =
       TextEditingController();
-  final AuthRepository _authRepository = createAuthRepository();
+  late final AuthRepository _authRepository;
 
   _SignupErrorType? _activeError;
   bool _submitting = false;
@@ -90,6 +94,9 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   String? get _emailInlineMessage {
+    if (_activeError == _SignupErrorType.duplicateEmail) {
+      return '이미 가입된 이메일입니다. 로그인해주세요.';
+    }
     if (_email.isEmpty || _isEmailValid) {
       return null;
     }
@@ -119,6 +126,8 @@ class _SignupPageState extends State<SignupPage> {
         return '이름을 입력해주세요.';
       case _SignupErrorType.invalidEmail:
         return '이메일 형식을 확인해주세요.';
+      case _SignupErrorType.duplicateEmail:
+        return '이미 가입된 계정입니다. 로그인해주세요.';
       case _SignupErrorType.invalidPassword:
         return '비밀번호 규칙에 어긋납니다. 수정해주세요.';
       case _SignupErrorType.passwordMismatch:
@@ -136,6 +145,9 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   _CheckState get _emailCheckState {
+    if (_activeError == _SignupErrorType.duplicateEmail) {
+      return _CheckState.inactive;
+    }
     if (_isEmailValid) {
       return _CheckState.active;
     }
@@ -166,10 +178,17 @@ class _SignupPageState extends State<SignupPage> {
 
   void _onEmailChanged(String value) {
     setState(() {
-      if (_activeError == _SignupErrorType.invalidEmail) {
+      if (_activeError == _SignupErrorType.invalidEmail ||
+          _activeError == _SignupErrorType.duplicateEmail) {
         _activeError = null;
       }
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _authRepository = widget._authRepository ?? createAuthRepository();
   }
 
   void _onPasswordChanged(String value) {
@@ -279,15 +298,9 @@ class _SignupPageState extends State<SignupPage> {
           _submitting = false;
         });
         if (message == AuthFailureMessages.duplicatedEmail) {
-          context.go(
-            Uri(
-              path: '/login',
-              queryParameters: <String, String>{
-                'email': _email.trim(),
-                'notice': 'existing-account',
-              },
-            ).toString(),
-          );
+          setState(() {
+            _activeError = _SignupErrorType.duplicateEmail;
+          });
           return;
         }
         ScaffoldMessenger.of(

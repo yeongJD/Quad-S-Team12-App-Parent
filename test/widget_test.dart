@@ -5,6 +5,8 @@ import 'package:bridge_p/core/auth/account_store.dart';
 import 'package:bridge_p/core/auth/auth_session.dart';
 import 'package:bridge_p/core/child/child_connection_store.dart';
 import 'package:bridge_p/core/models/result.dart';
+import 'package:bridge_p/data/models/auth/auth_token.dart';
+import 'package:bridge_p/data/repositories/auth_repository.dart';
 import 'package:bridge_p/data/repositories/mock_child_repository.dart';
 import 'package:bridge_p/data/repositories/mock_mission_repository.dart';
 import 'package:bridge_p/data/repositories/mock_notification_repository.dart';
@@ -17,6 +19,7 @@ import 'package:bridge_p/features/my_page/presentation/pages/my_page.dart';
 import 'package:bridge_p/features/notifications/presentation/data/notification_store.dart';
 import 'package:bridge_p/features/notifications/presentation/models/notification_item.dart';
 import 'package:bridge_p/features/parent_home/presentation/pages/parent_home_page.dart';
+import 'package:bridge_p/features/signup/pages/signup_page.dart';
 import 'package:bridge_p/features/parent_home/presentation/widgets/today_time_section.dart';
 import 'package:bridge_p/features/today_mission/presentation/data/today_mission_store.dart';
 import 'package:bridge_p/features/today_mission/presentation/models/today_mission.dart';
@@ -711,6 +714,31 @@ void main() {
     expect(find.text('부모 회원가입'), findsOneWidget);
   });
 
+  testWidgets('signup duplicate email stays on form with field error', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SignupPage(authRepository: _DuplicateSignupRepository()),
+      ),
+    );
+
+    final Finder fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '부모');
+    await tester.enterText(fields.at(1), 'test3@test.com');
+    await tester.enterText(fields.at(2), 'Password1234!');
+    await tester.enterText(fields.at(3), 'Password1234!');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('확인'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('확인'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SignupPage), findsOneWidget);
+    expect(find.text('이미 가입된 이메일입니다. 로그인해주세요.'), findsOneWidget);
+    expect(find.text('이미 가입된 계정입니다. 로그인해주세요.'), findsOneWidget);
+  });
+
   testWidgets('cached parent login opens parent home', (
     WidgetTester tester,
   ) async {
@@ -1365,5 +1393,50 @@ class _ThrowingWhitelistRepository implements TimePlanRepository {
     required Set<String> appIds,
   }) async {
     throw StateError('whitelist storage unavailable');
+  }
+}
+
+class _DuplicateSignupRepository implements AuthRepository {
+  const _DuplicateSignupRepository();
+
+  @override
+  Future<Result<AuthToken>> signup({
+    required String email,
+    required String name,
+    required String password,
+  }) async {
+    return Result<AuthToken>.failure(AuthFailureMessages.duplicatedEmail);
+  }
+
+  @override
+  Future<Result<AuthToken>> login({
+    required String email,
+    required String password,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Result<AuthToken>> refreshToken(String refreshToken) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Result<void>> changePassword({
+    required String parentId,
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Result<void>> deleteAccount({required String parentId}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Result<void>> logout({String? refreshToken}) {
+    throw UnimplementedError();
   }
 }
