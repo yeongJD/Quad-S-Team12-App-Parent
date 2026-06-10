@@ -174,10 +174,7 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: AppTypography.headlineBold.copyWith(
-            fontSize: 18,
-            height: 1.4,
-            letterSpacing: -0.22,
+          style: AppTypography.headlineSemiBold.copyWith(
             color: AppColors.black,
           ),
         ),
