@@ -63,7 +63,7 @@ class _NotificationCardState extends State<NotificationCard>
   }
 
   Future<void> _handleDragEnd() async {
-    if (_dragOffset <= -_maxSlide * 0.85) {
+    if (_dragOffset <= -_maxSlide * 0.4) {
       _animateTo(-_maxSlide);
       _isShowingDialog = true;
       await widget.onDeleteIntent(widget.item);
@@ -133,8 +133,8 @@ class _NotificationCardState extends State<NotificationCard>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14.385,
-                    vertical: 12.587,
+                    horizontal: 16,
+                    vertical: 14,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,47 +142,59 @@ class _NotificationCardState extends State<NotificationCard>
                       Row(
                         children: [
                           _NotificationLeadingIcon(style: style),
-                          const SizedBox(width: 3.596),
-                          Text(
-                            widget.item.title,
-                            style: AppTypography.labelBold.copyWith(
-                              fontSize: 10.79,
-                              height: 1.334,
-                              letterSpacing: 0.2719,
-                              color: style.accentColor,
-                              decoration: TextDecoration.none,
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.item.title,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.captionBold.copyWith(
+                                fontSize: 12,
+                                height: 1.334,
+                                letterSpacing: 0.3024,
+                                color: style.accentColor,
+                                decoration: TextDecoration.none,
+                              ),
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           Text(
                             widget.item.timeAgo,
                             style: AppTypography.captionRegular.copyWith(
-                              fontSize: 10.79,
+                              fontSize: 12,
                               height: 1.334,
-                              letterSpacing: 0.2719,
+                              letterSpacing: 0.3024,
                               color: AppColors.gray300,
                               decoration: TextDecoration.none,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10.789),
+                      const SizedBox(height: 12),
                       Text(
                         widget.item.message,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: AppTypography.labelMedium.copyWith(
-                          fontSize: 12.59,
+                          fontSize: 14,
                           height: 1.429,
-                          letterSpacing: 0.1826,
+                          letterSpacing: 0.203,
                           color: AppColors.gray800,
                           decoration: TextDecoration.none,
                         ),
                       ),
-                      const SizedBox(height: 10.789),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: _NotificationActionChip(
-                          label: widget.item.actionLabel,
-                          onTap: widget.onActionTap,
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: widget.onActionTap,
+                        behavior: HitTestBehavior.opaque,
+                        child: Text(
+                          '${widget.item.actionLabel} →',
+                          style: AppTypography.captionMedium.copyWith(
+                            fontSize: 12,
+                            height: 1.334,
+                            letterSpacing: 0.3024,
+                            color: AppColors.gray500,
+                            decoration: TextDecoration.none,
+                          ),
                         ),
                       ),
                     ],
@@ -191,44 +203,6 @@ class _NotificationCardState extends State<NotificationCard>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationActionChip extends StatelessWidget {
-  const _NotificationActionChip({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.gray100,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        hoverColor: AppColors.gray500.withValues(alpha: 0.08),
-        highlightColor: AppColors.gray500.withValues(alpha: 0.12),
-        splashColor: AppColors.gray500.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 24,
-          padding: const EdgeInsets.symmetric(horizontal: 9),
-          alignment: Alignment.center,
-          child: Text(
-            '$label →',
-            style: AppTypography.captionBold.copyWith(
-              fontSize: 11,
-              height: 1.334,
-              letterSpacing: 0,
-              color: AppColors.gray500,
-              decoration: TextDecoration.none,
-            ),
-          ),
         ),
       ),
     );
@@ -261,22 +235,22 @@ class _NotificationLeadingIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!style.hasBackground) {
       return SizedBox(
-        width: 18,
-        height: 18,
-        child: Icon(style.icon, size: 17, color: style.accentColor),
+        width: 20,
+        height: 20,
+        child: Icon(style.icon, size: 18, color: style.accentColor),
       );
     }
 
     return Container(
-      width: 18,
-      height: 18,
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
         color: style.backgroundColor,
         shape: BoxShape.circle,
       ),
       child: Icon(
         style.icon,
-        size: style.icon == Icons.schedule_rounded ? 11 : 12,
+        size: style.icon == Icons.schedule_rounded ? 13 : 14,
         color: AppColors.white,
       ),
     );

@@ -533,7 +533,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ) ...[
                               NotificationCard(
                                 item: activeNotifications[index],
-                                onTap: () {},
+                                onTap: () => _handleActionTap(
+                                  activeNotifications[index],
+                                ),
                                 onActionTap: () => _handleActionTap(
                                   activeNotifications[index],
                                 ),
@@ -564,7 +566,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 ) ...[
                                   NotificationCard(
                                     item: pastNotifications[index],
-                                    onTap: () {},
+                                    onTap: () => _handleActionTap(
+                                      pastNotifications[index],
+                                    ),
                                     onActionTap: () => _handleActionTap(
                                       pastNotifications[index],
                                     ),
