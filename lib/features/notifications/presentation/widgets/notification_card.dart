@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../models/notification_item.dart';
 
@@ -105,13 +106,13 @@ class _NotificationCardState extends State<NotificationCard>
                 child: Container(
                   width: _maxSlide + 22,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD3D3),
-                    borderRadius: BorderRadius.circular(14.385),
+                    color: AppColors.destructiveSubtle,
+                    borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
                   ),
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 16.183),
+                      padding: const EdgeInsets.only(right: 16),
                       child: Opacity(
                         opacity: (-_dragOffset / _maxSlide).clamp(0, 1),
                         child: const _DeleteRevealIcon(),
@@ -130,7 +131,7 @@ class _NotificationCardState extends State<NotificationCard>
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -147,10 +148,7 @@ class _NotificationCardState extends State<NotificationCard>
                             child: Text(
                               widget.item.title,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTypography.captionBold.copyWith(
-                                fontSize: 12,
-                                height: 1.334,
-                                letterSpacing: 0.3024,
+                              style: AppTypography.captionSemiBold.copyWith(
                                 color: style.accentColor,
                                 decoration: TextDecoration.none,
                               ),
@@ -160,9 +158,6 @@ class _NotificationCardState extends State<NotificationCard>
                           Text(
                             widget.item.timeAgo,
                             style: AppTypography.captionRegular.copyWith(
-                              fontSize: 12,
-                              height: 1.334,
-                              letterSpacing: 0.3024,
                               color: AppColors.gray300,
                               decoration: TextDecoration.none,
                             ),
@@ -175,9 +170,6 @@ class _NotificationCardState extends State<NotificationCard>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.labelMedium.copyWith(
-                          fontSize: 14,
-                          height: 1.429,
-                          letterSpacing: 0.203,
                           color: AppColors.gray800,
                           decoration: TextDecoration.none,
                         ),
@@ -189,9 +181,6 @@ class _NotificationCardState extends State<NotificationCard>
                         child: Text(
                           '${widget.item.actionLabel} →',
                           style: AppTypography.captionMedium.copyWith(
-                            fontSize: 12,
-                            height: 1.334,
-                            letterSpacing: 0.3024,
                             color: AppColors.gray500,
                             decoration: TextDecoration.none,
                           ),
@@ -215,13 +204,13 @@ class _DeleteRevealIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 21.578,
-      height: 21.578,
+      width: 24,
+      height: 24,
       decoration: const BoxDecoration(
-        color: Color(0xFFFF4B4B),
+        color: AppColors.destructive,
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.close_rounded, size: 14, color: AppColors.white),
+      child: const Icon(Icons.close_rounded, size: 16, color: AppColors.white),
     );
   }
 }

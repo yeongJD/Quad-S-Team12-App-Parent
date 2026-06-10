@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/models/child/child_summary.dart';
 import '../../../../data/repositories/child_repository.dart';
@@ -507,9 +508,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             '확인하지 않은 알림이 없습니다.',
                             textAlign: TextAlign.center,
                             style: AppTypography.headlineMedium.copyWith(
-                              fontSize: 16.183,
-                              height: 1.445,
-                              letterSpacing: -0.0032,
                               color: AppColors.gray300,
                               decoration: TextDecoration.none,
                             ),
@@ -542,7 +540,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 onDeleteIntent: _showDeleteDialog,
                               ),
                               if (index < activeNotifications.length - 1)
-                                const SizedBox(height: 13.486),
+                                const SizedBox(height: 15),
                             ],
                             if (pastNotifications.isNotEmpty) ...[
                               SizedBox(
@@ -558,7 +556,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 },
                               ),
                               if (_isPastNotificationsExpanded) ...[
-                                const SizedBox(height: 13.486),
+                                const SizedBox(height: 15),
                                 for (
                                   int index = 0;
                                   index < pastNotifications.length;
@@ -575,7 +573,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     onDeleteIntent: _showDeleteDialog,
                                   ),
                                   if (index < pastNotifications.length - 1)
-                                    const SizedBox(height: 13.486),
+                                    const SizedBox(height: 15),
                                 ],
                               ],
                             ],
@@ -604,9 +602,6 @@ class _UnreadEmptyMessage extends StatelessWidget {
         '확인하지 않은 알림이 없습니다.',
         textAlign: TextAlign.center,
         style: AppTypography.headlineMedium.copyWith(
-          fontSize: 16.183,
-          height: 1.445,
-          letterSpacing: -0.0032,
           color: AppColors.gray300,
           decoration: TextDecoration.none,
         ),
@@ -625,14 +620,14 @@ class _PastNotificationsToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.gray500.withValues(alpha: 0.08),
         highlightColor: AppColors.gray500.withValues(alpha: 0.12),
         splashColor: AppColors.gray500.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
         child: SizedBox(
           height: 46,
           child: Row(
@@ -640,7 +635,7 @@ class _PastNotificationsToggle extends StatelessWidget {
             children: [
               Text(
                 '지난알림 확인하기',
-                style: AppTypography.labelBold.copyWith(
+                style: AppTypography.labelSemiBold.copyWith(
                   fontSize: 13,
                   height: 1.429,
                   letterSpacing: 0,
