@@ -279,7 +279,7 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   TimeSetupSpacing.horizontalPadding,
-                                  7.64,
+                                  8,
                                   TimeSetupSpacing.horizontalPadding,
                                   0,
                                 ),
@@ -289,7 +289,7 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                                   onEditTap: _openEditFlow,
                                 ),
                               ),
-                              const SizedBox(height: 30.09),
+                              const SizedBox(height: 30),
                               Container(
                                 width: double.infinity,
                                 height: 7,
@@ -298,7 +298,7 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   TimeSetupSpacing.horizontalPadding,
-                                  26.33,
+                                  26,
                                   TimeSetupSpacing.horizontalPadding,
                                   0,
                                 ),
@@ -382,11 +382,11 @@ class _WeeklyPlanSection extends StatelessWidget {
         const SizedBox(height: 20),
         if (total case final TimeSelection totalTime) ...[
           TimeAmountBox(time: totalTime),
-          const SizedBox(height: 13.486),
+          const SizedBox(height: 14),
           DailyPlanRuleList(rules: rules),
         ] else
           const Padding(
-            padding: EdgeInsets.only(top: 105.192),
+            padding: EdgeInsets.only(top: 105),
             child: _EmptyNotice(message: '아직 자녀가 이번주 사용계획을\n설정하지 않았어요.'),
           ),
       ],

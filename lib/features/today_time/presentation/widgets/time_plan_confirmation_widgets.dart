@@ -78,11 +78,11 @@ class TimeAmountText extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('${time.hour}', style: valueStyle),
-        const SizedBox(width: 8.99),
+        const SizedBox(width: 9),
         Text('시간', style: labelStyle),
-        const SizedBox(width: 22.48),
+        const SizedBox(width: 22),
         Text(time.minuteText, style: valueStyle),
-        const SizedBox(width: 8.99),
+        const SizedBox(width: 9),
         Text('분', style: labelStyle),
       ],
     );
@@ -98,18 +98,18 @@ class EditTimeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: TimeSetupPalette.tipBackground,
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.primary.withValues(alpha: 0.08),
         highlightColor: AppColors.primary.withValues(alpha: 0.12),
         splashColor: AppColors.primary.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: SizedBox(
           height: 28,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -118,7 +118,7 @@ class EditTimeButton extends StatelessWidget {
                   size: 17,
                   color: AppColors.primary,
                 ),
-                const SizedBox(width: 6.3),
+                const SizedBox(width: 6),
                 Text(
                   '수정하기',
                   style: AppTypography.labelMedium.copyWith(
@@ -153,15 +153,15 @@ class RevisionToggle extends StatelessWidget {
           '수정허용',
           style: AppTypography.labelMedium.copyWith(color: AppColors.gray300),
         ),
-        const SizedBox(width: 4.5),
+        const SizedBox(width: 6),
         GestureDetector(
           onTap: () => onChanged(!value),
           behavior: HitTestBehavior.opaque,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            width: 40.46,
-            height: 25.17,
-            padding: const EdgeInsets.all(3.6),
+            width: 40,
+            height: 24,
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: value ? AppColors.primary : AppColors.gray200,
               borderRadius: BorderRadius.circular(200),
@@ -171,8 +171,8 @@ class RevisionToggle extends StatelessWidget {
               curve: Curves.easeOutCubic,
               alignment: value ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
-                width: 17.98,
-                height: 17.98,
+                width: 18,
+                height: 18,
                 decoration: const BoxDecoration(
                   color: AppColors.white,
                   shape: BoxShape.circle,
@@ -205,7 +205,7 @@ class DailyPlanRuleList extends StatelessWidget {
       children: rules
           .map(
             (DailyTimeRule rule) => Padding(
-              padding: const EdgeInsets.only(bottom: 13.486),
+              padding: const EdgeInsets.only(bottom: 14),
               child: DailyPlanRuleCard(rule: rule),
             ),
           )
@@ -227,7 +227,7 @@ class DailyPlanRuleCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: 67.43,
+      height: 68,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -238,8 +238,8 @@ class DailyPlanRuleCard extends StatelessWidget {
           Text(rule.dayText, style: textStyle),
           Container(
             width: 1,
-            height: 19.78,
-            margin: const EdgeInsets.symmetric(horizontal: 17.982),
+            height: 20,
+            margin: const EdgeInsets.symmetric(horizontal: 18),
             color: AppColors.gray200,
           ),
           Expanded(

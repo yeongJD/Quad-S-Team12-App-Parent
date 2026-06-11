@@ -185,15 +185,15 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
                             color: AppColors.gray500,
                           ),
                         ),
-                        const SizedBox(height: 26.972),
+                        const SizedBox(height: 27),
                         _MonthlyTotalField(
                           time: total,
                           onTap: _openMonthlyPicker,
                         ),
-                        const SizedBox(height: 35.963),
+                        const SizedBox(height: 36),
                         ...widget.rules.map(
                           (DailyTimeRule rule) => Padding(
-                            padding: const EdgeInsets.only(bottom: 13.486),
+                            padding: const EdgeInsets.only(bottom: 14),
                             child: _MonthlyRuleCard(rule: rule),
                           ),
                         ),
@@ -238,7 +238,7 @@ class _MonthlyTotalField extends StatelessWidget {
         splashColor: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(TimeSetupRadius.field),
         child: Container(
-          height: 56.642,
+          height: 56,
           width: double.infinity,
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -254,7 +254,7 @@ class _MonthlyTotalField extends StatelessWidget {
                 color: AppColors.primary,
                 selected: true,
               ),
-              const SizedBox(width: 25.174),
+              const SizedBox(width: 25),
               TimeSelectorPart(
                 value: time.minute.toString().padLeft(2, '0'),
                 label: '분',
@@ -264,7 +264,7 @@ class _MonthlyTotalField extends StatelessWidget {
               const SizedBox(width: 34),
               const Icon(
                 Icons.edit_outlined,
-                size: 21.578,
+                size: 22,
                 color: AppColors.gray800,
               ),
             ],
@@ -300,8 +300,8 @@ class _MonthlyRuleCard extends StatelessWidget {
           ),
           Container(
             width: 1,
-            height: 19.78,
-            margin: const EdgeInsets.symmetric(horizontal: 8.991),
+            height: 20,
+            margin: const EdgeInsets.symmetric(horizontal: 9),
             color: AppColors.gray200,
           ),
           Text(
@@ -501,7 +501,7 @@ class _MonthlyTimePickerSheetState extends State<_MonthlyTimePickerSheet> {
             left: TimeSetupSpacing.sheetHorizontalPadding,
             right: TimeSetupSpacing.sheetHorizontalPadding,
             top: TimeSetupSpacing.pickerHighlightTop,
-            height: 44.954,
+            height: 45,
             child: IgnorePointer(child: PickerSelectionUnits()),
           ),
           Positioned(
