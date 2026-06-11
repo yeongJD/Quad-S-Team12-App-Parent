@@ -388,6 +388,85 @@
 | 지급시간 | 부모는 full input field처럼 보이고, 자녀는 compact하지만 표현 정책이 다르다. | 정보 화면용 `MissionRewardTimeChip`을 만든다. | read-only 화면에서는 compact chip, 등록 화면에서는 picker field로 명확히 구분된다. |
 | 상세설명 | 부모는 폭이 안정적이지만 화면 하단에서 잘려 보일 수 있고, 자녀는 compact하지만 여백이 다르다. | read-only textarea와 editable textarea를 같은 radius/padding 기반으로 만든다. | 상세설명 영역이 두 앱에서 같은 정보 블록으로 보인다. |
 
+### 추가 코드 검수 결과
+
+현재 코드 기준으로는 미션 등록 화면이 가장 망가져 있다기보다는, **부모 등록 / 부모 확인 / 자녀 미션 정보**가 같은 정보 구조를 서로 다른 로컬 위젯으로 반복 구현하는 것이 가장 큰 문제다.
+
+#### 부모 미션 등록
+
+- `today_mission_edit_page.dart`는 최근 토큰 정리로 chip height, radius, text weight가 큰 방향에서는 맞아 있다.
+- 다만 option chip 계열이 화면 내부에만 존재한다.
+  - `_OptionChip`
+  - `_SelectionGrid`
+  - `_EvenSelectionRow`
+  - `_FixedSelectionRow`
+- `barrierColor: Color.fromRGBO(68, 68, 68, 0.6)`가 아직 직접 지정되어 있다.
+  - `AppColors.scrim`으로 바꿀 수 있는 안전한 정리 항목이다.
+- section 내부 gap `18`, divider vertical margin `26`, category spacing `8`, reset/verification spacing `14`가 부모 확인 화면, 자녀 미션 정보 화면과 반복된다.
+  - 지금은 값이 우연히 맞아도 컴포넌트가 분리되어 있어 이후 한쪽만 틀어질 가능성이 높다.
+- 지급시간은 등록 화면에서는 field 형태가 맞다.
+  - 단, read-only 화면과 같은 `_RewardTimeRow` 계열을 공유하면 안 된다.
+  - 등록용 `MissionRewardTimePickerField`와 정보용 `MissionRewardTimeChip`을 분리하는 편이 좋다.
+
+#### 부모 미션 확인
+
+- `today_mission_check_page.dart`는 미션 정보 탭에서 등록 화면과 거의 같은 chip UI를 다시 구현한다.
+  - `_ReadOnlyOptionChip`
+  - `_ReadOnlySelectionGrid`
+  - `_ReadOnlyEvenSelectionRow`
+  - `_ReadOnlyFixedSelectionRow`
+- 이 read-only chip은 부모 등록의 `_OptionChip`, 자녀 미션 정보의 `_SelectableChip`과 시각 규칙이 사실상 같다.
+  - 공통 `MissionOptionChip(readOnly: true/false)`로 빼는 것이 1순위 개선이다.
+- 탭은 부모가 hand-rolled Row이고, 자녀는 `TabBar` 기반이다.
+  - 부모 탭은 `labelSemiBold/labelMedium` 14pt 계열이다.
+  - 자녀 탭은 `bodySemiBold/bodyMedium` 16pt 계열이다.
+  - 같은 탭처럼 보이려면 Figma 기준 190w tab pair는 유지하되 text size/weight를 하나로 고정해야 한다.
+- 부모 확인의 `수행확인` 화면은 사진 그리드가 `141 x 140`이고 항상 4칸 placeholder를 만든다.
+  - 자녀 업로드 프리뷰는 2-column, `157 / 156` 비율, `AppTokens.photoGap` 기준이다.
+  - 부모는 증빙 확인 화면이라 같은 크기를 강제할 필요는 없지만, 사진 카드 radius/gap/tile ratio는 자녀 수행 화면과 맞추는 것이 좋다.
+- 수행확인 액션 버튼은 자체 `_ReviewActionButton`이다.
+  - 높이 54, radius 8은 맞지만 `BridgeButton`/`TimeSetupActionButton`과 disabled/loading/pressed 상태가 다르다.
+  - 승인/반려의 상태 피드백을 공통 버튼 문법으로 맞출 필요가 있다.
+
+#### 자녀 미션 정보 / 수행
+
+- `mission_info_page.dart`는 부모 확인 화면과 같은 section/chip 구조를 다시 구현한다.
+  - `_EvenChipRowSection`
+  - `_FixedChipRowSection`
+  - `_SelectableChip`
+  - `_MissionInfoSeparator`
+  - `_RewardChip`
+  - `_DescriptionSection`
+- 자녀 화면의 `TabBar` 리듬은 부모보다 정돈되어 있지만, 부모 탭과 text size/weight가 다르다.
+- 자녀 정보 화면의 지급시간 `_RewardChip`은 compact해서 read-only 화면에 적합하다.
+  - 다만 0분이면 해당 segment를 생략한다.
+  - 부모 확인 화면은 항상 `01 시간 00 분` 형태에 가깝다.
+  - read-only 지급시간 정책을 하나로 결정해야 한다.
+- 자녀 수행 화면의 사진 업로드/프리뷰/로딩 overlay는 현재 방향이 맞다.
+  - 추가로 `ModalBarrier`의 `Color(0x66000000)`는 별도 token 또는 `AppColors.scrim` 계열로 맞출 수 있다.
+  - `CameraCTA`, `BridgePhotoTile`, `BridgeAddPhotoTile`은 작은 radius token 정리가 진행되어 있어 큰 구조 변경은 우선순위가 낮다.
+
+### 미션 화면 개선 우선순위
+
+1. 공통 mission option 컴포넌트 추출
+   - `MissionOptionChip`
+   - `MissionOptionGrid`
+   - `MissionOptionFixedRow`
+   - `MissionInfoSeparator`
+   - `MissionInfoSectionLabel`
+2. 부모 확인 탭과 자녀 정보 탭 typography 통일
+   - width `190`
+   - underline `1.4`
+   - active text / inactive text size와 weight 통일
+3. read-only 지급시간 컴포넌트 통일
+   - `MissionRewardTimeChip`
+   - 0분 표시 정책 결정
+4. 부모 수행확인 사진 grid 정리
+   - tile radius/gap을 자녀 수행 화면과 같은 token으로 정리
+   - 실제 사진이 여러 장인 경우를 API 응답 구조와 맞춰 확장 가능하게 유지
+5. 미션 등록 bottom sheet / 수행 loading overlay의 scrim token 정리
+   - 화면 의미 변경 없이 색 token만 정리 가능
+
 ### 관련 파일
 
 - 부모: `lib/features/today_mission/presentation/pages/today_mission_edit_page.dart`
