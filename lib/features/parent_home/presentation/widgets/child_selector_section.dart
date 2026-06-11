@@ -108,12 +108,7 @@ class _ChildCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           child.name,
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 14.4,
-            height: 1.5,
-            letterSpacing: 0.08,
-            color: AppColors.gray700,
-          ),
+          style: AppTypography.labelMedium.copyWith(color: AppColors.gray700),
         ),
       ],
     );
@@ -212,14 +207,14 @@ class _AddChildCardState extends State<_AddChildCard> {
 
   @override
   Widget build(BuildContext context) {
-    final double size = widget.isEmptyState ? 74 : 66.532;
-    final double innerSize = widget.isEmptyState ? 64 : 57.541;
+    final double size = widget.isEmptyState ? 74 : 67;
+    final double innerSize = widget.isEmptyState ? 64 : 58;
     final Color dashColor = widget.isEmptyState
         ? const Color(0xFFC2DFFD)
         : AppColors.gray200;
     final Color fillColor = widget.isEmptyState
-        ? const Color(0xFFEBF5FE)
-        : const Color(0xFFF0F2F5);
+        ? AppColors.primaryLight
+        : AppColors.gray100;
     final Color feedbackColor = widget.isEmptyState
         ? AppColors.primary
         : AppColors.gray500;
@@ -273,9 +268,7 @@ class _AddChildCardState extends State<_AddChildCard> {
                       shape: BoxShape.circle,
                       color: interactiveFillColor,
                     ),
-                    child: Center(
-                      child: _PlusIcon(color: plusColor, size: 21.578),
-                    ),
+                    child: Center(child: _PlusIcon(color: plusColor, size: 22)),
                   ),
                 ],
               ),
@@ -285,12 +278,11 @@ class _AddChildCardState extends State<_AddChildCard> {
         const SizedBox(height: 6),
         Text(
           '추가',
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: widget.isEmptyState ? 16 : 14.4,
-            height: 1.5,
-            letterSpacing: widget.isEmptyState ? 0.0912 : 0.08,
-            color: AppColors.gray400,
-          ),
+          style:
+              (widget.isEmptyState
+                      ? AppTypography.bodyMedium
+                      : AppTypography.labelMedium)
+                  .copyWith(color: AppColors.gray400),
         ),
       ],
     );
@@ -306,6 +298,7 @@ class _PlusIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double stroke = size * 0.085;
+    final BorderRadius strokeRadius = BorderRadius.circular(stroke / 2);
 
     return SizedBox(
       width: size,
@@ -316,18 +309,12 @@ class _PlusIcon extends StatelessWidget {
           Container(
             width: stroke,
             height: size * 0.75,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
           Container(
             width: size * 0.75,
             height: stroke,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
         ],
       ),
