@@ -383,29 +383,21 @@ class _MissionTitleField extends StatelessWidget {
         controller: controller,
         textAlign: TextAlign.center,
         cursorColor: AppColors.primary,
-        style: AppTypography.heading1Bold.copyWith(
-          fontSize: 24,
-          height: 1.364,
-          letterSpacing: 0,
-          color: AppColors.gray800,
-        ),
+        style: AppTypography.heading1Bold.copyWith(color: AppColors.gray800),
         decoration: InputDecoration(
           hintText: '미션 이름을 작성해주세요',
           hintStyle: AppTypography.heading2Bold.copyWith(
-            fontSize: 18,
-            height: 1.4,
-            letterSpacing: 0,
             color: AppColors.gray300,
           ),
           contentPadding: EdgeInsets.zero,
           filled: true,
           fillColor: AppColors.white,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.gray200),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.primary),
           ),
         ),
@@ -652,12 +644,7 @@ class _MissionDescriptionField extends StatelessWidget {
         expands: true,
         textAlignVertical: TextAlignVertical.top,
         cursorColor: AppColors.primary,
-        style: AppTypography.labelRegular.copyWith(
-          fontSize: 16,
-          height: 1.625,
-          letterSpacing: 0,
-          color: AppColors.gray700,
-        ),
+        style: AppTypography.bodyRegular.copyWith(color: AppColors.gray700),
         decoration: InputDecoration(
           hintText:
               '설명을 자세히 적어주면 자녀도 헷갈리지 않고,\nAI 확인도 훨씬 쉬워져요.\n\n'
@@ -665,10 +652,7 @@ class _MissionDescriptionField extends StatelessWidget {
               '채점된 페이지 사진 1장 찍어서 올리기!',
           hintMaxLines: 6,
           counterText: '',
-          hintStyle: AppTypography.labelRegular.copyWith(
-            fontSize: 16,
-            height: 1.625,
-            letterSpacing: 0,
+          hintStyle: AppTypography.bodyRegular.copyWith(
             color: AppColors.gray300,
           ),
           contentPadding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
@@ -792,7 +776,7 @@ class _MissionRewardTimeSheetState extends State<_MissionRewardTimeSheet> {
               left: TimeSetupSpacing.sheetHorizontalPadding,
               right: TimeSetupSpacing.sheetHorizontalPadding,
               top: TimeSetupSpacing.pickerHighlightTop,
-              height: 44.954,
+              height: 45,
               child: const DecoratedBox(
                 decoration: BoxDecoration(
                   border: Border(
@@ -912,12 +896,7 @@ class _MissionPickerUnitLabel extends StatelessWidget {
       baselineType: TextBaseline.alphabetic,
       child: Text(
         text,
-        style: AppTypography.headlineMedium.copyWith(
-          fontSize: 18,
-          height: 1.4,
-          letterSpacing: 0,
-          color: const Color(0xFF050505),
-        ),
+        style: AppTypography.headlineMedium.copyWith(color: AppColors.inkBlack),
       ),
     );
   }
