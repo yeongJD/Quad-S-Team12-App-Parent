@@ -280,9 +280,6 @@ class _MissingMissionView extends StatelessWidget {
             child: Text(
               '미션을 찾을 수 없습니다.',
               style: AppTypography.bodyMedium.copyWith(
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0,
                 color: AppColors.gray300,
               ),
             ),
@@ -344,36 +341,33 @@ class _MissionCheckTab extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: feedbackColor.withValues(alpha: 0.06),
         highlightColor: feedbackColor.withValues(alpha: 0.10),
         splashColor: feedbackColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 7.193,
-            vertical: 5.394,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
                 color: selected ? AppColors.black : Colors.transparent,
-                width: 1.259,
+                width: 1.4,
               ),
             ),
           ),
           child: Text(
             label,
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14.385,
-              height: 1.5,
-              letterSpacing: 0.082,
-              color: selected ? AppColors.black : AppColors.gray400,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
+            style:
+                (selected
+                        ? AppTypography.labelSemiBold
+                        : AppTypography.labelMedium)
+                    .copyWith(
+                      color: selected ? AppColors.black : AppColors.gray400,
+                    ),
           ),
         ),
       ),
@@ -718,12 +712,7 @@ class _ReadOnlyMissionDescriptionField extends StatelessWidget {
       ),
       child: Text(
         description,
-        style: AppTypography.labelRegular.copyWith(
-          fontSize: 16,
-          height: 1.625,
-          letterSpacing: 0,
-          color: AppColors.gray700,
-        ),
+        style: AppTypography.bodyRegular.copyWith(color: AppColors.gray700),
       ),
     );
   }
@@ -779,12 +768,7 @@ class _MissionReviewContent extends StatelessWidget {
         child: Text(
           '미션이 아직 수행되지 않았어요.',
           textAlign: TextAlign.center,
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16.183,
-            height: 1.445,
-            letterSpacing: -0.0032,
-            color: AppColors.gray300,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.gray300),
         ),
       );
     }
@@ -835,21 +819,15 @@ class _MissionReviewContent extends StatelessWidget {
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: AppTypography.headlineBold.copyWith(
-                    fontSize: 18,
-                    height: 1.4,
-                    letterSpacing: -0.2158,
-                    color: const Color(0xFF050505),
+                  style: AppTypography.headlineSemiBold.copyWith(
+                    color: AppColors.inkBlack,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontSize: 14,
-                    height: 1.5,
-                    letterSpacing: 0,
+                  style: AppTypography.labelMedium.copyWith(
                     color: AppColors.gray500,
                   ),
                 ),
@@ -872,9 +850,6 @@ class _MissionReviewContent extends StatelessWidget {
                   child: Text(
                     '$submittedAt 수행 제출\n$submittedAt 확인 요청',
                     style: AppTypography.captionMedium.copyWith(
-                      fontSize: 10.789,
-                      height: 1.334,
-                      letterSpacing: 0.2719,
                       color: AppColors.gray300,
                     ),
                   ),
@@ -923,8 +898,8 @@ class _ProofPhotoGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? imageUrl = proofImageUrl;
     return Wrap(
-      spacing: 10.789,
-      runSpacing: 10.789,
+      spacing: 11,
+      runSpacing: 11,
       children: [
         if (imageUrl != null && imageUrl.isNotEmpty)
           _ProofPhotoImage(imageUrl: imageUrl)
@@ -946,11 +921,11 @@ class _ProofPhotoImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(7.193),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       child: Image.network(
         imageUrl,
-        width: 141.155,
-        height: 140.256,
+        width: 141,
+        height: 140,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) =>
             const _ProofPhotoPlaceholder(),
@@ -965,11 +940,11 @@ class _ProofPhotoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 141.155,
-      height: 140.256,
+      width: 141,
+      height: 140,
       decoration: BoxDecoration(
         color: AppColors.gray200,
-        borderRadius: BorderRadius.circular(7.193),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       ),
     );
   }
@@ -996,7 +971,7 @@ class _ReviewActionButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: filled ? AppColors.primary : AppColors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
           border: Border.all(
             color: filled ? AppColors.primary : AppColors.destructive,
           ),
@@ -1004,9 +979,6 @@ class _ReviewActionButton extends StatelessWidget {
         child: Text(
           label,
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: 0,
             color: filled ? AppColors.white : AppColors.destructive,
           ),
         ),

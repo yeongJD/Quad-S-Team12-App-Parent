@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 
 class MissionTopBar extends StatelessWidget {
@@ -13,22 +14,19 @@ class MissionTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52,
+      height: AppTokens.topBarHeight,
       child: Stack(
         children: [
           Center(
             child: Text(
               title,
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: 0,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
           Positioned(
-            left: 24,
+            left: AppTokens.pageHorizontal,
             top: 14,
             child: Material(
               color: Colors.transparent,
