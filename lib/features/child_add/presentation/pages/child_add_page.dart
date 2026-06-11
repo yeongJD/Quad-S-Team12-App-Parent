@@ -355,7 +355,7 @@ class _ChildAddTopBar extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: _ChildAddMetrics.horizontalPadding,
+            left: 20,
             top: 14,
             child: Material(
               color: Colors.transparent,

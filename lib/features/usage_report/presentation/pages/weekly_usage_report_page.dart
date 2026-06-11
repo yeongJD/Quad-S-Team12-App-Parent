@@ -20,7 +20,7 @@ class WeeklyUsageReportPage extends StatelessWidget {
     final String weekLabel = currentMonthWeekLabel();
 
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.gray100,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -79,12 +79,12 @@ class _ReportTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 62,
+      height: AppTokens.topBarHeight,
       child: Stack(
         children: [
           Positioned(
-            left: 16,
-            top: 17,
+            left: 20,
+            top: 14,
             child: Material(
               color: Colors.transparent,
               shape: const CircleBorder(),
@@ -96,13 +96,13 @@ class _ReportTopBar extends StatelessWidget {
                 splashColor: AppColors.gray800.withValues(alpha: 0.12),
                 customBorder: const CircleBorder(),
                 child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: Center(
+                  width: 24,
+                  height: 24,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
                     child: SvgPicture.asset(
                       'assets/icons/cmp/btn/back.svg',
-                      width: 20,
-                      height: 20,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -112,8 +112,8 @@ class _ReportTopBar extends StatelessWidget {
           Center(
             child: Text(
               '사용 리포트',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.gray900,
+              style: AppTypography.headlineMedium.copyWith(
+                color: AppColors.inkBlack,
               ),
             ),
           ),

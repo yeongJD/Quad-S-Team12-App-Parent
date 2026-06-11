@@ -77,7 +77,10 @@
   - onboarding/landing처럼 제품 진입 전 화면은 `gray050(#FAFBFC)` 예외 가능
   - card/input/tile surface는 `white` 또는 `gray050`를 용도별로 사용
 - sub page topbar: status bar 이후 `52` 높이
-- back icon: 52px topbar 내부에서 y `14` 기준
+- back icon: 알림 화면 기준 edge `20`, 52px topbar 내부에서 y `14` 기준
+- secondary screen shell: `SafeArea -> 52px header -> Expanded content` 구조를 기본으로 한다.
+  - `Scaffold.appBar`와 body `SafeArea`를 섞으면 status bar 보정이 중복되어 화면마다 세로 리듬이 달라질 수 있다.
+  - 자녀 앱의 `BridgeAppBar`는 body 안 inline header로 사용한다.
 - primary button: height `54`, radius `8`
 - input field: height `50`, radius `12`
 - chip: height `52`, radius `12`, selected primary, unselected gray050 + gray200 border

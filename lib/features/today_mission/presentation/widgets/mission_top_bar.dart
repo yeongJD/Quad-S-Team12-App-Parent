@@ -26,7 +26,7 @@ class MissionTopBar extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: AppTokens.pageHorizontal,
+            left: 20,
             top: 14,
             child: Material(
               color: Colors.transparent,
