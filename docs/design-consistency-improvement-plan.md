@@ -399,6 +399,35 @@
 | 지급시간 | 부모는 full input field처럼 보이고, 자녀는 compact하지만 표현 정책이 다르다. | 정보 화면용 `MissionRewardTimeChip`을 만든다. | read-only 화면에서는 compact chip, 등록 화면에서는 picker field로 명확히 구분된다. |
 | 상세설명 | 부모는 폭이 안정적이지만 화면 하단에서 잘려 보일 수 있고, 자녀는 compact하지만 여백이 다르다. | read-only textarea와 editable textarea를 같은 radius/padding 기반으로 만든다. | 상세설명 영역이 두 앱에서 같은 정보 블록으로 보인다. |
 
+### Figma / 코드 대조 기준
+
+Figma `scr/child-미션정보`(`746:11392`)는 컨텐츠가 현재 앱과 다르다. 예를 들어 Figma에는 `루틴`, `심부름`이 남아 있지만, 현재 앱과 백엔드는 `학습`, `운동`, `청소`, `기타` 4개 기준으로 정리되어 있다. 따라서 이 노드는 **컨텐츠 기준이 아니라 spacing / typography / component chrome 기준**으로만 참고한다.
+
+Figma에서 확인한 미션 정보 화면의 주요 수치는 다음과 같다.
+
+| 요소 | Figma 기준 | 현재 코드 관찰 | 판단 |
+| --- | --- | --- | --- |
+| 화면 배경 | `white`로 추출되지만 앱 전체 톤에서는 detail page 배경을 별도 판정 필요 | 부모 미션 등록/확인은 `gray100`, 자녀 미션 정보/수행은 `gray050` | 부모/자녀 세부화면 배경이 다르게 보이는 원인이다. 앱 톤 기준으로 `gray100` 통일을 우선 검토한다. |
+| content column | left `24`, width `327` | 부모/자녀 모두 대체로 page padding `24` | 좌우 padding 값 자체는 큰 문제가 아니다. 체감 차이는 chip width/spacing과 배경색에서 더 크게 발생한다. |
+| topbar | status bar `44` 이후 topbar height `52`, title `18 Medium`, back icon x `24` y `14` | 부모는 로컬 topbar, 자녀는 `BridgeAppBar` 계열 | title font/height/back icon touch area를 같은 규칙으로 고정해야 한다. |
+| tab | width `190`, label `16`, active SemiBold, inactive Medium, underline `1.4` | 자녀는 16pt에 가깝고, 부모 확인 탭은 14pt 계열 | 부모 확인 탭 typography를 자녀/Figma 기준으로 올리는 것이 우선이다. |
+| section label | `18 SemiBold`, color `gray800`, lineHeight `1.445` | 부모/자녀 모두 `headlineSemiBold` 계열로 대부분 맞음 | 유지하되 직접 지정된 font가 남아 있으면 token으로 바꾼다. |
+| label -> chip gap | `14` | 부모/자녀 일부가 `18` | 현재 앱이 Figma보다 살짝 벌어져 있다. 등록/정보 화면 모두 `14`로 맞추는지 검토한다. |
+| chip | height `52`, radius `12`, selected 16 SemiBold, unselected 16 Medium | 최근 코드 기준 부모/자녀 모두 height/radius/font는 근접 | 유지 대상. 다만 부모 확인 탭처럼 14pt 계열이 섞인 곳은 별도 정리한다. |
+| chip spacing | category/reset/confirmation 모두 gap `8` | 부모/자녀는 category `8`, reset/confirmation `14`가 섞임 | 앱 컨텐츠 4개/3개 기준에서는 `14`가 안정적으로 보이는 곳도 있다. Figma 값은 참고하되 실제 row 폭을 기준으로 결정한다. |
+| separator | height `7`, width `374`, color `gray100` | 부모/자녀 모두 height `6`, margin vertical `26`, color `gray150` | 두 앱은 서로 맞지만 Figma와 1px 차이가 있다. separator를 `7`로 토큰화할지 검토한다. |
+| 지급시간 chip | height `52`, radius `8`, padding x `20`, number `18 SemiBold primary`, unit `18 Medium black`, hour/minute 모두 표시 | 부모 확인은 field형, 자녀 정보는 compact chip이나 0분 생략 가능 | read-only 지급시간 컴포넌트를 새로 맞추는 것이 필요하다. |
+| 상세설명 | gap `14`, height `198`, padding x `14` y `12`, radius `12`, text `16 Regular` | 부모/자녀 상세설명 gap과 height가 서로 다름 | 정보 화면용 read-only textarea token을 분리해야 한다. |
+
+### 미션 등록 timepicker 판정
+
+부모 앱 미션 등록의 `지급시간` timepicker는 다른 시간 선택 UI와 동일하게 **기본값을 `00 시간 00 분`으로 보여주는 것**이 맞다.
+
+- 신규 미션 등록 상태의 `_rewardTime`은 이미 `0시간 0분`이다.
+- 기존 구현은 bottom sheet를 열 때 `initialTime.isEmpty`이면 `1시간 5분`으로 치환하고 있었다.
+- 이 동작은 다른 timepicker의 기본 표시와 다르고, 등록 버튼 비활성 조건과도 어긋나 보인다.
+- 따라서 `initialTime`을 그대로 사용하고, `00 시간 00 분`에서 확인을 누르면 기존처럼 미션 등록 조건은 충족되지 않게 둔다.
+
 ### 추가 코드 검수 결과
 
 현재 코드 기준으로는 미션 등록 화면이 가장 망가져 있다기보다는, **부모 등록 / 부모 확인 / 자녀 미션 정보**가 같은 정보 구조를 서로 다른 로컬 위젯으로 반복 구현하는 것이 가장 큰 문제다.
