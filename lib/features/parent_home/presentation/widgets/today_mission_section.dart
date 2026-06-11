@@ -155,7 +155,7 @@ class _MissionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 18),
       decoration: BoxDecoration(
-        color: isCompleted ? const Color(0xFFEDEEF1) : AppColors.white,
+        color: isCompleted ? AppColors.gray150 : AppColors.white,
         borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
       ),
       child: Row(
@@ -181,8 +181,7 @@ class _MissionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                     child: Text(
                       item.title,
-                      style: AppTypography.labelMedium.copyWith(
-                        fontSize: 16,
+                      style: AppTypography.bodyMedium.copyWith(
                         color: isCompleted
                             ? AppColors.gray300
                             : AppColors.gray800,
@@ -192,7 +191,7 @@ class _MissionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 2.7),
+                const SizedBox(height: 3),
                 Text(
                   item.reward,
                   style: AppTypography.captionRegular.copyWith(
@@ -255,7 +254,7 @@ class _MissionAddButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFEBF5FE),
+      color: AppColors.primaryLight,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -283,6 +282,9 @@ class _AddIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double stroke = 1.8;
+    const BorderRadius strokeRadius = BorderRadius.all(
+      Radius.circular(stroke / 2),
+    );
 
     return SizedBox(
       width: size,
@@ -293,18 +295,12 @@ class _AddIcon extends StatelessWidget {
           Container(
             width: stroke,
             height: size * 0.75,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
           Container(
             width: size * 0.75,
             height: stroke,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
         ],
       ),

@@ -40,9 +40,6 @@ class ParentHomeHeader extends StatelessWidget {
                     'my',
                     style: AppTypography.labelRegular.copyWith(
                       color: AppColors.gray800,
-                      fontSize: 14,
-                      height: 1.429,
-                      letterSpacing: 0.203,
                     ),
                   ),
                 ),

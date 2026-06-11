@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../models/parent_home_models.dart';
 
@@ -34,13 +35,13 @@ class TodayTimeSection extends StatelessWidget {
         const SizedBox(height: 18),
         Container(
           width: double.infinity,
-          height: 157.338,
+          height: 157,
           decoration: BoxDecoration(
             color: AppColors.white,
-            borderRadius: BorderRadius.circular(14.385),
+            borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
             boxShadow: const [
               BoxShadow(
-                color: Color.fromRGBO(217, 217, 217, 0.5),
+                color: AppTokens.cardShadowColor,
                 blurRadius: 7.2,
                 offset: Offset(0, 3.6),
               ),
@@ -70,12 +71,7 @@ class _WaitingTimePlanMessage extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: AppTypography.heading2Bold.copyWith(
-          fontSize: 16,
-          height: 1.4,
-          letterSpacing: 0,
-          color: AppColors.gray300,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.gray300),
       ),
     );
   }
@@ -93,8 +89,8 @@ class _TimeSummaryContent extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 111.485,
-            height: 111.485,
+            width: 112,
+            height: 112,
             child: CustomPaint(
               painter: _TimeRingPainter(
                 outerProgress: summary.basicProgress,
@@ -115,10 +111,7 @@ class _TimeSummaryContent extends StatelessWidget {
                 children: [
                   Text(
                     '오늘 사용 예정 시간',
-                    style: AppTypography.labelMedium.copyWith(
-                      fontSize: 12.587,
-                      height: 1.429,
-                      letterSpacing: 0.18,
+                    style: AppTypography.captionMedium.copyWith(
                       color: AppColors.primary,
                     ),
                   ),
@@ -126,30 +119,21 @@ class _TimeSummaryContent extends StatelessWidget {
                   Text(
                     summary.basicTime,
                     style: AppTypography.heading2Bold.copyWith(
-                      fontSize: 21.578,
-                      height: 1.364,
-                      letterSpacing: -0.42,
                       color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 14),
                   Text(
                     '월간 남은시간',
-                    style: AppTypography.labelMedium.copyWith(
-                      fontSize: 12.587,
-                      height: 1.429,
-                      letterSpacing: 0.18,
-                      color: const Color(0xFFFFB300),
+                    style: AppTypography.captionMedium.copyWith(
+                      color: _TimeRingPainter.monthlyRemainingColor,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     summary.bonusTime,
                     style: AppTypography.heading2Bold.copyWith(
-                      fontSize: 21.578,
-                      height: 1.364,
-                      letterSpacing: -0.42,
-                      color: const Color(0xFFFFB300),
+                      color: _TimeRingPainter.monthlyRemainingColor,
                     ),
                   ),
                 ],
@@ -226,7 +210,7 @@ class _PrimaryAddButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFEBF5FE),
+      color: AppColors.primaryLight,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -254,6 +238,9 @@ class _AddIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double stroke = 2;
+    const BorderRadius strokeRadius = BorderRadius.all(
+      Radius.circular(stroke / 2),
+    );
 
     return SizedBox(
       width: size,
@@ -264,18 +251,12 @@ class _AddIcon extends StatelessWidget {
           Container(
             width: stroke,
             height: size * 0.75,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
           Container(
             width: size * 0.75,
             height: stroke,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
         ],
       ),
@@ -291,6 +272,7 @@ class _TimeRingPainter extends CustomPainter {
 
   final double outerProgress;
   final double innerProgress;
+  static const Color monthlyRemainingColor = Color(0xFFFFB300);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -328,7 +310,7 @@ class _TimeRingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.butt
       ..strokeWidth = 11
-      ..color = const Color(0xFFFFB300);
+      ..color = monthlyRemainingColor;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: size.width / 2 - 21),
       -math.pi / 2,
