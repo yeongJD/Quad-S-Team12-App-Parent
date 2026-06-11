@@ -71,6 +71,11 @@
 
 - page horizontal padding: `24`
 - mobile content width: `327`
+- app background:
+  - main/home surface: `gray100(#F5F7FA)` 우선
+  - sub/detail page background: 부모/자녀 모두 `gray100(#F5F7FA)` 기준으로 맞추는 것을 우선 검토
+  - completion/intro처럼 의도적으로 비어 보이는 화면은 `gray050(#FAFBFC)` 예외 가능
+  - card/input/tile surface는 `white` 또는 `gray050`를 용도별로 사용
 - sub page topbar: status bar 이후 `52` 높이
 - back icon: 52px topbar 내부에서 y `14` 기준
 - primary button: height `54`, radius `8`
@@ -188,6 +193,12 @@
 - 헤더는 자녀 앱 구현을 그대로 쓰기 전에 SafeArea 문제를 먼저 해결해야 한다.
   - 자녀 앱 audit에 따르면 `BridgeAppBar`는 inline 사용과 `Scaffold.appBar` 사용이 섞이며, notched device에서 위치가 달라질 수 있다.
   - 부모 앱의 일부 inline topbar는 실제 위치가 더 안정적으로 보이는 경우가 있다.
+- 배경색은 자녀 앱 세부화면이 더 흰색에 가깝게 보이는 원인이다.
+  - 자녀 앱 `AppColors.background`는 `gray050(#FAFBFC)`이다.
+  - 자녀 앱의 미션 상세/미션수행/시간설정/리포트 화면은 주로 `AppColors.background`를 사용한다.
+  - 부모 앱의 미션 등록/미션 확인/미션 목록과 자녀 홈/알림/마이페이지는 `gray100(#F5F7FA)`를 사용한다.
+  - 그래서 부모 앱 미션 화면과 자녀 앱 미션 세부화면을 나란히 보면 자녀 앱이 거의 흰색 배경처럼 보인다.
+  - 최종 기준은 sub/detail page를 `gray100`, 카드/입력/사진타일 surface를 `white` 또는 `gray050`로 분리하는 방향이 더 자연스럽다.
 
 ## 화면별 개선 계획
 
@@ -445,6 +456,10 @@
 - 자녀 수행 화면의 사진 업로드/프리뷰/로딩 overlay는 현재 방향이 맞다.
   - 추가로 `ModalBarrier`의 `Color(0x66000000)`는 별도 token 또는 `AppColors.scrim` 계열로 맞출 수 있다.
   - `CameraCTA`, `BridgePhotoTile`, `BridgeAddPhotoTile`은 작은 radius token 정리가 진행되어 있어 큰 구조 변경은 우선순위가 낮다.
+- 자녀 미션 상세/수행 화면의 `Scaffold.backgroundColor`는 `AppColors.background`라서 실제로는 `gray050(#FAFBFC)`이다.
+  - 순백색은 아니지만 부모 미션 화면의 `gray100(#F5F7FA)`보다 밝아 거의 흰색처럼 보인다.
+  - 미션 세부화면을 부모 앱과 맞추려면 `mission_info_page.dart`의 info/cameraPrompt/photoPreview/submitted Scaffold 배경을 `gray100` 계열로 맞추는 것이 우선 후보이다.
+  - 단, 카드/사진 타일 내부 surface까지 같이 회색으로 바꾸면 깊이감이 사라지므로 page background만 조정한다.
 
 ### 미션 화면 개선 우선순위
 
@@ -466,6 +481,10 @@
    - 실제 사진이 여러 장인 경우를 API 응답 구조와 맞춰 확장 가능하게 유지
 5. 미션 등록 bottom sheet / 수행 loading overlay의 scrim token 정리
    - 화면 의미 변경 없이 색 token만 정리 가능
+6. 자녀 미션 세부화면 background token 정리
+   - page background는 `gray100`
+   - card/input/photo tile surface는 기존 `white`/`gray050` 유지
+   - 부모 미션 등록/확인 화면과 나란히 봤을 때 배경 톤이 같아지는지 확인
 
 ### 관련 파일
 
@@ -754,6 +773,8 @@
 ### 공통
 
 - [ ] 현재 앱의 컨텐츠, enum, 문구, 화면 플로우가 유지되었는가?
+- [ ] main/home, sub/detail, card/surface 배경색 기준이 분리되어 있는가?
+- [ ] 부모/자녀 sub/detail page 배경이 같은 톤으로 보이는가?
 - [ ] 부모/자녀 앱의 `AppTypography` 자간이 동일한가?
 - [ ] 부모/자녀 앱의 `AppTokens`가 같은 이름/같은 값으로 정리되어 있는가?
 - [ ] 동일한 token이라도 Figma spec과 실제 캡처 기준에서 어긋나지 않는가?
