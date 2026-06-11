@@ -1264,7 +1264,7 @@ void main() {
             extendedMinutes: 0,
             totalAvailableMinutes: 60,
             rewardPoolMinutes: 0,
-            monthlyRemainingMinutes: 60,
+            monthlyRemainingMinutes: 120,
           ),
         );
 
@@ -1309,7 +1309,7 @@ void main() {
       extendedMinutes: 0,
       totalAvailableMinutes: 90,
       rewardPoolMinutes: 0,
-      monthlyRemainingMinutes: 90,
+      monthlyRemainingMinutes: 120,
     );
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
@@ -1318,7 +1318,7 @@ void main() {
     expect(find.text('01:00'), findsNothing);
   });
 
-  testWidgets('parent home renders reward pool minutes as bonus time', (
+  testWidgets('parent home renders monthly remaining minutes as bonus time', (
     WidgetTester tester,
   ) async {
     const String parentId = 'extended-time-parent@example.com';
@@ -1365,12 +1365,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('01:00'), findsOneWidget);
+    expect(find.text('01:15'), findsOneWidget);
     expect(find.text('02:00'), findsOneWidget);
     expect(find.text('00:15'), findsNothing);
   });
 
-  testWidgets('parent home pull refresh reloads reward pool bonus time', (
+  testWidgets('parent home pull refresh reloads monthly remaining bonus time', (
     WidgetTester tester,
   ) async {
     const String parentId = 'refresh-bonus-parent@example.com';
@@ -1386,7 +1386,7 @@ void main() {
             extendedMinutes: 0,
             totalAvailableMinutes: 60,
             rewardPoolMinutes: 0,
-            monthlyRemainingMinutes: 60,
+            monthlyRemainingMinutes: 0,
           ),
         );
 
@@ -1432,7 +1432,7 @@ void main() {
       extendedMinutes: 0,
       totalAvailableMinutes: 60,
       rewardPoolMinutes: 30,
-      monthlyRemainingMinutes: 90,
+      monthlyRemainingMinutes: 30,
     );
     final RefreshIndicator refreshIndicator = tester.widget(
       find.byType(RefreshIndicator),

@@ -123,6 +123,7 @@ class _SavedPolicyRepository implements TimePlanRepository {
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 0,
+        monthlyRemainingMinutes: 0,
       ),
     );
   }

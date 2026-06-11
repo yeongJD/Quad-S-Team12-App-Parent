@@ -20,7 +20,7 @@ class WeeklyUsageReportPage extends StatelessWidget {
     final String weekLabel = currentMonthWeekLabel();
 
     return Scaffold(
-      backgroundColor: AppColors.gray100,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,

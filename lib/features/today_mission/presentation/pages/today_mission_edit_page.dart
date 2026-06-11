@@ -199,7 +199,7 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.gray100,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,

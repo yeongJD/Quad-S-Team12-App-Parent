@@ -7,7 +7,6 @@ import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/repositories/mission_repository.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
-import '../../../today_time/presentation/styles/time_setup_tokens.dart';
 import '../../../today_time/presentation/widgets/daily_time_rule_sheet.dart';
 import '../models/today_mission.dart';
 import '../widgets/mission_top_bar.dart';
@@ -172,7 +171,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
     final bool isInfoTab = _selectedTabIndex == 0;
 
     return Scaffold(
-      backgroundColor: AppColors.gray100,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -183,6 +182,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
                 : Column(
                     children: [
                       MissionTopBar(title: mission.title, onBack: _handleBack),
+                      const SizedBox(height: 16),
                       _MissionCheckTabs(
                         selectedIndex: _selectedTabIndex,
                         onSelected: (int index) {
@@ -399,7 +399,7 @@ class _MissionInfoContent extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     _contentHorizontalPadding,
-                    18,
+                    34,
                     _contentHorizontalPadding,
                     0,
                   ),
@@ -407,7 +407,7 @@ class _MissionInfoContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _SectionTitle('카테고리'),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _ReadOnlySelectionGrid<MissionCategory>(
                         values: missionCreateCategoryOptions,
                         selectedValue: mission.category,
@@ -432,7 +432,7 @@ class _MissionInfoContent extends StatelessWidget {
                         values: MissionResetPeriod.values,
                         selectedValue: mission.resetPeriod,
                         widths: const <double>[74, 88, 74],
-                        spacing: 14,
+                        spacing: 8,
                         labelOf: (MissionResetPeriod value) => value.label,
                       ),
                     ],
@@ -447,11 +447,11 @@ class _MissionInfoContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _SectionTitle('확인방식'),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _ReadOnlyEvenSelectionRow<MissionConfirmationMethod>(
                         values: MissionConfirmationMethod.values,
                         selectedValue: mission.confirmationMethod,
-                        spacing: 14,
+                        spacing: 8,
                         labelOf: (MissionConfirmationMethod value) =>
                             value.label,
                       ),
@@ -477,7 +477,7 @@ class _MissionInfoContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _SectionTitle('상세설명'),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _ReadOnlyMissionDescriptionField(
                         description: mission.description,
                       ),
@@ -652,9 +652,7 @@ class _ReadOnlyRewardTimeRow extends StatelessWidget {
       hour: minutes ~/ 60,
       minute: minutes % 60,
     );
-    final Color numberColor = time.isEmpty
-        ? AppColors.gray300
-        : AppColors.gray800;
+    final Color numberColor = AppColors.primary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -662,14 +660,16 @@ class _ReadOnlyRewardTimeRow extends StatelessWidget {
       children: [
         const _SectionTitle('지급시간'),
         Container(
-          height: TimeSetupSize.fieldHeight,
-          width: 192,
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(TimeSetupRadius.field),
+            color: AppColors.gray050,
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
             border: Border.all(color: AppColors.gray200),
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TimeSelectorPart(
@@ -678,7 +678,7 @@ class _ReadOnlyRewardTimeRow extends StatelessWidget {
                 color: numberColor,
                 selected: !time.isEmpty,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 16),
               TimeSelectorPart(
                 value: time.minuteText,
                 label: '분',
@@ -701,12 +701,12 @@ class _ReadOnlyMissionDescriptionField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 214,
+      height: 198,
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       alignment: Alignment.topLeft,
       decoration: BoxDecoration(
-        color: AppColors.gray100,
+        color: AppColors.gray050,
         borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
         border: Border.all(color: AppColors.gray200),
       ),
@@ -725,9 +725,9 @@ class _SectionDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 6,
-      margin: const EdgeInsets.symmetric(vertical: 26),
-      color: AppColors.gray150,
+      height: 7,
+      margin: const EdgeInsets.symmetric(vertical: 24),
+      color: AppColors.gray100,
     );
   }
 }

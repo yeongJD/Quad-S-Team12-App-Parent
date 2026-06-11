@@ -271,7 +271,7 @@ class _TodayMissionListPageState extends State<TodayMissionListPage> {
     final bool isEmpty = _missions.isEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.gray100,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,

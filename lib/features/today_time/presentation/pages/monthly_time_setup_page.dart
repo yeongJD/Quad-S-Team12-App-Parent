@@ -152,7 +152,7 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
     final TimeSelection total = _timeFromMinutes(_selectedTotalMinutes);
 
     return Scaffold(
-      backgroundColor: AppColors.gray100,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

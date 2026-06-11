@@ -367,6 +367,7 @@ void main() {
         extendedMinutes: 30,
         totalAvailableMinutes: 30,
         rewardPoolMinutes: 120,
+        monthlyRemainingMinutes: 120,
       );
       const ChildTimeSummary zeroToday = ChildTimeSummary(
         parentPolicyExists: true,
@@ -377,6 +378,7 @@ void main() {
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 120,
+        monthlyRemainingMinutes: 120,
       );
       const ChildTimeSummary waitingChildPlan = ChildTimeSummary(
         parentPolicyExists: true,
@@ -387,6 +389,7 @@ void main() {
         extendedMinutes: 0,
         totalAvailableMinutes: 60,
         rewardPoolMinutes: 120,
+        monthlyRemainingMinutes: 720,
       );
 
       expect(rewardOnlyToday.hasDisplayableTodayTime, isTrue);
