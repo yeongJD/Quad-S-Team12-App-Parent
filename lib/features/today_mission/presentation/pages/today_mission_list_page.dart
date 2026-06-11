@@ -6,13 +6,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/repositories/mission_repository.dart';
 import '../data/today_mission_mock_data.dart';
 import '../models/today_mission.dart';
+import '../widgets/mission_top_bar.dart';
 import 'today_mission_check_page.dart';
 import 'today_mission_edit_page.dart';
-import '../widgets/mission_top_bar.dart';
 
 class TodayMissionListPage extends StatefulWidget {
   const TodayMissionListPage({
@@ -321,12 +322,7 @@ class _MissionEmptyState extends StatelessWidget {
     return Center(
       child: Text(
         '등록된 미션이 없습니다.',
-        style: AppTypography.bodyMedium.copyWith(
-          fontSize: 16.183,
-          height: 1.445,
-          letterSpacing: -0.0032,
-          color: AppColors.gray300,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.gray300),
       ),
     );
   }
@@ -364,9 +360,9 @@ class _MissionListContent extends StatelessWidget {
               onOpenReview: () => onOpenReview(index),
               onDeleteRequested: onDelete,
             ),
-            if (index != missions.length - 1) const SizedBox(height: 13.486),
+            if (index != missions.length - 1) const SizedBox(height: 14),
           ],
-          const SizedBox(height: 17.98),
+          const SizedBox(height: 18),
           _MissionAddButton(onTap: onAdd),
         ],
       ),
@@ -394,7 +390,7 @@ class _MissionListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14.385),
+      borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
       child: Dismissible(
         key: ValueKey<String>(
           'mission-${mission.title}-${mission.category.name}-$index',
@@ -407,7 +403,7 @@ class _MissionListCard extends StatelessWidget {
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
-          color: const Color(0xFFFFD3D3),
+          color: AppColors.destructiveSubtle,
           child: const _DeleteActionButton(),
         ),
         child: _MissionCardSurface(
@@ -437,12 +433,12 @@ class _MissionStatusBadge extends StatelessWidget {
         textColor = AppColors.gray500;
       case TodayMissionStatus.reviewing:
         backgroundColor = const Color(0xFFFFF5D6);
-        textColor = const Color(0xFFFF9200);
+        textColor = AppColors.cautionary;
       case TodayMissionStatus.completed:
         backgroundColor = const Color(0xFFE9F8EF);
         textColor = AppColors.positive;
       case TodayMissionStatus.rejected:
-        backgroundColor = const Color(0xFFFFE8E8);
+        backgroundColor = AppColors.destructiveSubtle;
         textColor = AppColors.destructive;
     }
 
@@ -455,16 +451,11 @@ class _MissionStatusBadge extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
         ),
         child: Text(
           status.label,
-          style: AppTypography.captionBold.copyWith(
-            fontSize: 11,
-            height: 1.334,
-            letterSpacing: 0,
-            color: textColor,
-          ),
+          style: AppTypography.captionBold.copyWith(color: textColor),
         ),
       ),
     );
@@ -487,23 +478,23 @@ class _MissionCardSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 76.421,
-      padding: const EdgeInsets.symmetric(horizontal: 16.183, vertical: 12),
+      height: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14.385),
+        borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
       ),
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3.596),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: SvgPicture.asset(
               mission.category.iconAsset,
-              width: 43.156,
-              height: 43.156,
+              width: 43,
+              height: 43,
             ),
           ),
-          const SizedBox(width: 17.082),
+          const SizedBox(width: 17),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -516,15 +507,12 @@ class _MissionCardSurface extends StatelessWidget {
                     mission.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.headlineBold.copyWith(
-                      fontSize: 16.183,
-                      height: 1.445,
-                      letterSpacing: -0.0032,
-                      color: const Color(0xFF050505),
+                    style: AppTypography.bodySemiBold.copyWith(
+                      color: AppColors.inkBlack,
                     ),
                   ),
                 ),
-                const SizedBox(height: 2.697),
+                const SizedBox(height: 3),
                 Row(
                   children: [
                     Flexible(
@@ -532,10 +520,7 @@ class _MissionCardSurface extends StatelessWidget {
                         mission.rewardLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.labelMedium.copyWith(
-                          fontSize: 12.587,
-                          height: 1.429,
-                          letterSpacing: 0.1825,
+                        style: AppTypography.captionRegular.copyWith(
                           color: AppColors.gray500,
                         ),
                       ),
@@ -581,8 +566,8 @@ class _MissionSettingsButton extends StatelessWidget {
           child: Center(
             child: SvgPicture.asset(
               'assets/icons/arrow button/Settings.svg',
-              width: 17.982,
-              height: 17.982,
+              width: 18,
+              height: 18,
               colorFilter: const ColorFilter.mode(
                 AppColors.gray300,
                 BlendMode.srcIn,
@@ -601,8 +586,8 @@ class _DeleteActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 21.578,
-      height: 21.578,
+      width: 22,
+      height: 22,
       decoration: const BoxDecoration(
         color: AppColors.destructive,
         shape: BoxShape.circle,
@@ -620,7 +605,7 @@ class _MissionAddButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFEBF5FE),
+      color: AppColors.primaryLight,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -630,8 +615,8 @@ class _MissionAddButton extends StatelessWidget {
         splashColor: AppColors.primary.withValues(alpha: 0.16),
         customBorder: const CircleBorder(),
         child: const SizedBox(
-          width: 35.963,
-          height: 35.963,
+          width: 36,
+          height: 36,
           child: Icon(Icons.add_rounded, size: 28, color: AppColors.primary),
         ),
       ),
@@ -655,24 +640,21 @@ class _DeleteConfirmationOverlay extends StatelessWidget {
         color: const Color.fromRGBO(68, 68, 68, 0.6),
         child: Center(
           child: Container(
-            width: 294.897,
-            height: 189.705,
-            padding: const EdgeInsets.fromLTRB(31, 33.27, 31, 26.97),
+            width: 295,
+            height: 190,
+            padding: const EdgeInsets.fromLTRB(31, 33, 31, 27),
             decoration: BoxDecoration(
               color: AppColors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
             ),
             child: Column(
               children: [
                 const _WarningIcon(),
-                const SizedBox(height: 16.183),
+                const SizedBox(height: 16),
                 Text(
                   '미션을 삭제하시겠습니까?',
                   textAlign: TextAlign.center,
-                  style: AppTypography.labelBold.copyWith(
-                    fontSize: 14.385,
-                    height: 1.5,
-                    letterSpacing: 0.082,
+                  style: AppTypography.labelSemiBold.copyWith(
                     color: AppColors.gray800,
                   ),
                 ),
@@ -686,7 +668,7 @@ class _DeleteConfirmationOverlay extends StatelessWidget {
                         onTap: onCancel,
                       ),
                     ),
-                    const SizedBox(width: 13.486),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: _DialogActionButton(
                         label: '확인',
@@ -711,8 +693,8 @@ class _WarningIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 28.77,
-      height: 28.77,
+      width: 29,
+      height: 29,
       decoration: const BoxDecoration(
         color: AppColors.destructive,
         shape: BoxShape.circle,
@@ -739,21 +721,16 @@ class _DialogActionButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height: 37.761,
+        height: 38,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: filled ? AppColors.primary : const Color(0xFFEBF5FE),
-          borderRadius: BorderRadius.circular(8),
-          border: filled
-              ? null
-              : Border.all(color: AppColors.primary, width: 0.899),
+          color: filled ? AppColors.primary : AppColors.primaryLight,
+          borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          border: filled ? null : Border.all(color: AppColors.primary),
         ),
         child: Text(
           label,
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 12.587,
-            height: 1.429,
-            letterSpacing: 0.1826,
+          style: AppTypography.captionMedium.copyWith(
             color: filled ? AppColors.white : AppColors.primary,
           ),
         ),
