@@ -9,16 +9,18 @@ class TimeSetupActionButton extends StatelessWidget {
     required this.label,
     required this.enabled,
     required this.onTap,
+    this.disabledMessage = '필수 항목을 먼저 입력해주세요.',
   });
 
   final String label;
   final bool enabled;
   final VoidCallback onTap;
+  final String disabledMessage;
 
   void _handleDisabledTap(BuildContext context) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('필수 항목을 먼저 입력해주세요.')));
+    ).showSnackBar(SnackBar(content: Text(disabledMessage)));
   }
 
   @override
@@ -103,6 +105,9 @@ class PlusIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double stroke = 2;
+    const BorderRadius strokeRadius = BorderRadius.all(
+      Radius.circular(stroke / 2),
+    );
 
     return SizedBox(
       width: size,
@@ -113,18 +118,12 @@ class PlusIcon extends StatelessWidget {
           Container(
             width: stroke,
             height: size * 0.75,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
           Container(
             width: size * 0.75,
             height: stroke,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
         ],
       ),

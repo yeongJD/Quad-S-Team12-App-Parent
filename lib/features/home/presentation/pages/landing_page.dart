@@ -3,10 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/auth_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
 
   static const double _designWidth = 375;
@@ -19,6 +20,25 @@ class LandingPage extends StatelessWidget {
   static const double _actionBottom = 48.55;
   static const double _actionGap = 13.486;
   static const double _buttonHeight = 48.55;
+
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  @override
+  void initState() {
+    super.initState();
+    _redirectCachedSession();
+  }
+
+  Future<void> _redirectCachedSession() async {
+    final bool isLoggedIn = await AuthSession.isLoggedIn();
+    if (!mounted || !isLoggedIn) {
+      return;
+    }
+    context.go('/parent-home');
+  }
 
   @override
   Widget build(BuildContext context) {

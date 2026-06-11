@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/repositories/mission_repository.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
-import '../../../today_time/presentation/styles/time_setup_tokens.dart';
 import '../../../today_time/presentation/widgets/daily_time_rule_sheet.dart';
-import '../data/today_mission_store.dart';
 import '../models/today_mission.dart';
 import '../widgets/mission_top_bar.dart';
 
@@ -36,6 +37,7 @@ class TodayMissionCheckPage extends StatefulWidget {
     required this.missionIndex,
     required this.initialMission,
     this.initialTab = MissionCheckTab.info,
+    this.missionRepository,
   });
 
   final String? parentId;
@@ -43,6 +45,7 @@ class TodayMissionCheckPage extends StatefulWidget {
   final int? missionIndex;
   final TodayMission? initialMission;
   final MissionCheckTab initialTab;
+  final MissionRepository? missionRepository;
 
   @override
   State<TodayMissionCheckPage> createState() => _TodayMissionCheckPageState();
@@ -52,8 +55,16 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
   static const double _horizontalPadding = 24;
   static const String _fallbackSubmittedAt = '2025.1.21 오후 7:01';
 
+  late final MissionRepository _missionRepository;
   late TodayMission? _mission = widget.initialMission;
   late int _selectedTabIndex = widget.initialTab.index;
+  bool _isUpdatingVerification = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _missionRepository = widget.missionRepository ?? createMissionRepository();
+  }
 
   void _handleBack() {
     final GoRouter router = GoRouter.of(context);
@@ -67,12 +78,14 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
   Future<void> _updateVerificationStatus(
     MissionVerificationStatus verificationStatus,
   ) async {
+    if (_isUpdatingVerification) {
+      return;
+    }
     final TodayMission? mission = _mission;
     final int? missionIndex = widget.missionIndex;
     final String? parentId = widget.parentId;
     final String? childrenId = widget.childrenId;
     if (mission == null ||
-        missionIndex == null ||
         parentId == null ||
         parentId.isEmpty ||
         childrenId == null ||
@@ -80,22 +93,67 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
       return;
     }
 
+    setState(() {
+      _isUpdatingVerification = true;
+    });
+
     final TodayMission updatedMission = mission.copyWith(
       verificationStatus: verificationStatus,
       submittedAtText: mission.submittedAtText ?? _fallbackSubmittedAt,
     );
-    await TodayMissionStore.updateAt(
-      parentId: parentId,
-      childrenId: childrenId,
-      index: missionIndex,
-      mission: updatedMission,
-    );
+    late final Result<void> result;
+    // Use dedicated approve/reject endpoints when the status transition is a
+    // verdict; fall back to a generic updateAt for the in-progress states
+    // (idle / waiting*).
+    switch (verificationStatus) {
+      case MissionVerificationStatus.approved:
+        result = await _approveMission(
+          parentId: parentId,
+          childrenId: childrenId,
+          mission: mission,
+          missionIndex: missionIndex,
+        );
+      case MissionVerificationStatus.rejected:
+        result = await _rejectMission(
+          parentId: parentId,
+          childrenId: childrenId,
+          mission: mission,
+          missionIndex: missionIndex,
+        );
+      case MissionVerificationStatus.idle:
+      case MissionVerificationStatus.waitingParentApproval:
+      case MissionVerificationStatus.waitingAiVerification:
+        if (missionIndex == null) {
+          result = Result<void>.failure(MissionFailureMessages.invalidState);
+        } else {
+          result = await _missionRepository.updateMissionAt(
+            parentId: parentId,
+            childrenId: childrenId,
+            index: missionIndex,
+            mission: updatedMission,
+          );
+        }
+    }
     if (!mounted) {
       return;
     }
-    setState(() {
-      _mission = updatedMission;
-    });
+
+    switch (result) {
+      case Success<void>():
+        setState(() {
+          _mission = updatedMission;
+          _isUpdatingVerification = false;
+        });
+      case Failure<void>(:final message):
+        setState(() {
+          _isUpdatingVerification = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -113,7 +171,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
     final bool isInfoTab = _selectedTabIndex == 0;
 
     return Scaffold(
-      backgroundColor: AppColors.gray100,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -124,6 +182,7 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
                 : Column(
                     children: [
                       MissionTopBar(title: mission.title, onBack: _handleBack),
+                      const SizedBox(height: 16),
                       _MissionCheckTabs(
                         selectedIndex: _selectedTabIndex,
                         onSelected: (int index) {
@@ -152,6 +211,58 @@ class _TodayMissionCheckPageState extends State<TodayMissionCheckPage> {
       ),
     );
   }
+
+  Future<Result<void>> _approveMission({
+    required String parentId,
+    required String childrenId,
+    required TodayMission mission,
+    required int? missionIndex,
+  }) {
+    final String? performanceId = mission.performanceId;
+    if (performanceId != null && performanceId.isNotEmpty) {
+      return _missionRepository.approveMissionPerformance(
+        parentId: parentId,
+        childrenId: childrenId,
+        performanceId: performanceId,
+      );
+    }
+    if (missionIndex == null) {
+      return Future<Result<void>>.value(
+        Result<void>.failure(MissionFailureMessages.invalidState),
+      );
+    }
+    return _missionRepository.approveMissionAt(
+      parentId: parentId,
+      childrenId: childrenId,
+      index: missionIndex,
+    );
+  }
+
+  Future<Result<void>> _rejectMission({
+    required String parentId,
+    required String childrenId,
+    required TodayMission mission,
+    required int? missionIndex,
+  }) {
+    final String? performanceId = mission.performanceId;
+    if (performanceId != null && performanceId.isNotEmpty) {
+      return _missionRepository.rejectMissionPerformance(
+        parentId: parentId,
+        childrenId: childrenId,
+        performanceId: performanceId,
+      );
+    }
+    if (missionIndex == null) {
+      return Future<Result<void>>.value(
+        Result<void>.failure(MissionFailureMessages.invalidState),
+      );
+    }
+    return _missionRepository.rejectMissionAt(
+      parentId: parentId,
+      childrenId: childrenId,
+      index: missionIndex,
+    );
+  }
 }
 
 class _MissingMissionView extends StatelessWidget {
@@ -169,9 +280,6 @@ class _MissingMissionView extends StatelessWidget {
             child: Text(
               '미션을 찾을 수 없습니다.',
               style: AppTypography.bodyMedium.copyWith(
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0,
                 color: AppColors.gray300,
               ),
             ),
@@ -233,36 +341,33 @@ class _MissionCheckTab extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: feedbackColor.withValues(alpha: 0.06),
         highlightColor: feedbackColor.withValues(alpha: 0.10),
         splashColor: feedbackColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 7.193,
-            vertical: 5.394,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
                 color: selected ? AppColors.black : Colors.transparent,
-                width: 1.259,
+                width: 1.4,
               ),
             ),
           ),
           child: Text(
             label,
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14.385,
-              height: 1.5,
-              letterSpacing: 0.082,
-              color: selected ? AppColors.black : AppColors.gray400,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
+            style:
+                (selected
+                        ? AppTypography.bodySemiBold
+                        : AppTypography.bodyMedium)
+                    .copyWith(
+                      color: selected ? AppColors.black : AppColors.gray400,
+                    ),
           ),
         ),
       ),
@@ -294,7 +399,7 @@ class _MissionInfoContent extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     _contentHorizontalPadding,
-                    18,
+                    34,
                     _contentHorizontalPadding,
                     0,
                   ),
@@ -302,11 +407,12 @@ class _MissionInfoContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _SectionTitle('카테고리'),
-                      const SizedBox(height: 18),
-                      _ReadOnlyEvenSelectionRow<MissionCategory>(
-                        values: MissionCategory.values,
+                      const SizedBox(height: 14),
+                      _ReadOnlySelectionGrid<MissionCategory>(
+                        values: missionCreateCategoryOptions,
                         selectedValue: mission.category,
                         spacing: 8,
+                        columns: 4,
                         labelOf: (MissionCategory value) => value.label,
                       ),
                     ],
@@ -326,7 +432,7 @@ class _MissionInfoContent extends StatelessWidget {
                         values: MissionResetPeriod.values,
                         selectedValue: mission.resetPeriod,
                         widths: const <double>[74, 88, 74],
-                        spacing: 14,
+                        spacing: 8,
                         labelOf: (MissionResetPeriod value) => value.label,
                       ),
                     ],
@@ -341,11 +447,11 @@ class _MissionInfoContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _SectionTitle('확인방식'),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _ReadOnlyEvenSelectionRow<MissionConfirmationMethod>(
                         values: MissionConfirmationMethod.values,
                         selectedValue: mission.confirmationMethod,
-                        spacing: 14,
+                        spacing: 8,
                         labelOf: (MissionConfirmationMethod value) =>
                             value.label,
                       ),
@@ -371,7 +477,7 @@ class _MissionInfoContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _SectionTitle('상세설명'),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       _ReadOnlyMissionDescriptionField(
                         description: mission.description,
                       ),
@@ -414,6 +520,56 @@ class _ReadOnlyEvenSelectionRow<T> extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ReadOnlySelectionGrid<T> extends StatelessWidget {
+  const _ReadOnlySelectionGrid({
+    required this.values,
+    required this.selectedValue,
+    required this.spacing,
+    required this.columns,
+    required this.labelOf,
+  });
+
+  final List<T> values;
+  final T selectedValue;
+  final double spacing;
+  final int columns;
+  final String Function(T value) labelOf;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int effectiveColumns = values.length < columns
+            ? values.length
+            : columns;
+        final double gridWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final double itemWidth =
+            (gridWidth - spacing * (effectiveColumns - 1)) / effectiveColumns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: <Widget>[
+            for (final T value in values)
+              SizedBox(
+                width: itemWidth,
+                child: _ReadOnlyOptionChip(
+                  label: labelOf(value),
+                  selected: value == selectedValue,
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -466,19 +622,18 @@ class _ReadOnlyOptionChip extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: selected ? AppColors.primary : AppColors.gray050,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
         border: Border.all(
           color: selected ? AppColors.primary : AppColors.gray200,
         ),
       ),
       child: Text(
         label,
-        style: AppTypography.headlineMedium.copyWith(
-          fontSize: 16,
-          height: 1.445,
-          letterSpacing: 0,
-          color: selected ? AppColors.white : AppColors.gray600,
-        ),
+        style:
+            (selected ? AppTypography.bodySemiBold : AppTypography.bodyMedium)
+                .copyWith(
+                  color: selected ? AppColors.white : AppColors.gray600,
+                ),
         maxLines: 1,
         overflow: TextOverflow.visible,
       ),
@@ -497,9 +652,7 @@ class _ReadOnlyRewardTimeRow extends StatelessWidget {
       hour: minutes ~/ 60,
       minute: minutes % 60,
     );
-    final Color numberColor = time.isEmpty
-        ? AppColors.gray300
-        : AppColors.gray800;
+    final Color numberColor = AppColors.primary;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -507,14 +660,16 @@ class _ReadOnlyRewardTimeRow extends StatelessWidget {
       children: [
         const _SectionTitle('지급시간'),
         Container(
-          height: TimeSetupSize.fieldHeight,
-          width: 192,
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(TimeSetupRadius.field),
+            color: AppColors.gray050,
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
             border: Border.all(color: AppColors.gray200),
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TimeSelectorPart(
@@ -523,7 +678,7 @@ class _ReadOnlyRewardTimeRow extends StatelessWidget {
                 color: numberColor,
                 selected: !time.isEmpty,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 16),
               TimeSelectorPart(
                 value: time.minuteText,
                 label: '분',
@@ -546,23 +701,18 @@ class _ReadOnlyMissionDescriptionField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 214,
+      height: 198,
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       alignment: Alignment.topLeft,
       decoration: BoxDecoration(
-        color: AppColors.gray100,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.gray050,
+        borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
         border: Border.all(color: AppColors.gray200),
       ),
       child: Text(
         description,
-        style: AppTypography.labelRegular.copyWith(
-          fontSize: 16,
-          height: 1.625,
-          letterSpacing: 0,
-          color: AppColors.gray700,
-        ),
+        style: AppTypography.bodyRegular.copyWith(color: AppColors.gray700),
       ),
     );
   }
@@ -575,9 +725,9 @@ class _SectionDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 6,
-      margin: const EdgeInsets.symmetric(vertical: 26),
-      color: const Color(0xFFEDEEF1),
+      height: 7,
+      margin: const EdgeInsets.symmetric(vertical: 24),
+      color: AppColors.gray100,
     );
   }
 }
@@ -591,12 +741,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: AppTypography.headlineBold.copyWith(
-        fontSize: 16,
-        height: 1.445,
-        letterSpacing: 0,
-        color: AppColors.gray800,
-      ),
+      style: AppTypography.headlineSemiBold.copyWith(color: AppColors.gray800),
     );
   }
 }
@@ -623,12 +768,7 @@ class _MissionReviewContent extends StatelessWidget {
         child: Text(
           '미션이 아직 수행되지 않았어요.',
           textAlign: TextAlign.center,
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16.183,
-            height: 1.445,
-            letterSpacing: -0.0032,
-            color: AppColors.gray300,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.gray300),
         ),
       );
     }
@@ -637,9 +777,7 @@ class _MissionReviewContent extends StatelessWidget {
         verificationType == MissionVerificationType.parent &&
         verificationStatus == MissionVerificationStatus.waitingParentApproval;
     final bool showRejectButton =
-        verificationStatus == MissionVerificationStatus.waitingParentApproval ||
-        (verificationStatus == MissionVerificationStatus.approved &&
-            verificationType != MissionVerificationType.parent);
+        verificationStatus == MissionVerificationStatus.waitingParentApproval;
     final bool showActionButtons = showApproveButton || showRejectButton;
     final bool showAiLoading =
         verificationStatus == MissionVerificationStatus.waitingAiVerification;
@@ -658,11 +796,8 @@ class _MissionReviewContent extends StatelessWidget {
       MissionVerificationStatus.approved =>
         verificationType == MissionVerificationType.parent
             ? '부모 승인이 완료되어 보상 시간이 지급되었습니다.'
-            : '보상 시간이 지급되었습니다.\n필요하면 사후 반려할 수 있어요.',
-      MissionVerificationStatus.rejected =>
-        verificationType == MissionVerificationType.parent
-            ? '반려가 완료되었습니다.\n보상 시간은 지급되지 않았어요.'
-            : '반려가 완료되었습니다.\n지급된 시간은 회수 대상입니다.',
+            : '보상 시간이 지급되었습니다.',
+      MissionVerificationStatus.rejected => '반려가 완료되었습니다.\n보상 시간은 지급되지 않았어요.',
       MissionVerificationStatus.idle => '',
     };
     final String submittedAt =
@@ -684,21 +819,15 @@ class _MissionReviewContent extends StatelessWidget {
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: AppTypography.headlineBold.copyWith(
-                    fontSize: 18,
-                    height: 1.4,
-                    letterSpacing: -0.2158,
-                    color: const Color(0xFF050505),
+                  style: AppTypography.headlineSemiBold.copyWith(
+                    color: AppColors.inkBlack,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontSize: 14,
-                    height: 1.5,
-                    letterSpacing: 0,
+                  style: AppTypography.labelMedium.copyWith(
                     color: AppColors.gray500,
                   ),
                 ),
@@ -714,16 +843,13 @@ class _MissionReviewContent extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 36),
-                const _ProofPhotoGrid(),
+                _ProofPhotoGrid(proofImageUrl: mission.proofImageUrl),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     '$submittedAt 수행 제출\n$submittedAt 확인 요청',
                     style: AppTypography.captionMedium.copyWith(
-                      fontSize: 10.789,
-                      height: 1.334,
-                      letterSpacing: 0.2719,
                       color: AppColors.gray300,
                     ),
                   ),
@@ -764,19 +890,46 @@ class _MissionReviewContent extends StatelessWidget {
 }
 
 class _ProofPhotoGrid extends StatelessWidget {
-  const _ProofPhotoGrid();
+  const _ProofPhotoGrid({this.proofImageUrl});
+
+  final String? proofImageUrl;
 
   @override
   Widget build(BuildContext context) {
+    final String? imageUrl = proofImageUrl;
     return Wrap(
-      spacing: 10.789,
-      runSpacing: 10.789,
-      children: const [
-        _ProofPhotoPlaceholder(),
-        _ProofPhotoPlaceholder(),
-        _ProofPhotoPlaceholder(),
-        _ProofPhotoPlaceholder(),
+      spacing: 11,
+      runSpacing: 11,
+      children: [
+        if (imageUrl != null && imageUrl.isNotEmpty)
+          _ProofPhotoImage(imageUrl: imageUrl)
+        else
+          const _ProofPhotoPlaceholder(),
+        const _ProofPhotoPlaceholder(),
+        const _ProofPhotoPlaceholder(),
+        const _ProofPhotoPlaceholder(),
       ],
+    );
+  }
+}
+
+class _ProofPhotoImage extends StatelessWidget {
+  const _ProofPhotoImage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+      child: Image.network(
+        imageUrl,
+        width: 141,
+        height: 140,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            const _ProofPhotoPlaceholder(),
+      ),
     );
   }
 }
@@ -787,11 +940,11 @@ class _ProofPhotoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 141.155,
-      height: 140.256,
+      width: 141,
+      height: 140,
       decoration: BoxDecoration(
         color: AppColors.gray200,
-        borderRadius: BorderRadius.circular(7.193),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       ),
     );
   }
@@ -818,7 +971,7 @@ class _ReviewActionButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: filled ? AppColors.primary : AppColors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
           border: Border.all(
             color: filled ? AppColors.primary : AppColors.destructive,
           ),
@@ -826,9 +979,6 @@ class _ReviewActionButton extends StatelessWidget {
         child: Text(
           label,
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: 0,
             color: filled ? AppColors.white : AppColors.destructive,
           ),
         ),

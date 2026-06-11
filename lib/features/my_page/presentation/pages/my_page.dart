@@ -4,8 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
+import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/parent_profile/parent_profile.dart';
+import '../../../../data/repositories/auth_repository.dart';
+import '../../../../data/repositories/parent_profile_repository.dart';
 import '../../../common/presentation/widgets/confirmation_dialog.dart';
 
 class MyPage extends StatefulWidget {
@@ -16,6 +22,10 @@ class MyPage extends StatefulWidget {
 }
 
 class _MyPageState extends State<MyPage> {
+  final ParentProfileRepository _profileRepository =
+      createParentProfileRepository();
+  final AuthRepository _authRepository = createAuthRepository();
+
   String _name = AuthSession.fallbackName;
   String _email = '';
 
@@ -27,15 +37,32 @@ class _MyPageState extends State<MyPage> {
 
   Future<void> _loadUsername() async {
     final String? parentId = await AuthSession.getCurrentParentId();
-    final ParentAccount? account = parentId == null
-        ? null
-        : await AccountStore.getAccountById(parentId);
+    final String? sessionEmail = await AuthSession.getCurrentEmail();
+    ParentProfile? profile;
+    ParentAccount? localAccount;
+    if (parentId != null && parentId.isNotEmpty) {
+      final Result<ParentProfile> result = await _profileRepository.getProfile(
+        parentId,
+      );
+      profile = switch (result) {
+        Success<ParentProfile>(:final data) => data,
+        Failure<ParentProfile>() => null,
+      };
+      if (profile == null) {
+        localAccount = await AccountStore.getAccountById(parentId);
+      }
+    }
+    if (localAccount == null &&
+        sessionEmail != null &&
+        sessionEmail.isNotEmpty) {
+      localAccount = await AccountStore.getAccountByEmail(sessionEmail);
+    }
     if (!mounted) {
       return;
     }
     setState(() {
-      _name = account?.name ?? AuthSession.fallbackName;
-      _email = account?.email ?? '';
+      _name = profile?.name ?? localAccount?.name ?? AuthSession.fallbackName;
+      _email = profile?.email ?? localAccount?.email ?? sessionEmail ?? '';
     });
   }
 
@@ -60,6 +87,13 @@ class _MyPageState extends State<MyPage> {
       onConfirm: () async {
         final GoRouter router = GoRouter.of(context);
         context.pop();
+        // Release the device from the server first so the user doesn't
+        // keep receiving pushes after logout; failures are swallowed
+        // inside DeviceRegistration so the auth happy path still runs.
+        await DeviceRegistration.unregisterCurrent();
+        final String? refresh = await AuthSession.refreshToken();
+        await _authRepository.logout(refreshToken: refresh);
+        await AuthSession.clearTokens();
         await AuthSession.logout();
         if (!mounted) {
           return;
@@ -163,25 +197,21 @@ class _MyPageActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: backgroundColor,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: foregroundColor.withValues(alpha: 0.08),
         highlightColor: foregroundColor.withValues(alpha: 0.12),
         splashColor: foregroundColor.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: SizedBox(
           width: width,
           height: 37,
           child: Center(
             child: Text(
               label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: foregroundColor,
-                height: 1.5,
-                letterSpacing: 0.091,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: foregroundColor),
             ),
           ),
         ),
@@ -232,10 +262,7 @@ class _MyPageTopBar extends StatelessWidget {
             child: Text(
               '마이페이지',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 16.18,
-                height: 1.445,
-                letterSpacing: -0.0032,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -262,8 +289,6 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: AppTypography.bodyMedium.copyWith(
-                height: 1.5,
-                letterSpacing: 0.082,
                 color: AppColors.gray600,
               ),
             ),
@@ -276,9 +301,7 @@ class _InfoRow extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyMedium.copyWith(
-                height: 1.5,
-                letterSpacing: 0.082,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -301,23 +324,19 @@ class _PasswordRow extends StatelessWidget {
         children: [
           Text(
             '비밀번호',
-            style: AppTypography.bodyMedium.copyWith(
-              height: 1.5,
-              letterSpacing: 0.082,
-              color: AppColors.gray600,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.gray600),
           ),
           const SizedBox(width: 13),
           Material(
-            color: const Color(0xFFEDEEF1),
-            borderRadius: BorderRadius.circular(8),
+            color: AppColors.gray150,
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: onEditTap,
               hoverColor: AppColors.gray600.withValues(alpha: 0.08),
               highlightColor: AppColors.gray600.withValues(alpha: 0.12),
               splashColor: AppColors.gray600.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
               child: Container(
                 height: 37,
                 padding: const EdgeInsets.symmetric(horizontal: 13),
@@ -325,8 +344,6 @@ class _PasswordRow extends StatelessWidget {
                 child: Text(
                   '수정하기',
                   style: AppTypography.bodyMedium.copyWith(
-                    height: 1.5,
-                    letterSpacing: 0.082,
                     color: AppColors.gray600,
                   ),
                 ),

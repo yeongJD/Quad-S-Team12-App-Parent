@@ -12,17 +12,23 @@ abstract final class AppColors {
   static const Color gray400 = Color(0xFF91969E);
   static const Color gray300 = Color(0xFFA7ACB2);
   static const Color gray200 = Color(0xFFD5D8DE);
+  static const Color gray150 = Color(0xFFEDEEF1);
   static const Color gray100 = Color(0xFFF5F7FA);
   static const Color gray050 = Color(0xFFFAFBFC);
 
   static const Color primary = Color(0xFF3A99F8);
+  static const Color primaryLight = Color(0xFFEBF5FE);
   static const Color positive = Color(0xFF00BF40);
   static const Color cautionary = Color(0xFFFF9200);
   static const Color destructive = Color(0xFFFF4242);
+  static const Color destructiveSubtle = Color(0xFFFFD3D3);
+  static const Color secondaryYellow = Color(0xFFFFCC33);
 
   static const Color labelStrong = black;
   static const Color labelNormal = Color(0xFF171719);
+  static const Color inkBlack = Color(0xFF050505);
   static const Color lineNormalNeutral = Color(0x2970737C);
+  static const Color scrim = Color(0x99444444);
 
   static const Color background = gray050;
   static const Color surface = white;

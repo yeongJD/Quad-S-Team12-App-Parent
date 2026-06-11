@@ -35,7 +35,6 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => LoginPage(
-        initialName: state.uri.queryParameters['name'],
         initialEmail: state.uri.queryParameters['email'],
         showExistingAccountNotice:
             state.uri.queryParameters['notice'] == 'existing-account',
@@ -163,6 +162,12 @@ final GoRouter appRouter = GoRouter(
         parentId: state.uri.queryParameters['parentId'],
         childrenId: state.uri.queryParameters['childrenId'],
         demo: state.uri.queryParameters['demo'],
+        initialMissionId: state.uri.queryParameters['missionId'],
+        initialPerformanceId: state.uri.queryParameters['performanceId'],
+        initialMissionIndex: _parseOptionalInt(
+          state.uri.queryParameters['missionIndex'],
+        ),
+        initialTab: _parseMissionCheckTab(state.uri.queryParameters['tab']),
       ),
     ),
     GoRoute(
@@ -206,6 +211,19 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+
+int? _parseOptionalInt(String? value) {
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  return int.tryParse(value);
+}
+
+MissionCheckTab _parseMissionCheckTab(String? value) {
+  return value == MissionCheckTab.review.name
+      ? MissionCheckTab.review
+      : MissionCheckTab.info;
+}
 
 WhitelistSetupPage _buildWhitelistSetupPage(
   BuildContext context,

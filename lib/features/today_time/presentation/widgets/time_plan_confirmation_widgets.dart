@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../models/daily_time_rule.dart';
 import '../styles/time_setup_tokens.dart';
@@ -18,10 +19,7 @@ class TimePlanSectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: AppTypography.heading2Bold.copyWith(
-              fontSize: 18,
-              height: 1.4,
-              letterSpacing: -0.216,
+            style: AppTypography.headlineSemiBold.copyWith(
               color: AppColors.gray800,
             ),
           ),
@@ -44,8 +42,8 @@ class TimeAmountBox extends StatelessWidget {
       width: double.infinity,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10.789),
-        border: Border.all(color: AppColors.gray200, width: 1.8),
+        borderRadius: BorderRadius.circular(TimeSetupRadius.field),
+        border: Border.all(color: AppColors.gray200),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -59,8 +57,8 @@ class TimeAmountText extends StatelessWidget {
   const TimeAmountText({
     super.key,
     required this.time,
-    this.valueColor = const Color(0xFF050505),
-    this.textColor = const Color(0xFF050505),
+    this.valueColor = AppColors.inkBlack,
+    this.textColor = AppColors.inkBlack,
   });
 
   final TimeSelection time;
@@ -69,16 +67,10 @@ class TimeAmountText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextStyle valueStyle = AppTypography.headlineBold.copyWith(
-      fontSize: 16.183,
-      height: 1.445,
-      letterSpacing: -0.0032,
+    final TextStyle valueStyle = AppTypography.bodySemiBold.copyWith(
       color: valueColor,
     );
-    final TextStyle labelStyle = AppTypography.headlineRegular.copyWith(
-      fontSize: 16.183,
-      height: 1.445,
-      letterSpacing: -0.0032,
+    final TextStyle labelStyle = AppTypography.bodyRegular.copyWith(
       color: textColor,
     );
 
@@ -86,11 +78,11 @@ class TimeAmountText extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('${time.hour}', style: valueStyle),
-        const SizedBox(width: 8.99),
+        const SizedBox(width: 9),
         Text('시간', style: labelStyle),
-        const SizedBox(width: 22.48),
+        const SizedBox(width: 22),
         Text(time.minuteText, style: valueStyle),
-        const SizedBox(width: 8.99),
+        const SizedBox(width: 9),
         Text('분', style: labelStyle),
       ],
     );
@@ -106,18 +98,18 @@ class EditTimeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: TimeSetupPalette.tipBackground,
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.primary.withValues(alpha: 0.08),
         highlightColor: AppColors.primary.withValues(alpha: 0.12),
         splashColor: AppColors.primary.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: SizedBox(
           height: 28,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -126,13 +118,10 @@ class EditTimeButton extends StatelessWidget {
                   size: 17,
                   color: AppColors.primary,
                 ),
-                const SizedBox(width: 6.3),
+                const SizedBox(width: 6),
                 Text(
                   '수정하기',
                   style: AppTypography.labelMedium.copyWith(
-                    fontSize: 12.59,
-                    height: 1.429,
-                    letterSpacing: 0.183,
                     color: AppColors.primary,
                   ),
                 ),
@@ -162,22 +151,17 @@ class RevisionToggle extends StatelessWidget {
       children: [
         Text(
           '수정허용',
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 12.587,
-            height: 1.429,
-            letterSpacing: 0.183,
-            color: AppColors.gray300,
-          ),
+          style: AppTypography.labelMedium.copyWith(color: AppColors.gray300),
         ),
-        const SizedBox(width: 4.5),
+        const SizedBox(width: 6),
         GestureDetector(
           onTap: () => onChanged(!value),
           behavior: HitTestBehavior.opaque,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            width: 40.46,
-            height: 25.17,
-            padding: const EdgeInsets.all(3.6),
+            width: 40,
+            height: 24,
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: value ? AppColors.primary : AppColors.gray200,
               borderRadius: BorderRadius.circular(200),
@@ -187,8 +171,8 @@ class RevisionToggle extends StatelessWidget {
               curve: Curves.easeOutCubic,
               alignment: value ? Alignment.centerRight : Alignment.centerLeft,
               child: Container(
-                width: 17.98,
-                height: 17.98,
+                width: 18,
+                height: 18,
                 decoration: const BoxDecoration(
                   color: AppColors.white,
                   shape: BoxShape.circle,
@@ -213,12 +197,7 @@ class DailyPlanRuleList extends StatelessWidget {
       return Text(
         '자녀가 아직 이번주의 사용 계획을 설정하지 않았어요.',
         textAlign: TextAlign.center,
-        style: AppTypography.bodyMedium.copyWith(
-          fontSize: 16.183,
-          height: 1.445,
-          letterSpacing: -0.0032,
-          color: AppColors.gray300,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.gray300),
       );
     }
 
@@ -226,7 +205,7 @@ class DailyPlanRuleList extends StatelessWidget {
       children: rules
           .map(
             (DailyTimeRule rule) => Padding(
-              padding: const EdgeInsets.only(bottom: 13.486),
+              padding: const EdgeInsets.only(bottom: 14),
               child: DailyPlanRuleCard(rule: rule),
             ),
           )
@@ -242,28 +221,25 @@ class DailyPlanRuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextStyle textStyle = AppTypography.headlineBold.copyWith(
-      fontSize: 16.183,
-      height: 1.445,
-      letterSpacing: -0.0032,
+    final TextStyle textStyle = AppTypography.bodySemiBold.copyWith(
       color: AppColors.gray800,
     );
 
     return Container(
       width: double.infinity,
-      height: 67.43,
-      padding: const EdgeInsets.symmetric(horizontal: 16.183, vertical: 13.486),
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14.385),
+        borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
       ),
       child: Row(
         children: [
           Text(rule.dayText, style: textStyle),
           Container(
             width: 1,
-            height: 19.78,
-            margin: const EdgeInsets.symmetric(horizontal: 17.982),
+            height: 20,
+            margin: const EdgeInsets.symmetric(horizontal: 18),
             color: AppColors.gray200,
           ),
           Expanded(

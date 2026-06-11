@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/date/week_label.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 
 class WeeklyUsageReportPage extends StatelessWidget {
@@ -19,7 +20,7 @@ class WeeklyUsageReportPage extends StatelessWidget {
     final String weekLabel = currentMonthWeekLabel();
 
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -78,12 +79,12 @@ class _ReportTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 62,
+      height: AppTokens.topBarHeight,
       child: Stack(
         children: [
           Positioned(
-            left: 16,
-            top: 17,
+            left: 20,
+            top: 14,
             child: Material(
               color: Colors.transparent,
               shape: const CircleBorder(),
@@ -95,13 +96,13 @@ class _ReportTopBar extends StatelessWidget {
                 splashColor: AppColors.gray800.withValues(alpha: 0.12),
                 customBorder: const CircleBorder(),
                 child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: Center(
+                  width: 24,
+                  height: 24,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2),
                     child: SvgPicture.asset(
                       'assets/icons/cmp/btn/back.svg',
-                      width: 20,
-                      height: 20,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -112,10 +113,7 @@ class _ReportTopBar extends StatelessWidget {
             child: Text(
               '사용 리포트',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 16.18,
-                height: 1.445,
-                letterSpacing: 0,
-                color: AppColors.gray900,
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -138,7 +136,7 @@ class _ReportCard extends StatelessWidget {
       padding: padding ?? const EdgeInsets.fromLTRB(20, 20, 20, 20),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
         boxShadow: const [
           BoxShadow(
             color: Color.fromRGBO(0, 0, 0, 0.08),
@@ -173,9 +171,6 @@ class _HeroReportCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: AppTypography.labelMedium.copyWith(
-                      fontSize: 14,
-                      height: 1.43,
-                      letterSpacing: 0,
                       color: AppColors.gray300,
                     ),
                   ),
@@ -183,9 +178,6 @@ class _HeroReportCard extends StatelessWidget {
                   Text(
                     title,
                     style: AppTypography.heading2Bold.copyWith(
-                      fontSize: 20,
-                      height: 1.4,
-                      letterSpacing: 0,
                       color: AppColors.primary,
                     ),
                   ),
@@ -194,15 +186,14 @@ class _HeroReportCard extends StatelessWidget {
                     width: 282,
                     padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDCEEFF),
-                      borderRadius: BorderRadius.circular(16),
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.cardRadiusSmall,
+                      ),
                     ),
                     child: Text(
                       '기존 계획을 확인하고,\n계획대로 사용했는지,\n계획대로 사용하지 못했다면 그 이유는 무엇인지,\n어떻게 조정하는 것이 좋을지 자녀와 함께 확인해요',
                       style: AppTypography.captionMedium.copyWith(
-                        fontSize: 12,
-                        height: 1.35,
-                        letterSpacing: 0,
                         color: AppColors.gray600,
                       ),
                     ),
@@ -252,20 +243,12 @@ class _WeeklyPlanCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14,
-              height: 1.43,
-              letterSpacing: 0,
-              color: AppColors.gray300,
-            ),
+            style: AppTypography.labelMedium.copyWith(color: AppColors.gray300),
           ),
           const SizedBox(height: 2),
           Text(
             total,
             style: AppTypography.headlineBold.copyWith(
-              fontSize: 20,
-              height: 1.35,
-              letterSpacing: 0,
               color: AppColors.gray900,
             ),
           ),
@@ -301,9 +284,6 @@ class _UsageAnalysisCard extends StatelessWidget {
           Text(
             '이번주 사용 분석',
             style: AppTypography.headlineBold.copyWith(
-              fontSize: 20,
-              height: 1.35,
-              letterSpacing: 0,
               color: AppColors.gray900,
             ),
           ),
@@ -311,9 +291,6 @@ class _UsageAnalysisCard extends StatelessWidget {
           Text(
             '화·토·일에 계획보다 많이 사용했어요.\n월·금에는 계획보다 적게 사용하는 날이 많았어요.',
             style: AppTypography.captionMedium.copyWith(
-              fontSize: 12,
-              height: 1.35,
-              letterSpacing: 0,
               color: AppColors.gray300,
             ),
           ),
@@ -342,9 +319,6 @@ class _PlanAchievementCard extends StatelessWidget {
           Text(
             '계획 이행률 50%',
             style: AppTypography.headlineBold.copyWith(
-              fontSize: 20,
-              height: 1.35,
-              letterSpacing: 0,
               color: AppColors.gray900,
             ),
           ),
@@ -383,20 +357,12 @@ class _AiSuggestionCard extends StatelessWidget {
         children: [
           Text(
             '다음주는 이렇게 조정해봐요',
-            style: AppTypography.labelMedium.copyWith(
-              fontSize: 14,
-              height: 1.43,
-              letterSpacing: 0,
-              color: AppColors.gray300,
-            ),
+            style: AppTypography.labelMedium.copyWith(color: AppColors.gray300),
           ),
           const SizedBox(height: 2),
           Text(
             'AI 조정 제안',
             style: AppTypography.headlineBold.copyWith(
-              fontSize: 20,
-              height: 1.35,
-              letterSpacing: 0,
               color: AppColors.gray900,
             ),
           ),
@@ -484,7 +450,7 @@ class _SoftRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.gray100,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
       ),
       child: Center(child: child),
     );
@@ -514,15 +480,9 @@ class _TimeAmount extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextStyle numberStyle = AppTypography.headlineBold.copyWith(
-      fontSize: 18,
-      height: 1.445,
-      letterSpacing: 0,
       color: AppColors.gray800,
     );
     final TextStyle labelStyle = AppTypography.headlineMedium.copyWith(
-      fontSize: 18,
-      height: 1.445,
-      letterSpacing: 0,
       color: AppColors.gray800,
     );
 
@@ -550,7 +510,7 @@ class _DeltaBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = switch (status) {
-      _UsageStatus.under => const Color(0xFF00BF40),
+      _UsageStatus.under => AppColors.positive,
       _UsageStatus.over => AppColors.destructive,
       _UsageStatus.same => AppColors.gray400,
     };

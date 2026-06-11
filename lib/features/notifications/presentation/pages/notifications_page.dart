@@ -3,23 +3,47 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
-import '../../../../core/child/child_connection_store.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/child/child_summary.dart';
+import '../../../../data/repositories/child_repository.dart';
+import '../../../../data/repositories/mission_repository.dart';
+import '../../../../data/repositories/notification_repository.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
-import '../data/notification_store.dart';
 import '../models/notification_item.dart';
+import '../models/notification_mission_target.dart';
+import '../models/notification_target_route.dart';
 import '../widgets/notification_card.dart';
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
+  const NotificationsPage({
+    super.key,
+    NotificationRepository? notificationRepository,
+    ChildRepository? childRepository,
+    MissionRepository? missionRepository,
+  }) : _notificationRepository = notificationRepository,
+       _childRepository = childRepository,
+       _missionRepository = missionRepository;
+
+  final NotificationRepository? _notificationRepository;
+  final ChildRepository? _childRepository;
+  final MissionRepository? _missionRepository;
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
+  late final NotificationRepository _notificationRepository =
+      widget._notificationRepository ?? createNotificationRepository();
+  late final ChildRepository _childRepository =
+      widget._childRepository ?? createChildRepository();
+  late final MissionRepository _missionRepository =
+      widget._missionRepository ?? createMissionRepository();
+
   List<NotificationItem> _notifications = <NotificationItem>[];
   bool _isLoading = true;
   bool _isPastNotificationsExpanded = false;
@@ -33,21 +57,56 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Future<void> _loadNotifications() async {
     final String? parentId = await AuthSession.getCurrentParentId();
-    final List<NotificationItem> notifications = await NotificationStore.load(
-      parentId,
-    );
+    if (parentId == null || parentId.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _parentId = parentId;
+        _notifications = <NotificationItem>[];
+        _isLoading = false;
+      });
+      return;
+    }
+    final Result<List<NotificationItem>> result = await _notificationRepository
+        .loadInbox(parentId);
     if (!mounted) {
       return;
     }
 
+    final List<NotificationItem> items = switch (result) {
+      Success<List<NotificationItem>>(:final data) => data,
+      Failure<List<NotificationItem>>() => const <NotificationItem>[],
+    };
     setState(() {
       _parentId = parentId;
-      _notifications = notifications;
+      _notifications = items;
       _isLoading = false;
     });
   }
 
   Future<void> _handleActionTap(NotificationItem item) async {
+    if (shouldOpenMissionDetailFromNotification(item)) {
+      final bool didOpen = await _openMissionNotification(item);
+      if (didOpen) {
+        await _markNotificationRead(item);
+        return;
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+
+    final String? targetRoute = parentNotificationTargetRoute(
+      item,
+      parentId: _parentId,
+    );
+    if (targetRoute != null) {
+      context.push(targetRoute);
+      await _markNotificationRead(item);
+      return;
+    }
+
     bool didOpen = false;
     switch (item.type) {
       case NotificationType.missionCompleted:
@@ -64,17 +123,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  Future<void> _markNotificationRead(NotificationItem item) async {
+  Future<bool> _markNotificationRead(NotificationItem item) async {
     final String? parentId = _parentId;
     if (parentId != null && parentId.isNotEmpty) {
-      await NotificationStore.markRead(
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      final Result<void> result = await _notificationRepository.markRead(
         parentId: parentId,
         notificationId: item.id,
       );
+      if (!mounted) {
+        return false;
+      }
+      switch (result) {
+        case Success<void>():
+          break;
+        case Failure<void>(:final String message):
+          messenger.showSnackBar(SnackBar(content: Text(message)));
+          return false;
+      }
     }
 
     if (!mounted) {
-      return;
+      return false;
     }
     setState(() {
       _notifications = _notifications
@@ -85,25 +155,69 @@ class _NotificationsPageState extends State<NotificationsPage> {
           )
           .toList(growable: false);
     });
+    return true;
   }
 
   Future<bool> _openMissionNotification(NotificationItem item) async {
-    final String parentId = _parentId?.isNotEmpty == true
-        ? _parentId!
-        : 'mock-parent';
+    final String? parentId = _parentId?.isNotEmpty == true ? _parentId! : null;
 
-    final ConnectedChild? child = await _childFromPayload(item);
+    final ChildSummary? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
+
+    if (parentId != null && child != null) {
+      final Result<List<TodayMission>> result = await _missionRepository
+          .loadMissions(parentId: parentId, childrenId: child.childrenId);
+      if (!mounted) {
+        return false;
+      }
+
+      if (result case Success<List<TodayMission>>(:final data)) {
+        final int? missionIndex = notificationMissionIndexForMissions(
+          data,
+          item,
+        );
+        if (missionIndex != null) {
+          context.push(
+            '/today-mission/check',
+            extra: TodayMissionCheckArgs(
+              parentId: parentId,
+              childrenId: child.childrenId,
+              index: missionIndex,
+              mission: data[missionIndex],
+              initialTab: MissionCheckTab.review,
+            ),
+          );
+          return true;
+        }
+      }
+
+      _showFallbackMessage();
+      context.push(
+        _missionListLocation(parentId: parentId, childrenId: child.childrenId),
+      );
+      return true;
+    }
+
+    if (parentId != null) {
+      final String? childRef = _childRefFromPayload(item);
+      _showFallbackMessage();
+      context.push(
+        _missionListLocation(parentId: parentId, childrenId: childRef),
+      );
+      return true;
+    }
+
+    final String fallbackParentId = 'mock-parent';
     final String childrenId =
         child?.childrenId ?? _childCodeFromPayload(item) ?? 'GDG12-1';
-    final int missionIndex = _missionIndexFromPayload(item) ?? 0;
+    final int missionIndex = notificationMissionIndex(item) ?? 0;
 
     context.push(
       '/today-mission/check',
       extra: TodayMissionCheckArgs(
-        parentId: parentId,
+        parentId: fallbackParentId,
         childrenId: childrenId,
         index: missionIndex,
         mission: _missionMockForNotification(item.type),
@@ -121,7 +235,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       return true;
     }
 
-    final ConnectedChild? child = await _childFromPayload(item);
+    final ChildSummary? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
@@ -149,7 +263,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       return true;
     }
 
-    final ConnectedChild? child = await _childFromPayload(item);
+    final ChildSummary? child = await _childFromPayload(item);
     if (!mounted) {
       return false;
     }
@@ -165,34 +279,39 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return true;
   }
 
-  Future<ConnectedChild?> _childFromPayload(NotificationItem item) async {
+  Future<ChildSummary?> _childFromPayload(NotificationItem item) async {
     final String? parentId = _parentId;
-    final Object? childCode = item.payload?['childCode'];
-    if (parentId == null || parentId.isEmpty || childCode is! String) {
+    final String? childRef = _childRefFromPayload(item);
+    if (parentId == null || parentId.isEmpty || childRef == null) {
       return null;
     }
 
-    final List<ConnectedChild> children =
-        await ChildConnectionStore.loadChildren(parentId);
-    for (final ConnectedChild child in children) {
-      if (child.childCode == childCode || child.childrenId == childCode) {
+    final Result<List<ChildSummary>> result = await _childRepository
+        .loadChildren(parentId);
+    final List<ChildSummary> children = switch (result) {
+      Success<List<ChildSummary>>(:final data) => data,
+      Failure<List<ChildSummary>>() => const <ChildSummary>[],
+    };
+    for (final ChildSummary child in children) {
+      if (child.childCode == childRef || child.childrenId == childRef) {
         return child;
       }
     }
     return null;
   }
 
-  int? _missionIndexFromPayload(NotificationItem item) {
-    final Object? missionIndex = item.payload?['missionIndex'];
-    if (missionIndex is int) {
-      return missionIndex;
-    }
-    return null;
+  String? _childCodeFromPayload(NotificationItem item) {
+    return _childRefFromPayload(item);
   }
 
-  String? _childCodeFromPayload(NotificationItem item) {
-    final Object? childCode = item.payload?['childCode'];
-    return childCode is String && childCode.isNotEmpty ? childCode : null;
+  String? _childRefFromPayload(NotificationItem item) {
+    for (final String key in <String>['childrenId', 'childId', 'childCode']) {
+      final Object? value = item.payload?[key];
+      if (value != null && value.toString().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return null;
   }
 
   TodayMission _missionMockForNotification(NotificationType type) {
@@ -261,6 +380,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
     ).toString();
   }
 
+  String _missionListLocation({required String parentId, String? childrenId}) {
+    return Uri(
+      path: '/today-mission',
+      queryParameters: <String, String>{
+        'parentId': parentId,
+        if (childrenId != null && childrenId.isNotEmpty)
+          'childrenId': childrenId,
+      },
+    ).toString();
+  }
+
   void _showFallbackMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('연결된 항목을 찾을 수 없어 목록으로 이동합니다.')),
@@ -273,7 +403,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       barrierDismissible: true,
       barrierLabel: 'notification-delete-dialog',
       barrierColor: const Color.fromRGBO(68, 68, 68, 0.6),
-      pageBuilder: (context, animation, secondaryAnimation) {
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return Material(
           type: MaterialType.transparency,
           child: SafeArea(
@@ -284,20 +414,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 21),
                   child: _DeleteNotificationDialog(
                     onConfirm: () async {
+                      final NavigatorState navigator = Navigator.of(
+                        dialogContext,
+                      );
+                      final ScaffoldMessengerState messenger =
+                          ScaffoldMessenger.of(context);
                       final String? parentId = _parentId;
+                      if (parentId != null && parentId.isNotEmpty) {
+                        final Result<void> result =
+                            await _notificationRepository.hide(
+                              parentId: parentId,
+                              notificationId: item.id,
+                            );
+                        if (!mounted) {
+                          return;
+                        }
+                        switch (result) {
+                          case Success<void>():
+                            break;
+                          case Failure<void>(:final String message):
+                            navigator.pop();
+                            messenger.showSnackBar(
+                              SnackBar(content: Text(message)),
+                            );
+                            return;
+                        }
+                      }
+                      if (!mounted) {
+                        return;
+                      }
                       setState(() {
                         _notifications.removeWhere(
                           (NotificationItem candidate) =>
                               candidate.id == item.id,
                         );
                       });
-                      context.pop();
-                      if (parentId != null && parentId.isNotEmpty) {
-                        await NotificationStore.hide(
-                          parentId: parentId,
-                          notificationId: item.id,
-                        );
-                      }
+                      navigator.pop();
                     },
                   ),
                 ),
@@ -356,9 +508,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             '확인하지 않은 알림이 없습니다.',
                             textAlign: TextAlign.center,
                             style: AppTypography.headlineMedium.copyWith(
-                              fontSize: 16.183,
-                              height: 1.445,
-                              letterSpacing: -0.0032,
                               color: AppColors.gray300,
                               decoration: TextDecoration.none,
                             ),
@@ -382,14 +531,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ) ...[
                               NotificationCard(
                                 item: activeNotifications[index],
-                                onTap: () {},
+                                onTap: () => _handleActionTap(
+                                  activeNotifications[index],
+                                ),
                                 onActionTap: () => _handleActionTap(
                                   activeNotifications[index],
                                 ),
                                 onDeleteIntent: _showDeleteDialog,
                               ),
                               if (index < activeNotifications.length - 1)
-                                const SizedBox(height: 13.486),
+                                const SizedBox(height: 15),
                             ],
                             if (pastNotifications.isNotEmpty) ...[
                               SizedBox(
@@ -405,7 +556,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 },
                               ),
                               if (_isPastNotificationsExpanded) ...[
-                                const SizedBox(height: 13.486),
+                                const SizedBox(height: 15),
                                 for (
                                   int index = 0;
                                   index < pastNotifications.length;
@@ -413,14 +564,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 ) ...[
                                   NotificationCard(
                                     item: pastNotifications[index],
-                                    onTap: () {},
+                                    onTap: () => _handleActionTap(
+                                      pastNotifications[index],
+                                    ),
                                     onActionTap: () => _handleActionTap(
                                       pastNotifications[index],
                                     ),
                                     onDeleteIntent: _showDeleteDialog,
                                   ),
                                   if (index < pastNotifications.length - 1)
-                                    const SizedBox(height: 13.486),
+                                    const SizedBox(height: 15),
                                 ],
                               ],
                             ],
@@ -449,9 +602,6 @@ class _UnreadEmptyMessage extends StatelessWidget {
         '확인하지 않은 알림이 없습니다.',
         textAlign: TextAlign.center,
         style: AppTypography.headlineMedium.copyWith(
-          fontSize: 16.183,
-          height: 1.445,
-          letterSpacing: -0.0032,
           color: AppColors.gray300,
           decoration: TextDecoration.none,
         ),
@@ -470,14 +620,14 @@ class _PastNotificationsToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.gray500.withValues(alpha: 0.08),
         highlightColor: AppColors.gray500.withValues(alpha: 0.12),
         splashColor: AppColors.gray500.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
         child: SizedBox(
           height: 46,
           child: Row(
@@ -485,10 +635,7 @@ class _PastNotificationsToggle extends StatelessWidget {
             children: [
               Text(
                 '지난알림 확인하기',
-                style: AppTypography.labelBold.copyWith(
-                  fontSize: 13,
-                  height: 1.429,
-                  letterSpacing: 0,
+                style: AppTypography.labelSemiBold.copyWith(
                   color: AppColors.gray600,
                   decoration: TextDecoration.none,
                 ),
@@ -518,19 +665,19 @@ class _DeleteNotificationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 294.897,
-        height: 189.705,
+        width: 295,
+        height: 190,
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 33, 18, 27),
           child: Column(
             children: [
               Container(
-                width: 28.77,
-                height: 28.77,
+                width: 29,
+                height: 29,
                 decoration: const BoxDecoration(
                   color: AppColors.destructive,
                   shape: BoxShape.circle,
@@ -572,10 +719,7 @@ class _DeleteNotificationDialog extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 '알림을 삭제하시겠습니까?',
-                style: AppTypography.labelBold.copyWith(
-                  fontSize: 14.39,
-                  height: 1.5,
-                  letterSpacing: 0.082,
+                style: AppTypography.labelSemiBold.copyWith(
                   color: AppColors.gray800,
                   decoration: TextDecoration.none,
                 ),
@@ -589,7 +733,7 @@ class _DeleteNotificationDialog extends StatelessWidget {
                     filled: false,
                     onTap: context.pop,
                   ),
-                  const SizedBox(width: 13.486),
+                  const SizedBox(width: 14),
                   _DeleteDialogButton(
                     label: '확인',
                     filled: true,
@@ -624,22 +768,17 @@ class _DeleteDialogButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 107.889,
-        height: 37.761,
+        width: 108,
+        height: 38,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: filled ? AppColors.primary : const Color(0xFFEBF5FE),
-          borderRadius: BorderRadius.circular(8),
-          border: filled
-              ? null
-              : Border.all(color: AppColors.primary, width: 0.899),
+          color: filled ? AppColors.primary : AppColors.primaryLight,
+          borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          border: filled ? null : Border.all(color: AppColors.primary),
         ),
         child: Text(
           label,
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 12.59,
-            height: 1.429,
-            letterSpacing: 0.1826,
+          style: AppTypography.captionMedium.copyWith(
             color: filled ? AppColors.white : AppColors.primary,
             decoration: TextDecoration.none,
           ),
@@ -657,7 +796,7 @@ class _NotificationsTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52,
+      height: AppTokens.topBarHeight,
       child: Stack(
         children: [
           Positioned(
@@ -691,10 +830,7 @@ class _NotificationsTopBar extends StatelessWidget {
             child: Text(
               '알림',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 16.18,
-                height: 1.445,
-                letterSpacing: -0.0032,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
                 decoration: TextDecoration.none,
               ),
             ),

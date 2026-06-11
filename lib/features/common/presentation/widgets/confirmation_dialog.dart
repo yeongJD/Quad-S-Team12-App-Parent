@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 
 Future<void> showAppConfirmationDialog({
@@ -14,7 +15,7 @@ Future<void> showAppConfirmationDialog({
     context: context,
     barrierDismissible: true,
     barrierLabel: barrierLabel,
-    barrierColor: const Color.fromRGBO(68, 68, 68, 0.6),
+    barrierColor: AppColors.scrim,
     pageBuilder: (context, animation, secondaryAnimation) {
       return Material(
         type: MaterialType.transparency,
@@ -61,15 +62,15 @@ class AppConfirmationDialog extends StatelessWidget {
       height: 189.705,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 33, 18, 27),
         child: Column(
           children: [
             Container(
-              width: 28.77,
-              height: 28.77,
+              width: 32,
+              height: 32,
               decoration: const BoxDecoration(
                 color: AppColors.destructive,
                 shape: BoxShape.circle,
@@ -111,10 +112,7 @@ class AppConfirmationDialog extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message,
-              style: AppTypography.labelBold.copyWith(
-                fontSize: 14.39,
-                height: 1.5,
-                letterSpacing: 0.082,
+              style: AppTypography.bodySemiBold.copyWith(
                 color: AppColors.gray800,
                 decoration: TextDecoration.none,
               ),
@@ -128,7 +126,7 @@ class AppConfirmationDialog extends StatelessWidget {
                   filled: false,
                   onTap: context.pop,
                 ),
-                const SizedBox(width: 13.486),
+                const SizedBox(width: 15),
                 _ConfirmationDialogButton(
                   label: '확인',
                   filled: true,
@@ -159,31 +157,26 @@ class _ConfirmationDialogButton extends StatelessWidget {
     final Color foregroundColor = filled ? AppColors.white : AppColors.primary;
 
     return Material(
-      color: filled ? AppColors.primary : const Color(0xFFEBF5FE),
-      borderRadius: BorderRadius.circular(8),
+      color: filled ? AppColors.primary : AppColors.primaryLight,
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: foregroundColor.withValues(alpha: 0.08),
         highlightColor: foregroundColor.withValues(alpha: 0.12),
         splashColor: foregroundColor.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: Container(
           width: 107.889,
           height: 37.761,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            border: filled
-                ? null
-                : Border.all(color: AppColors.primary, width: 0.899),
-            borderRadius: BorderRadius.circular(8),
+            border: filled ? null : Border.all(color: AppColors.primary),
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
           ),
           child: Text(
             label,
             style: AppTypography.labelMedium.copyWith(
-              fontSize: 12.59,
-              height: 1.429,
-              letterSpacing: 0.1826,
               color: foregroundColor,
               decoration: TextDecoration.none,
             ),

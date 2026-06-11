@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../today_time/presentation/models/daily_time_rule.dart';
 import '../../../today_time/presentation/styles/time_setup_tokens.dart';
+import '../../../../data/repositories/mission_repository.dart';
 import '../../../today_time/presentation/widgets/daily_time_rule_sheet.dart';
 import '../../../today_time/presentation/widgets/time_setup_action_button.dart';
-import '../data/today_mission_store.dart';
 import '../models/today_mission.dart';
 import '../widgets/mission_top_bar.dart';
 
@@ -47,15 +49,18 @@ class TodayMissionEditPage extends StatefulWidget {
 class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
   static const double _contentHorizontalPadding = 24;
 
+  final MissionRepository _missionRepository = createMissionRepository();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   MissionCategory? _category;
   MissionResetPeriod? _resetPeriod;
   MissionConfirmationMethod? _confirmationMethod;
   TimeSelection _rewardTime = const TimeSelection(hour: 0, minute: 0);
+  bool _isSubmitting = false;
 
   bool get _canSubmit {
-    return _titleController.text.trim().isNotEmpty &&
+    return !_isSubmitting &&
+        _titleController.text.trim().isNotEmpty &&
         _category != null &&
         _resetPeriod != null &&
         _confirmationMethod != null &&
@@ -155,14 +160,19 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
       return;
     }
 
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    late final Result<void> result;
     if (missionIndex == null) {
-      await TodayMissionStore.add(
+      result = await _missionRepository.addMission(
         parentId: parentId,
         childrenId: childrenId,
         mission: mission,
       );
     } else {
-      await TodayMissionStore.updateAt(
+      result = await _missionRepository.updateMissionAt(
         parentId: parentId,
         childrenId: childrenId,
         index: missionIndex,
@@ -173,13 +183,23 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
     if (!mounted) {
       return;
     }
-    _handleBack();
+    switch (result) {
+      case Success<void>():
+        _handleBack();
+      case Failure<void>(:final String message):
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.gray100,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -226,10 +246,11 @@ class _TodayMissionEditPageState extends State<TodayMissionEditPage> {
                                   children: [
                                     const _SectionTitle('카테고리'),
                                     const SizedBox(height: 18),
-                                    _EvenSelectionRow<MissionCategory>(
-                                      values: MissionCategory.values,
+                                    _SelectionGrid<MissionCategory>(
+                                      values: missionCreateCategoryOptions,
                                       selectedValue: _category,
                                       spacing: 8,
+                                      columns: 4,
                                       labelOf: (MissionCategory value) =>
                                           value.label,
                                       onSelected: (MissionCategory value) {
@@ -362,29 +383,21 @@ class _MissionTitleField extends StatelessWidget {
         controller: controller,
         textAlign: TextAlign.center,
         cursorColor: AppColors.primary,
-        style: AppTypography.heading1Bold.copyWith(
-          fontSize: 24,
-          height: 1.364,
-          letterSpacing: 0,
-          color: AppColors.gray800,
-        ),
+        style: AppTypography.heading1Bold.copyWith(color: AppColors.gray800),
         decoration: InputDecoration(
           hintText: '미션 이름을 작성해주세요',
           hintStyle: AppTypography.heading2Bold.copyWith(
-            fontSize: 18,
-            height: 1.4,
-            letterSpacing: 0,
             color: AppColors.gray300,
           ),
           contentPadding: EdgeInsets.zero,
           filled: true,
           fillColor: AppColors.white,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.gray200),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.primary),
           ),
         ),
@@ -423,6 +436,59 @@ class _EvenSelectionRow<T> extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _SelectionGrid<T> extends StatelessWidget {
+  const _SelectionGrid({
+    required this.values,
+    required this.selectedValue,
+    required this.spacing,
+    required this.columns,
+    required this.labelOf,
+    required this.onSelected,
+  });
+
+  final List<T> values;
+  final T? selectedValue;
+  final double spacing;
+  final int columns;
+  final String Function(T value) labelOf;
+  final ValueChanged<T> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int effectiveColumns = values.length < columns
+            ? values.length
+            : columns;
+        final double gridWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final double itemWidth =
+            (gridWidth - spacing * (effectiveColumns - 1)) / effectiveColumns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: <Widget>[
+            for (final T value in values)
+              SizedBox(
+                width: itemWidth,
+                child: _OptionChip(
+                  label: labelOf(value),
+                  selected: value == selectedValue,
+                  onTap: () => onSelected(value),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -486,19 +552,18 @@ class _OptionChip extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : AppColors.gray050,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.gray200,
           ),
         ),
         child: Text(
           label,
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16,
-            height: 1.445,
-            letterSpacing: 0,
-            color: selected ? AppColors.white : AppColors.gray600,
-          ),
+          style:
+              (selected ? AppTypography.bodySemiBold : AppTypography.bodyMedium)
+                  .copyWith(
+                    color: selected ? AppColors.white : AppColors.gray600,
+                  ),
           maxLines: 1,
           overflow: TextOverflow.visible,
         ),
@@ -579,12 +644,7 @@ class _MissionDescriptionField extends StatelessWidget {
         expands: true,
         textAlignVertical: TextAlignVertical.top,
         cursorColor: AppColors.primary,
-        style: AppTypography.labelRegular.copyWith(
-          fontSize: 16,
-          height: 1.625,
-          letterSpacing: 0,
-          color: AppColors.gray700,
-        ),
+        style: AppTypography.bodyRegular.copyWith(color: AppColors.gray700),
         decoration: InputDecoration(
           hintText:
               '설명을 자세히 적어주면 자녀도 헷갈리지 않고,\nAI 확인도 훨씬 쉬워져요.\n\n'
@@ -592,21 +652,18 @@ class _MissionDescriptionField extends StatelessWidget {
               '채점된 페이지 사진 1장 찍어서 올리기!',
           hintMaxLines: 6,
           counterText: '',
-          hintStyle: AppTypography.labelRegular.copyWith(
-            fontSize: 16,
-            height: 1.625,
-            letterSpacing: 0,
+          hintStyle: AppTypography.bodyRegular.copyWith(
             color: AppColors.gray300,
           ),
           contentPadding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
           filled: true,
           fillColor: AppColors.gray100,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.gray200),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             borderSide: const BorderSide(color: AppColors.primary),
           ),
         ),
@@ -666,9 +723,7 @@ class _MissionRewardTimeSheetState extends State<_MissionRewardTimeSheet> {
   @override
   void initState() {
     super.initState();
-    final TimeSelection initialTime = widget.initialTime.isEmpty
-        ? const TimeSelection(hour: 1, minute: 5)
-        : widget.initialTime;
+    final TimeSelection initialTime = widget.initialTime;
     _selectedHourIndex = _initialIndexFor(_hours, initialTime.hour);
     _selectedMinuteIndex = _initialIndexFor(_minutes, initialTime.minute);
     _hourController = FixedExtentScrollController(
@@ -719,7 +774,7 @@ class _MissionRewardTimeSheetState extends State<_MissionRewardTimeSheet> {
               left: TimeSetupSpacing.sheetHorizontalPadding,
               right: TimeSetupSpacing.sheetHorizontalPadding,
               top: TimeSetupSpacing.pickerHighlightTop,
-              height: 44.954,
+              height: 45,
               child: const DecoratedBox(
                 decoration: BoxDecoration(
                   border: Border(
@@ -839,12 +894,7 @@ class _MissionPickerUnitLabel extends StatelessWidget {
       baselineType: TextBaseline.alphabetic,
       child: Text(
         text,
-        style: AppTypography.headlineMedium.copyWith(
-          fontSize: 18,
-          height: 1.4,
-          letterSpacing: 0,
-          color: const Color(0xFF050505),
-        ),
+        style: AppTypography.headlineMedium.copyWith(color: AppColors.inkBlack),
       ),
     );
   }
@@ -870,7 +920,7 @@ class _SectionDivider extends StatelessWidget {
       width: double.infinity,
       height: 6,
       margin: const EdgeInsets.symmetric(vertical: 26),
-      color: const Color(0xFFEDEEF1),
+      color: AppColors.gray150,
     );
   }
 }
@@ -884,12 +934,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: AppTypography.headlineBold.copyWith(
-        fontSize: 16,
-        height: 1.445,
-        letterSpacing: 0,
-        color: AppColors.gray800,
-      ),
+      style: AppTypography.headlineSemiBold.copyWith(color: AppColors.gray800),
     );
   }
 }

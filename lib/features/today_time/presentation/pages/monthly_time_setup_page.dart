@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../data/monthly_total_time_store.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../models/daily_time_rule.dart';
 import '../routes/today_time_routes.dart';
 import '../styles/time_setup_tokens.dart';
@@ -49,37 +50,20 @@ class MonthlyTimeSetupPage extends StatefulWidget {
 }
 
 class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
+  final TimePlanRepository _timePlanRepository = createTimePlanRepository();
   late int _minimumTotalMinutes;
   late int _selectedTotalMinutes;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _minimumTotalMinutes = _calculateMonthlyMinutes(widget.rules);
+    _minimumTotalMinutes = calculateMonthlyMinutesForRules(widget.rules);
     _selectedTotalMinutes =
         widget.initialMonthlyTotalMinutes == null ||
             widget.initialMonthlyTotalMinutes! < _minimumTotalMinutes
         ? _minimumTotalMinutes
         : widget.initialMonthlyTotalMinutes!;
-  }
-
-  int _calculateMonthlyMinutes(List<DailyTimeRule> rules) {
-    final DateTime now = DateTime.now();
-    final int lastDay = DateTime(now.year, now.month + 1, 0).day;
-    final List<int> weekdayCounts = List<int>.filled(7, 0);
-    for (int day = 1; day <= lastDay; day++) {
-      final int weekdayIndex = DateTime(now.year, now.month, day).weekday - 1;
-      weekdayCounts[weekdayIndex]++;
-    }
-
-    int total = 0;
-    for (final DailyTimeRule rule in rules) {
-      final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
-      for (final int dayIndex in rule.days) {
-        total += dailyMinutes * weekdayCounts[dayIndex];
-      }
-    }
-    return total;
   }
 
   TimeSelection _timeFromMinutes(int minutes) {
@@ -118,17 +102,35 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
   }
 
   Future<void> _continueToWhitelist(TimeSelection total) async {
+    if (_isSaving) {
+      return;
+    }
     final String? parentId = widget.parentId;
     final String? childrenId = widget.childrenId;
     if (parentId != null &&
         parentId.isNotEmpty &&
         childrenId != null &&
         childrenId.isNotEmpty) {
-      await MonthlyTotalTimeStore.save(
+      setState(() {
+        _isSaving = true;
+      });
+      final Result<void> result = await _timePlanRepository.saveMonthlyTotal(
         parentId: parentId,
         childrenId: childrenId,
         totalMinutes: _selectedTotalMinutes,
       );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isSaving = false;
+      });
+      if (result case Failure<void>(:final message)) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        return;
+      }
     }
     if (!mounted) {
       return;
@@ -150,7 +152,7 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
     final TimeSelection total = _timeFromMinutes(_selectedTotalMinutes);
 
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -173,26 +175,25 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
                           '이번 달 총 시간 설정',
                           style: TimeSetupTextStyles.sectionTitle,
                         ),
-                        const SizedBox(height: 10.789),
+                        const SizedBox(
+                          height: TimeSetupSpacing.titleToDescriptionGap,
+                        ),
                         Text(
                           '일별 시간 설정을 바탕으로 이번 달 총 시간이 계산되었어요\n'
                           '이대로 확정하거나, 여유 시간을 조금 더 보탤 수 있어요.',
                           style: AppTypography.labelMedium.copyWith(
-                            fontSize: 12.587,
-                            height: 1.429,
-                            letterSpacing: 0.1825,
                             color: AppColors.gray500,
                           ),
                         ),
-                        const SizedBox(height: 26.972),
+                        const SizedBox(height: 27),
                         _MonthlyTotalField(
                           time: total,
                           onTap: _openMonthlyPicker,
                         ),
-                        const SizedBox(height: 35.963),
+                        const SizedBox(height: 36),
                         ...widget.rules.map(
                           (DailyTimeRule rule) => Padding(
-                            padding: const EdgeInsets.only(bottom: 13.486),
+                            padding: const EdgeInsets.only(bottom: 14),
                             child: _MonthlyRuleCard(rule: rule),
                           ),
                         ),
@@ -203,8 +204,9 @@ class _MonthlyTimeSetupPageState extends State<MonthlyTimeSetupPage> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 31),
                   child: TimeSetupActionButton(
-                    label: '확인',
-                    enabled: true,
+                    label: _isSaving ? '저장중' : '확인',
+                    enabled: !_isSaving,
+                    disabledMessage: '시간 설정을 저장하는 중입니다.',
                     onTap: () => _continueToWhitelist(total),
                   ),
                 ),
@@ -236,12 +238,12 @@ class _MonthlyTotalField extends StatelessWidget {
         splashColor: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(TimeSetupRadius.field),
         child: Container(
-          height: 56.642,
+          height: 56,
           width: double.infinity,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10.789),
-            border: Border.all(color: AppColors.gray200, width: 1.798),
+            borderRadius: BorderRadius.circular(TimeSetupRadius.field),
+            border: Border.all(color: AppColors.gray200),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -252,7 +254,7 @@ class _MonthlyTotalField extends StatelessWidget {
                 color: AppColors.primary,
                 selected: true,
               ),
-              const SizedBox(width: 25.174),
+              const SizedBox(width: 25),
               TimeSelectorPart(
                 value: time.minute.toString().padLeft(2, '0'),
                 label: '분',
@@ -262,7 +264,7 @@ class _MonthlyTotalField extends StatelessWidget {
               const SizedBox(width: 34),
               const Icon(
                 Icons.edit_outlined,
-                size: 21.578,
+                size: 22,
                 color: AppColors.gray800,
               ),
             ],
@@ -282,35 +284,29 @@ class _MonthlyRuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16.183),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14.385),
+        borderRadius: BorderRadius.circular(TimeSetupRadius.card),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             rule.dayText,
-            style: AppTypography.headlineBold.copyWith(
-              fontSize: 16.183,
-              height: 1.445,
-              letterSpacing: -0.0032,
+            style: AppTypography.bodySemiBold.copyWith(
               color: AppColors.gray800,
             ),
           ),
           Container(
             width: 1,
-            height: 19.78,
-            margin: const EdgeInsets.symmetric(horizontal: 8.991),
+            height: 20,
+            margin: const EdgeInsets.symmetric(horizontal: 9),
             color: AppColors.gray200,
           ),
           Text(
             rule.time.displayText,
-            style: AppTypography.headlineBold.copyWith(
-              fontSize: 16.183,
-              height: 1.445,
-              letterSpacing: -0.0032,
+            style: AppTypography.bodySemiBold.copyWith(
               color: AppColors.gray800,
             ),
           ),
@@ -505,7 +501,7 @@ class _MonthlyTimePickerSheetState extends State<_MonthlyTimePickerSheet> {
             left: TimeSetupSpacing.sheetHorizontalPadding,
             right: TimeSetupSpacing.sheetHorizontalPadding,
             top: TimeSetupSpacing.pickerHighlightTop,
-            height: 44.954,
+            height: 45,
             child: IgnorePointer(child: PickerSelectionUnits()),
           ),
           Positioned(

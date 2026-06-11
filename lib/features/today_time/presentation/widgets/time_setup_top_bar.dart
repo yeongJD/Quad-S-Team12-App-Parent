@@ -18,7 +18,7 @@ class TimeSetupTopBar extends StatelessWidget {
         children: [
           Center(child: Text(title, style: TimeSetupTextStyles.pageTitle)),
           Positioned(
-            left: TimeSetupSpacing.horizontalPadding,
+            left: 20,
             top: 14,
             child: Material(
               color: Colors.transparent,

@@ -52,7 +52,7 @@ class TodayTimeCompletePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -73,10 +73,8 @@ class TodayTimeCompletePage extends StatelessWidget {
                         const Spacer(flex: 18),
                         Text(
                           '시간 설정 완료!',
-                          style: AppTypography.headlineBold.copyWith(
+                          style: AppTypography.heading1SemiBold.copyWith(
                             fontSize: 28,
-                            height: 1.445,
-                            letterSpacing: -0.0056,
                             color: AppColors.gray900,
                           ),
                         ),
@@ -100,10 +98,8 @@ class TodayTimeCompletePage extends StatelessWidget {
                           '자녀가 스스로 분배 계획을 세울 때까지\n'
                           '잠시만 기다려주세요!',
                           textAlign: TextAlign.center,
-                          style: AppTypography.headlineMedium.copyWith(
-                            fontSize: 16,
+                          style: AppTypography.bodyMedium.copyWith(
                             height: 1.625,
-                            letterSpacing: -0.0032,
                             color: AppColors.gray600,
                           ),
                         ),

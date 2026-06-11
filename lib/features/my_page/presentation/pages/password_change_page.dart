@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
 enum _PasswordChangeErrorType { currentMismatch }
 
@@ -19,7 +21,7 @@ class PasswordChangePage extends StatefulWidget {
 
 class _PasswordChangePageState extends State<PasswordChangePage> {
   static final RegExp _passwordPattern = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{8,15}$',
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{12,15}$',
   );
 
   final TextEditingController _currentPasswordController =
@@ -32,34 +34,39 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   final FocusNode _newPasswordFocusNode = FocusNode();
   final FocusNode _confirmPasswordFocusNode = FocusNode();
 
+  final AuthRepository _authRepository = createAuthRepository();
+
   _PasswordChangeErrorType? _currentPasswordError;
-  ParentAccount? _account;
+  String? _parentId;
   bool _showNewPasswordRuleError = false;
   bool _showSameAsCurrentError = false;
   bool _showConfirmMismatchError = false;
+  bool _submitting = false;
 
   String get _currentPassword => _currentPasswordController.text;
   String get _newPassword => _newPasswordController.text;
   String get _confirmPassword => _confirmPasswordController.text;
 
-  bool get _isCurrentPasswordValid =>
-      _account?.passwordHash ==
-      AccountStore.passwordHashForLocalMock(_currentPassword);
+  bool get _isCurrentPasswordEntered => _currentPassword.isNotEmpty;
   bool get _isNewPasswordValid => _passwordPattern.hasMatch(_newPassword);
+  // Plain-text compare — backend never returns the current password, and the
+  // mock-only hash check we used to do here broke the screen under
+  // `useMocks: false` because `_account` was always null in that mode.
   bool get _isSameAsCurrentPassword =>
       _newPassword.isNotEmpty &&
-      _account?.passwordHash ==
-          AccountStore.passwordHashForLocalMock(_newPassword);
+      _currentPassword.isNotEmpty &&
+      _newPassword == _currentPassword;
   bool get _isConfirmMatched =>
       _newPassword.isNotEmpty &&
       _confirmPassword.isNotEmpty &&
       _newPassword == _confirmPassword;
 
   bool get _canSubmit =>
-      _isCurrentPasswordValid &&
+      _isCurrentPasswordEntered &&
       _isNewPasswordValid &&
       !_isSameAsCurrentPassword &&
-      _isConfirmMatched;
+      _isConfirmMatched &&
+      !_submitting;
 
   String? get _currentPasswordHelperText {
     if (_currentPasswordError != _PasswordChangeErrorType.currentMismatch) {
@@ -73,7 +80,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       return '새 비밀번호는 기존 비밀번호와 달라야 합니다.';
     }
     if (_showNewPasswordRuleError) {
-      return '영문 대/소문자, 숫자, 특수문자 혼합 8자 / 빈칸, 공백 불가';
+      return '영문 대/소문자, 숫자, 특수문자 혼합 12~15자 / 빈칸, 공백 불가';
     }
     return null;
   }
@@ -88,19 +95,16 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   @override
   void initState() {
     super.initState();
-    _loadAccount();
+    _loadParentId();
   }
 
-  Future<void> _loadAccount() async {
+  Future<void> _loadParentId() async {
     final String? parentId = await AuthSession.getCurrentParentId();
-    final ParentAccount? account = parentId == null
-        ? null
-        : await AccountStore.getAccountById(parentId);
     if (!mounted) {
       return;
     }
     setState(() {
-      _account = account;
+      _parentId = parentId;
     });
   }
 
@@ -137,9 +141,6 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     FocusScope.of(context).unfocus();
 
     setState(() {
-      _currentPasswordError = _isCurrentPasswordValid
-          ? null
-          : _PasswordChangeErrorType.currentMismatch;
       _showNewPasswordRuleError =
           _newPassword.isNotEmpty && !_isNewPasswordValid;
       _showSameAsCurrentError =
@@ -152,18 +153,38 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       return;
     }
 
-    final ParentAccount? account = _account;
-    if (account == null) {
+    final String? parentId = _parentId;
+    if (parentId == null || parentId.isEmpty) {
       return;
     }
-    await AccountStore.updatePassword(
-      parentId: account.parentId,
-      password: _newPassword,
+
+    setState(() {
+      _submitting = true;
+    });
+    final Result<void> result = await _authRepository.changePassword(
+      parentId: parentId,
+      currentPassword: _currentPassword,
+      newPassword: _newPassword,
     );
     if (!mounted) {
       return;
     }
-    context.pop();
+    switch (result) {
+      case Success<void>():
+        context.pop();
+      case Failure<void>(:final String message):
+        setState(() {
+          _submitting = false;
+          if (message == AuthFailureMessages.passwordMismatch) {
+            _currentPasswordError = _PasswordChangeErrorType.currentMismatch;
+          }
+        });
+        if (message != AuthFailureMessages.passwordMismatch) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
+    }
   }
 
   @override
@@ -318,10 +339,7 @@ class _PasswordChangeTopBar extends StatelessWidget {
             child: Text(
               '비밀번호 수정',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 16.18,
-                height: 1.445,
-                letterSpacing: -0.0032,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -400,19 +418,14 @@ class _PasswordChangeFieldState extends State<_PasswordChangeField> {
       children: [
         Text(
           widget.label,
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 14.39,
-            height: 1.5,
-            letterSpacing: 0.082,
-            color: AppColors.gray600,
-          ),
+          style: AppTypography.labelMedium.copyWith(color: AppColors.gray600),
         ),
         const SizedBox(height: 9),
         Container(
           height: 44.954,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: widget.borderColor, width: 0.899),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
+            border: Border.all(color: widget.borderColor),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14.385),
           child: Row(
@@ -431,10 +444,7 @@ class _PasswordChangeFieldState extends State<_PasswordChangeField> {
                   ],
                   cursorColor: AppColors.black,
                   style: AppTypography.labelMedium.copyWith(
-                    fontSize: 14.39,
-                    height: 1.5,
-                    letterSpacing: 0.082,
-                    color: const Color(0xFF050505),
+                    color: AppColors.inkBlack,
                   ),
                   decoration: InputDecoration(
                     isDense: true,
@@ -449,9 +459,6 @@ class _PasswordChangeFieldState extends State<_PasswordChangeField> {
                     contentPadding: EdgeInsets.zero,
                     hintText: widget.placeholder,
                     hintStyle: AppTypography.labelMedium.copyWith(
-                      fontSize: 14.39,
-                      height: 1.5,
-                      letterSpacing: 0.082,
                       color: AppColors.gray300,
                     ),
                   ),
@@ -510,14 +517,13 @@ class _PasswordChangeButton extends StatelessWidget {
           elevation: 0,
           backgroundColor: enabled ? AppColors.primary : AppColors.gray200,
           foregroundColor: enabled ? AppColors.white : AppColors.gray300,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          ),
         ),
         child: Text(
           '완료',
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 16.18,
-            height: 1.445,
-            letterSpacing: -0.0032,
             color: enabled ? AppColors.white : AppColors.gray300,
           ),
         ),

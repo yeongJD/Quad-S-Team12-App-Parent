@@ -8,6 +8,10 @@ abstract final class AuthSession {
   static const String currentEmailKey = 'bridge_p.current_email';
   static const String fallbackName = 'parent';
 
+  static const String _accessTokenKey = 'bridge_p.access_token';
+  static const String _refreshTokenKey = 'bridge_p.refresh_token';
+  static const String _deviceIdKey = 'bridge_p.device_id';
+
   static Future<void> login({
     required String parentId,
     required String email,
@@ -18,7 +22,8 @@ abstract final class AuthSession {
   }
 
   static Future<bool> isLoggedIn() async {
-    return (await getCurrentParentId()) != null;
+    final String? parentId = await getCurrentParentId();
+    return parentId != null && parentId.isNotEmpty;
   }
 
   static Future<String?> getCurrentParentId() async {
@@ -35,6 +40,62 @@ abstract final class AuthSession {
     final SharedPreferences preferences = await SharedPreferences.getInstance();
     await preferences.remove(currentParentIdKey);
     await preferences.remove(currentEmailKey);
+    await preferences.remove(_accessTokenKey);
+    await preferences.remove(_refreshTokenKey);
+    await preferences.remove(_deviceIdKey);
+  }
+
+  /// Persist an [accessToken] (and optional [refreshToken]) in
+  /// SharedPreferences. Tokens are stored alongside — not in place of —
+  /// the existing parentId/email session keys, so a logged-in session can
+  /// remain valid across token rotations.
+  static Future<void> saveTokens({
+    required String accessToken,
+    String? refreshToken,
+  }) async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_accessTokenKey, accessToken);
+    if (refreshToken != null) {
+      await preferences.setString(_refreshTokenKey, refreshToken);
+    }
+  }
+
+  /// Returns the stored access token, or `null` if none is present.
+  static Future<String?> accessToken() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_accessTokenKey);
+  }
+
+  /// Returns the stored refresh token, or `null` if none is present.
+  static Future<String?> refreshToken() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_refreshTokenKey);
+  }
+
+  /// Removes only token entries — kept separate from [logout] so that the
+  /// auth flow can iterate on the two concerns independently.
+  static Future<void> clearTokens() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_accessTokenKey);
+    await preferences.remove(_refreshTokenKey);
+  }
+
+  /// Persist the backend-assigned device id returned by
+  /// `DeviceRepository.registerDevice`. Used by the matching
+  /// `unregisterDevice` call at logout / delete-account time.
+  static Future<void> saveDeviceId(String deviceId) async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_deviceIdKey, deviceId);
+  }
+
+  static Future<String?> deviceId() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    return preferences.getString(_deviceIdKey);
+  }
+
+  static Future<void> clearDeviceId() async {
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_deviceIdKey);
   }
 
   static Future<void> resetAllData() async {

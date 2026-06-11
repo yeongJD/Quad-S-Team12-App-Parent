@@ -1,16 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_session.dart';
-import '../../../../core/child/child_connection_store.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../today_mission/presentation/data/today_mission_store.dart';
+import '../../../../data/models/child/child_summary.dart';
+import '../../../../data/repositories/child_repository.dart';
+import '../../../../data/repositories/mission_repository.dart';
+import '../../../../data/repositories/notification_repository.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../../../today_mission/presentation/models/today_mission.dart';
 import '../../../today_mission/presentation/pages/today_mission_check_page.dart';
-import '../../../today_time/presentation/data/child_weekly_time_plan_store.dart';
-import '../../../today_time/presentation/data/daily_time_rule_store.dart';
-import '../../../today_time/presentation/models/daily_time_rule.dart';
-import '../../../notifications/presentation/data/notification_store.dart';
 import '../../../common/presentation/widgets/confirmation_dialog.dart';
 import '../models/parent_home_models.dart';
 import '../widgets/child_selector_section.dart';
@@ -27,7 +29,7 @@ class _StoredParentHomeData {
 
   final ParentHomeData data;
   final List<TodayMission> missions;
-  final List<ConnectedChild> children;
+  final List<ChildSummary> children;
 }
 
 class ParentHomePage extends StatefulWidget {
@@ -36,27 +38,41 @@ class ParentHomePage extends StatefulWidget {
     this.showFilledPreview = false,
     this.showTimeEmptyPreview = false,
     this.showLinkedChildPreview = false,
+    this.childRepository,
+    this.missionRepository,
+    this.notificationRepository,
+    this.timePlanRepository,
   });
 
   final bool showFilledPreview;
   final bool showTimeEmptyPreview;
   final bool showLinkedChildPreview;
+  final ChildRepository? childRepository;
+  final MissionRepository? missionRepository;
+  final NotificationRepository? notificationRepository;
+  final TimePlanRepository? timePlanRepository;
 
   @override
   State<ParentHomePage> createState() => _ParentHomePageState();
 }
 
-class _ParentHomePageState extends State<ParentHomePage> {
+class _ParentHomePageState extends State<ParentHomePage>
+    with WidgetsBindingObserver {
+  late final ChildRepository _childRepository;
+  late final MissionRepository _missionRepository;
+  late final NotificationRepository _notificationRepository;
+  late final TimePlanRepository _timePlanRepository;
+
   ParentHomeData _data = ParentHomeData.empty();
   bool _isLoading = true;
   int _selectedChildIndex = 0;
   int? _deleteChildIndex;
-  List<ConnectedChild> _connectedChildren = <ConnectedChild>[];
+  List<ChildSummary> _connectedChildren = <ChildSummary>[];
   List<TodayMission> _savedMissions = <TodayMission>[];
   String? _parentId;
   final GlobalKey _childSelectorKey = GlobalKey();
 
-  ConnectedChild? get _selectedChild {
+  ChildSummary? get _selectedChild {
     if (_selectedChildIndex < 0 ||
         _selectedChildIndex >= _connectedChildren.length) {
       return null;
@@ -64,10 +80,35 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return _connectedChildren[_selectedChildIndex];
   }
 
+  bool get _usesPreviewData =>
+      widget.showFilledPreview ||
+      widget.showTimeEmptyPreview ||
+      widget.showLinkedChildPreview;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _childRepository = widget.childRepository ?? createChildRepository();
+    _missionRepository = widget.missionRepository ?? createMissionRepository();
+    _notificationRepository =
+        widget.notificationRepository ?? createNotificationRepository();
+    _timePlanRepository =
+        widget.timePlanRepository ?? createTimePlanRepository();
     _loadParentHomeData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_usesPreviewData) {
+      unawaited(_loadParentHomeData());
+    }
   }
 
   Future<void> _loadParentHomeData() async {
@@ -76,37 +117,21 @@ class _ParentHomePageState extends State<ParentHomePage> {
     if (widget.showFilledPreview) {
       data = ParentHomeData.sampleFilled();
       savedMissions = <TodayMission>[];
-      _connectedChildren = const <ConnectedChild>[
-        ConnectedChild(
-          childrenId: 'GDG12-1',
-          name: '박진아',
-          childCode: 'GDG12-1',
-        ),
-        ConnectedChild(
-          childrenId: 'GDG12-2',
-          name: '박진아',
-          childCode: 'GDG12-2',
-        ),
+      _connectedChildren = const <ChildSummary>[
+        ChildSummary(childrenId: 'GDG12-1', name: '박진아', childCode: 'GDG12-1'),
+        ChildSummary(childrenId: 'GDG12-2', name: '박진아', childCode: 'GDG12-2'),
       ];
     } else if (widget.showTimeEmptyPreview) {
       data = ParentHomeData.sampleTimeEmpty();
       savedMissions = <TodayMission>[];
-      _connectedChildren = const <ConnectedChild>[
-        ConnectedChild(
-          childrenId: 'GDG12-1',
-          name: '박진아',
-          childCode: 'GDG12-1',
-        ),
+      _connectedChildren = const <ChildSummary>[
+        ChildSummary(childrenId: 'GDG12-1', name: '박진아', childCode: 'GDG12-1'),
       ];
     } else if (widget.showLinkedChildPreview) {
       data = ParentHomeData.withLinkedChild(name: '홍길동');
       savedMissions = <TodayMission>[];
-      _connectedChildren = const <ConnectedChild>[
-        ConnectedChild(
-          childrenId: 'GDG12-1',
-          name: '홍길동',
-          childCode: 'GDG12-1',
-        ),
+      _connectedChildren = const <ChildSummary>[
+        ChildSummary(childrenId: 'GDG12-1', name: '홍길동', childCode: 'GDG12-1'),
       ];
     } else {
       final _StoredParentHomeData storedData =
@@ -137,15 +162,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
           hasUnreadNotification: false,
         ),
         missions: <TodayMission>[],
-        children: <ConnectedChild>[],
+        children: <ChildSummary>[],
       );
     }
 
-    final bool hasUnreadNotification = await NotificationStore.hasUnread(
-      parentId,
-    );
-    final List<ConnectedChild> children =
-        await ChildConnectionStore.loadChildren(parentId);
+    final bool hasUnreadNotification = await _unreadNotificationCount(parentId);
+    final List<ChildSummary> children = await _loadChildSummaries(parentId);
     if (children.isEmpty) {
       _selectedChildIndex = 0;
       return _StoredParentHomeData(
@@ -159,27 +181,18 @@ class _ParentHomePageState extends State<ParentHomePage> {
     }
 
     _selectedChildIndex = _selectedChildIndex.clamp(0, children.length - 1);
-    final ConnectedChild selectedChild = children[_selectedChildIndex];
-    final List<DailyTimeRule> savedTimeRules = await DailyTimeRuleStore.load(
+    final ChildSummary selectedChild = children[_selectedChildIndex];
+    final ChildTimeSummary childTimeSummary = await _loadChildTimeSummary(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
-    final List<DailyTimeRule> childWeeklyRules =
-        await ChildWeeklyTimePlanStore.load(
-          parentId: parentId,
-          childrenId: selectedChild.childrenId,
-        );
-    final List<TodayMission> savedMissions = await TodayMissionStore.load(
+    final List<TodayMission> savedMissions = await _loadMissions(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
 
-    final bool hasParentRules = savedTimeRules.isNotEmpty;
-    final bool hasChildTimePlan = childWeeklyRules.isNotEmpty;
-
-    final TimeSummary? timeSummary = hasChildTimePlan
-        ? _timeSummaryFromRules(childWeeklyRules)
-        : null;
+    final TimeSummary? timeSummary = _timeSummaryFromBackend(childTimeSummary);
+    final String? timeEmptyMessage = _timeEmptyMessageFor(childTimeSummary);
 
     final List<MissionItem> missions = savedMissions
         .map(MissionItem.fromTodayMission)
@@ -187,13 +200,15 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
     return _StoredParentHomeData(
       data: ParentHomeData.withLinkedChildren(
-        names: children.map((ConnectedChild child) => child.name).toList(),
+        names: children.map((ChildSummary child) => child.name).toList(),
         photoBase64Values: children
-            .map((ConnectedChild child) => child.photoBase64)
+            .map((ChildSummary child) => child.profileImageUrl)
             .toList(),
         timeSummary: timeSummary,
-        waitingForChildTimePlan: hasParentRules && !hasChildTimePlan,
-        hasChildTimePlan: hasChildTimePlan,
+        waitingForChildTimePlan:
+            childTimeSummary.todayScheduleStatus == 'waitingChildPlan',
+        hasChildTimePlan: childTimeSummary.childPlanExists,
+        timeEmptyMessage: timeEmptyMessage,
         missions: missions,
         hasUnreadNotification: hasUnreadNotification,
       ),
@@ -202,37 +217,83 @@ class _ParentHomePageState extends State<ParentHomePage> {
     );
   }
 
-  TimeSummary? _timeSummaryFromRules(List<DailyTimeRule> rules) {
-    if (rules.isEmpty) {
-      return null;
-    }
+  Future<bool> _unreadNotificationCount(String parentId) async {
+    final Result<bool> result = await _notificationRepository.hasUnread(
+      parentId,
+    );
+    return switch (result) {
+      Success<bool>(:final data) => data,
+      Failure<bool>() => false,
+    };
+  }
 
-    final DateTime now = DateTime.now();
-    final int weekdayIndex = now.weekday - 1; // 0 for Monday, 6 for Sunday
+  Future<List<ChildSummary>> _loadChildSummaries(String parentId) async {
+    final Result<List<ChildSummary>> result = await _childRepository
+        .loadChildren(parentId);
+    return switch (result) {
+      Success<List<ChildSummary>>(:final data) => data,
+      Failure<List<ChildSummary>>() => const <ChildSummary>[],
+    };
+  }
 
-    DailyTimeRule? todayRule;
-    for (final DailyTimeRule rule in rules) {
-      if (rule.days.contains(weekdayIndex)) {
-        todayRule = rule;
-        break;
-      }
-    }
+  Future<ChildTimeSummary> _loadChildTimeSummary({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    final Result<ChildTimeSummary> result = await _timePlanRepository
+        .loadChildTimeSummary(
+          parentId: parentId,
+          childrenId: childrenId,
+          date: DateTime.now(),
+        );
+    return switch (result) {
+      Success<ChildTimeSummary>(:final data) => data,
+      Failure<ChildTimeSummary>() => const ChildTimeSummary(
+        parentPolicyExists: false,
+        childPlanExists: false,
+        todayScheduleStatus: 'loadFailed',
+        basePolicyMinutes: 0,
+        baseMinutes: 0,
+        extendedMinutes: 0,
+        totalAvailableMinutes: 0,
+        rewardPoolMinutes: 0,
+        monthlyRemainingMinutes: 0,
+      ),
+    };
+  }
 
-    if (todayRule == null) {
-      return null;
-    }
+  Future<List<TodayMission>> _loadMissions({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    final Result<List<TodayMission>> result = await _missionRepository
+        .loadMissions(parentId: parentId, childrenId: childrenId);
+    return switch (result) {
+      Success<List<TodayMission>>(:final data) => data,
+      Failure<List<TodayMission>>() => const <TodayMission>[],
+    };
+  }
 
-    final int minutes = todayRule.time.hour * 60 + todayRule.time.minute;
-    if (minutes <= 0) {
+  TimeSummary? _timeSummaryFromBackend(ChildTimeSummary summary) {
+    if (!summary.hasDisplayableTodayTime) {
       return null;
     }
 
     return TimeSummary(
-      basicTime: _formatTime(minutes),
-      bonusTime: _formatTime(0),
+      basicTime: _formatTime(summary.totalAvailableMinutes),
+      bonusTime: _formatTime(summary.monthlyRemainingMinutes),
       basicProgress: 1.0,
-      bonusProgress: 0.0,
+      bonusProgress: summary.monthlyRemainingMinutes > 0 ? 1.0 : 0.0,
     );
+  }
+
+  String? _timeEmptyMessageFor(ChildTimeSummary summary) {
+    return switch (summary.todayScheduleStatus) {
+      'waitingChildPlan' => '자녀가 아직 시간 설정 이전입니다.',
+      'templateMissing' => '오늘 배정 시간이 없습니다.',
+      'loadFailed' => '시간 정보를 불러오지 못했습니다.',
+      _ => null,
+    };
   }
 
   String _formatTime(int totalMinutes) {
@@ -243,7 +304,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
   }
 
   String get _missionConfirmationLocation {
-    if (_data.hasConfiguredMissions) {
+    if (_data.hasConfiguredMissions || !_usesPreviewData) {
       return _withChildCode('/today-mission');
     }
     return _withChildCode('/today-mission', demo: 'empty');
@@ -303,7 +364,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
     }
 
     final String? parentId = _parentId;
-    final ConnectedChild? selectedChild = _selectedChild;
+    final ChildSummary? selectedChild = _selectedChild;
     if (index < 0 || index >= _savedMissions.length) {
       await _openMissionList();
       return;
@@ -349,13 +410,13 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
     children.removeAt(index);
     final String? parentId = _parentId;
-    final ConnectedChild? selectedChild = index < _connectedChildren.length
+    final ChildSummary? selectedChild = index < _connectedChildren.length
         ? _connectedChildren[index]
         : null;
     if (parentId == null || selectedChild == null) {
       return;
     }
-    await ChildConnectionStore.removeChild(
+    await _childRepository.removeChild(
       parentId: parentId,
       childrenId: selectedChild.childrenId,
     );
@@ -436,6 +497,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
       demo = 'filled';
     } else if (_data.hasConfiguredTime) {
       demo = 'parent-only';
+    } else if (_data.waitingForChildTimePlan) {
+      demo = 'parent-only';
     } else if (widget.showTimeEmptyPreview) {
       demo = 'child-empty';
     } else {
@@ -446,7 +509,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
   String _withChildCode(String path, {String? demo}) {
     final String? parentId = _parentId;
-    final ConnectedChild? selectedChild = _selectedChild;
+    final ChildSummary? selectedChild = _selectedChild;
     final Map<String, String> queryParameters = <String, String>{};
     if (parentId != null && parentId.isNotEmpty) {
       queryParameters['parentId'] = parentId;
@@ -463,13 +526,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasFilledContent =
-        _data.hasChildren ||
-        _data.hasConfiguredTime ||
-        _data.hasConfiguredMissions;
-
     return Scaffold(
-      backgroundColor: hasFilledContent ? AppColors.gray100 : AppColors.gray050,
+      backgroundColor: AppColors.gray100,
       body: Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: _clearDeleteChildStateIfNeeded,
@@ -480,58 +538,67 @@ class _ParentHomePageState extends State<ParentHomePage> {
               constraints: const BoxConstraints(maxWidth: 375),
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ParentHomeHeader(
-                            hasUnreadNotification: _data.hasUnreadNotification,
-                            onMyTap: () => context.push('/mypage'),
-                            onNotificationTap: () async {
-                              await context.push('/notifications');
-                              if (!mounted) {
-                                return;
-                              }
-                              await _loadParentHomeData();
-                            },
-                          ),
-                          const SizedBox(height: 35),
-                          KeyedSubtree(
-                            key: _childSelectorKey,
-                            child: ChildSelectorSection(
-                              children: _data.children,
-                              selectedIndex: _selectedChildIndex,
-                              deleteIndex: _deleteChildIndex,
-                              onChildTap: _handleChildTap,
-                              onChildDelete: _showDeleteChildDialog,
-                              onAddChildTap: () async {
-                                await context.push('/child/add');
+                  : RefreshIndicator(
+                      color: AppColors.primary,
+                      triggerMode: RefreshIndicatorTriggerMode.anywhere,
+                      onRefresh: _loadParentHomeData,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ParentHomeHeader(
+                              hasUnreadNotification:
+                                  _data.hasUnreadNotification,
+                              onMyTap: () => context.push('/mypage'),
+                              onNotificationTap: () async {
+                                await context.push('/notifications');
                                 if (!mounted) {
                                   return;
                                 }
                                 await _loadParentHomeData();
                               },
                             ),
-                          ),
-                          const SizedBox(height: 36),
-                          TodayTimeSection(
-                            timeSummary: _data.timeSummary,
-                            waitingForChildPlan: _data.waitingForChildTimePlan,
-                            onSetup: _openTimeSettingsEntry,
-                            onAdd: _openTimeSetup,
-                          ),
-                          const SizedBox(height: 36),
-                          TodayMissionSection(
-                            missions: _data.missions,
-                            completedCount: _data.completedMissionCount,
-                            totalCount: _data.missionCount,
-                            onOpen: _openMissionList,
-                            onSetup: _openMissionList,
-                            onAdd: _openMissionSetup,
-                            onMissionTap: _openMissionCheck,
-                          ),
-                        ],
+                            const SizedBox(height: 35),
+                            KeyedSubtree(
+                              key: _childSelectorKey,
+                              child: ChildSelectorSection(
+                                children: _data.children,
+                                selectedIndex: _selectedChildIndex,
+                                deleteIndex: _deleteChildIndex,
+                                onChildTap: _handleChildTap,
+                                onChildDelete: _showDeleteChildDialog,
+                                onAddChildTap: () async {
+                                  await context.push('/child/add');
+                                  if (!mounted) {
+                                    return;
+                                  }
+                                  await _loadParentHomeData();
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 36),
+                            TodayTimeSection(
+                              timeSummary: _data.timeSummary,
+                              waitingForChildPlan:
+                                  _data.waitingForChildTimePlan,
+                              emptyMessage: _data.timeEmptyMessage,
+                              onSetup: _openTimeSettingsEntry,
+                              onAdd: _openTimeSetup,
+                            ),
+                            const SizedBox(height: 36),
+                            TodayMissionSection(
+                              missions: _data.missions,
+                              completedCount: _data.completedMissionCount,
+                              totalCount: _data.missionCount,
+                              onOpen: _openMissionList,
+                              onSetup: _openMissionList,
+                              onAdd: _openMissionSetup,
+                              onMissionTap: _openMissionCheck,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
             ),

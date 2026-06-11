@@ -1,16 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
+import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/auth/auth_token.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
 enum _SignupErrorType {
   invalidName,
   invalidEmail,
+  duplicateEmail,
   invalidPassword,
   passwordMismatch,
 }
@@ -18,7 +25,10 @@ enum _SignupErrorType {
 enum _CheckState { hidden, inactive, active }
 
 class SignupPage extends StatefulWidget {
-  const SignupPage({super.key});
+  const SignupPage({super.key, AuthRepository? authRepository})
+    : _authRepository = authRepository;
+
+  final AuthRepository? _authRepository;
 
   @override
   State<SignupPage> createState() => _SignupPageState();
@@ -27,7 +37,7 @@ class SignupPage extends StatefulWidget {
 class _SignupPageState extends State<SignupPage> {
   static final RegExp _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
   static final RegExp _passwordPattern = RegExp(
-    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{8,15}$',
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[^\s]{12,15}$',
   );
 
   final TextEditingController _nameController = TextEditingController();
@@ -35,8 +45,10 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordConfirmController =
       TextEditingController();
+  late final AuthRepository _authRepository;
 
   _SignupErrorType? _activeError;
+  bool _submitting = false;
 
   String get _name => _nameController.text;
   String get _email => _emailController.text;
@@ -83,6 +95,9 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   String? get _emailInlineMessage {
+    if (_activeError == _SignupErrorType.duplicateEmail) {
+      return '이미 가입된 이메일입니다. 로그인해주세요.';
+    }
     if (_email.isEmpty || _isEmailValid) {
       return null;
     }
@@ -93,7 +108,7 @@ class _SignupPageState extends State<SignupPage> {
     if (_password.isEmpty || _isPasswordValid) {
       return null;
     }
-    return '영문 대/소문자, 숫자, 특수문자 혼합 8자 / 빈칸, 공백 불가';
+    return '영문 대/소문자, 숫자, 특수문자 혼합 12~15자 / 빈칸, 공백 불가';
   }
 
   String? get _passwordConfirmInlineMessage {
@@ -112,6 +127,8 @@ class _SignupPageState extends State<SignupPage> {
         return '이름을 입력해주세요.';
       case _SignupErrorType.invalidEmail:
         return '이메일 형식을 확인해주세요.';
+      case _SignupErrorType.duplicateEmail:
+        return '이미 가입된 계정입니다. 로그인해주세요.';
       case _SignupErrorType.invalidPassword:
         return '비밀번호 규칙에 어긋납니다. 수정해주세요.';
       case _SignupErrorType.passwordMismatch:
@@ -129,6 +146,9 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   _CheckState get _emailCheckState {
+    if (_activeError == _SignupErrorType.duplicateEmail) {
+      return _CheckState.inactive;
+    }
     if (_isEmailValid) {
       return _CheckState.active;
     }
@@ -159,10 +179,17 @@ class _SignupPageState extends State<SignupPage> {
 
   void _onEmailChanged(String value) {
     setState(() {
-      if (_activeError == _SignupErrorType.invalidEmail) {
+      if (_activeError == _SignupErrorType.invalidEmail ||
+          _activeError == _SignupErrorType.duplicateEmail) {
         _activeError = null;
       }
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _authRepository = widget._authRepository ?? createAuthRepository();
   }
 
   void _onPasswordChanged(String value) {
@@ -184,6 +211,10 @@ class _SignupPageState extends State<SignupPage> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
+
+    if (_submitting) {
+      return;
+    }
 
     if (!_isNameValid) {
       setState(() {
@@ -215,40 +246,68 @@ class _SignupPageState extends State<SignupPage> {
 
     setState(() {
       _activeError = null;
+      _submitting = true;
     });
 
-    final ParentAccount? existingAccount = await AccountStore.getAccountByEmail(
-      _email,
+    final Result<AuthToken> result = await _authRepository.signup(
+      email: _email.trim(),
+      name: _name.trim(),
+      password: _password,
     );
     if (!mounted) {
-      return;
-    }
-    if (existingAccount != null) {
-      context.go(
-        Uri(
-          path: '/login',
-          queryParameters: <String, String>{
-            'name': existingAccount.name,
-            'email': existingAccount.email,
-            'notice': 'existing-account',
-          },
-        ).toString(),
-      );
       return;
     }
 
-    final ParentAccount account = ParentAccount(
-      parentId: AccountStore.parentIdFromEmail(_email),
-      email: _email.trim(),
-      name: _name.trim(),
-      passwordHash: AccountStore.passwordHashForLocalMock(_password),
-    );
-    await AccountStore.saveAccount(account);
-    await AuthSession.login(parentId: account.parentId, email: account.email);
-    if (!mounted) {
-      return;
+    switch (result) {
+      case Success<AuthToken>(:final AuthToken data):
+        // The backend may create the account without issuing a session. Clear
+        // any previous local session before sending the user to login, otherwise
+        // the landing/home redirect can keep using the former account.
+        if (data.accessToken.isEmpty || data.parentId.isEmpty) {
+          await AuthSession.logout();
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _submitting = false;
+          });
+          context.go(
+            Uri(
+              path: '/login',
+              queryParameters: <String, String>{'email': _email.trim()},
+            ).toString(),
+          );
+          return;
+        }
+        await AuthSession.logout();
+        await AuthSession.login(parentId: data.parentId, email: data.email);
+        final String? refresh = data.refreshToken;
+        await AuthSession.saveTokens(
+          accessToken: data.accessToken,
+          refreshToken: refresh,
+        );
+        unawaited(DeviceRegistration.registerCurrent());
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _submitting = false;
+        });
+        context.go('/signup/complete');
+      case Failure<AuthToken>(:final String message):
+        setState(() {
+          _submitting = false;
+        });
+        if (message == AuthFailureMessages.duplicatedEmail) {
+          setState(() {
+            _activeError = _SignupErrorType.duplicateEmail;
+          });
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
     }
-    context.go('/signup/complete');
   }
 
   @override
@@ -358,8 +417,10 @@ class _SignupPageState extends State<SignupPage> {
                             ],
                             _SignupButton(
                               label: '확인',
-                              enabled: _canSubmit,
-                              onPressed: _canSubmit ? _submit : null,
+                              enabled: _canSubmit && !_submitting,
+                              onPressed: (_canSubmit && !_submitting)
+                                  ? _submit
+                                  : null,
                             ),
                             const SizedBox(height: 29),
                           ],
@@ -419,10 +480,7 @@ class _SignupTopBar extends StatelessWidget {
             child: Text(
               '회원가입',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: -0.0036,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -466,8 +524,6 @@ class _SignupField extends StatelessWidget {
           label,
           style: AppTypography.bodyMedium.copyWith(
             fontSize: labelFontSize,
-            height: 1.5,
-            letterSpacing: 0.0912,
             color: AppColors.gray600,
           ),
         ),
@@ -476,7 +532,7 @@ class _SignupField extends StatelessWidget {
           height: 50,
           decoration: BoxDecoration(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             border: Border.all(color: borderColor),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -495,9 +551,6 @@ class _SignupField extends StatelessWidget {
                     inputFormatters: inputFormatters,
                     cursorColor: AppColors.black,
                     style: AppTypography.bodyMedium.copyWith(
-                      fontSize: 16,
-                      height: 1.5,
-                      letterSpacing: 0.0912,
                       color: AppColors.black,
                     ),
                     decoration: const InputDecoration(
@@ -574,7 +627,7 @@ class _SignupToast extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.gray500,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.errorBannerRadius),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -584,12 +637,7 @@ class _SignupToast extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTypography.labelMedium.copyWith(
-                fontSize: 14,
-                height: 1.429,
-                letterSpacing: 0.203,
-                color: AppColors.white,
-              ),
+              style: AppTypography.labelMedium.copyWith(color: AppColors.white),
             ),
           ),
         ],
@@ -613,7 +661,7 @@ class _ToastWarningIcon extends StatelessWidget {
       child: Center(
         child: Text(
           '!',
-          style: AppTypography.captionBold.copyWith(
+          style: AppTypography.captionSemiBold.copyWith(
             fontSize: 12,
             height: 1,
             letterSpacing: 0,
@@ -649,15 +697,13 @@ class _SignupButton extends StatelessWidget {
           disabledBackgroundColor: AppColors.gray200,
           foregroundColor: AppColors.white,
           disabledForegroundColor: AppColors.gray300,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          ),
         ),
         child: Text(
           label,
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: -0.0036,
-            fontWeight: FontWeight.w500,
             color: enabled ? AppColors.white : AppColors.gray300,
           ),
         ),

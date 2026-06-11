@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../styles/time_setup_tokens.dart';
 
 class TimeTipPopover extends StatelessWidget {
   const TimeTipPopover({super.key, required this.onClose});
@@ -27,8 +28,8 @@ class TimeTipPopover extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
           decoration: BoxDecoration(
-            color: AppColors.gray600,
-            borderRadius: BorderRadius.circular(12),
+            color: TimeSetupPalette.popoverBackground,
+            borderRadius: BorderRadius.circular(TimeSetupRadius.field),
           ),
           child: Stack(
             children: [
@@ -63,21 +64,12 @@ class _TipContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextStyle titleStyle = AppTypography.bodyMedium.copyWith(
-      fontSize: 16,
-      height: 1.5,
-      letterSpacing: 0,
       color: AppColors.gray100,
     );
     final TextStyle bodyStyle = AppTypography.captionRegular.copyWith(
-      fontSize: 14,
-      height: 1.429,
-      letterSpacing: 0,
       color: AppColors.gray100,
     );
     final TextStyle boldStyle = AppTypography.labelBold.copyWith(
-      fontSize: 14,
-      height: 1.429,
-      letterSpacing: 0,
       color: AppColors.gray100,
     );
 
@@ -94,12 +86,7 @@ class _TipContent extends StatelessWidget {
           '*대한소아청소년의학회의 정신건강의학과 전문의 121명\n'
           '대상 설문 조사 결과 (2014)\n'
           '*학습앱, 전화, 문자 기본앱 사용 제외',
-          style: AppTypography.labelRegular.copyWith(
-            fontSize: 12,
-            height: 1.334,
-            letterSpacing: 0,
-            color: AppColors.gray100,
-          ),
+          style: AppTypography.labelRegular.copyWith(color: AppColors.gray100),
         ),
         const SizedBox(height: 22),
         Text('2. 또래 평균 스마트폰 사용 시간', style: boldStyle),
@@ -134,7 +121,7 @@ class _TipContent extends StatelessWidget {
 class TipCaretPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()..color = AppColors.gray600;
+    final Paint paint = Paint()..color = TimeSetupPalette.popoverBackground;
     final Path path = Path()
       ..moveTo(size.width / 2, 0)
       ..lineTo(size.width, size.height)

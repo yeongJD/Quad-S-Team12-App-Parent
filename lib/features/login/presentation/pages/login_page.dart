@@ -1,24 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/auth/account_store.dart';
 import '../../../../core/auth/auth_session.dart';
+import '../../../../core/models/result.dart';
+import '../../../../core/services/device_registration.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/auth/auth_token.dart';
+import '../../../../data/repositories/auth_repository.dart';
 
-enum _LoginErrorType { missingName, missingEmail, wrongPassword }
+enum _LoginErrorType { missingEmail, wrongPassword }
 
 class LoginPage extends StatefulWidget {
   const LoginPage({
     super.key,
-    this.initialName,
     this.initialEmail,
     this.showExistingAccountNotice = false,
   });
 
-  final String? initialName;
   final String? initialEmail;
   final bool showExistingAccountNotice;
 
@@ -27,22 +31,20 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthRepository _authRepository = createAuthRepository();
 
   _LoginErrorType? _activeError;
+  bool _submitting = false;
 
-  String get _name => _nameController.text;
   String get _email => _emailController.text;
   String get _password => _passwordController.text;
-  bool get _canSubmit =>
-      _name.isNotEmpty && _email.isNotEmpty && _password.isNotEmpty;
+  bool get _canSubmit => _email.isNotEmpty && _password.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    _nameController.text = widget.initialName ?? '';
     _emailController.text = widget.initialEmail ?? '';
     if (widget.showExistingAccountNotice) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -58,8 +60,6 @@ class _LoginPageState extends State<LoginPage> {
 
   String? get _errorMessage {
     switch (_activeError) {
-      case _LoginErrorType.missingName:
-        return '해당 이름으로 가입된 정보가 없습니다.';
       case _LoginErrorType.missingEmail:
         return '해당 이메일로 가입된 정보가 없습니다.';
       case _LoginErrorType.wrongPassword:
@@ -71,16 +71,9 @@ class _LoginPageState extends State<LoginPage> {
 
   void _reconcileActiveError() {
     switch (_activeError) {
-      case _LoginErrorType.missingName:
-        if (_name.trim().isNotEmpty) {
-          _activeError = null;
-        }
-        break;
       case _LoginErrorType.missingEmail:
         if (_email.trim().isNotEmpty) {
-          _activeError = _name.trim().isNotEmpty
-              ? null
-              : _LoginErrorType.missingName;
+          _activeError = null;
         }
         break;
       case _LoginErrorType.wrongPassword:
@@ -91,12 +84,6 @@ class _LoginPageState extends State<LoginPage> {
       case null:
         break;
     }
-  }
-
-  void _onNameChanged(String value) {
-    setState(() {
-      _reconcileActiveError();
-    });
   }
 
   void _onEmailChanged(String value) {
@@ -114,52 +101,76 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
-    if (_name.trim().isEmpty) {
-      setState(() {
-        _activeError = _LoginErrorType.missingName;
-      });
-      return;
-    }
-
-    final ParentAccount? account = await AccountStore.getAccountByEmail(_email);
-    if (account == null) {
-      setState(() {
-        _activeError = _LoginErrorType.missingEmail;
-      });
-      return;
-    }
-
-    if (account.name != _name || _name.trim().isEmpty) {
-      setState(() {
-        _activeError = _LoginErrorType.missingName;
-      });
-      return;
-    }
-
-    final bool isValidLogin = await AccountStore.validateLogin(
-      email: _email,
-      password: _password,
-    );
-    if (!isValidLogin) {
-      setState(() {
-        _activeError = _LoginErrorType.wrongPassword;
-      });
+    if (_submitting) {
       return;
     }
 
     setState(() {
-      _activeError = null;
+      _submitting = true;
     });
-    await AuthSession.login(parentId: account.parentId, email: account.email);
+    final Result<AuthToken> result = await _authRepository.login(
+      email: _email.trim(),
+      password: _password,
+    );
     if (!mounted) {
       return;
     }
-    context.go('/login/complete');
+
+    switch (result) {
+      case Success<AuthToken>(:final AuthToken data):
+        if (data.accessToken.isEmpty || data.parentId.isEmpty) {
+          setState(() {
+            _submitting = false;
+            _activeError = null;
+          });
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('로그인 정보를 다시 확인해 주세요.')));
+          return;
+        }
+        await AuthSession.logout();
+        await AuthSession.login(parentId: data.parentId, email: data.email);
+        final String? refresh = data.refreshToken;
+        await AuthSession.saveTokens(
+          accessToken: data.accessToken,
+          refreshToken: refresh,
+        );
+        // Fire-and-forget — never blocks the user from advancing past
+        // login if push registration is slow or fails.
+        unawaited(DeviceRegistration.registerCurrent());
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _submitting = false;
+          _activeError = null;
+        });
+        context.go('/login/complete');
+      case Failure<AuthToken>(:final String message):
+        setState(() {
+          _submitting = false;
+          _activeError = _mapLoginFailure(message);
+        });
+        if (_activeError == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
+    }
+  }
+
+  _LoginErrorType? _mapLoginFailure(String message) {
+    if (message == AuthFailureMessages.unknownEmail) {
+      return _LoginErrorType.missingEmail;
+    }
+    if (message == AuthFailureMessages.wrongPassword) {
+      return _LoginErrorType.wrongPassword;
+    }
+    return null;
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -188,23 +199,6 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             _LoginTopBar(onBack: () => context.go('/')),
                             const SizedBox(height: 25),
-                            _LoginField(
-                              label: '이름',
-                              controller: _nameController,
-                              borderColor:
-                                  _activeError == _LoginErrorType.missingName
-                                  ? AppColors.destructive
-                                  : AppColors.gray200,
-                              onChanged: _onNameChanged,
-                              inputFormatters: <TextInputFormatter>[
-                                FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                                LengthLimitingTextInputFormatter(20),
-                              ],
-                              keyboardType: TextInputType.text,
-                              labelBottomSpacing: 10,
-                              labelFontSize: 14.385,
-                            ),
-                            const SizedBox(height: 35),
                             _LoginField(
                               label: '이메일',
                               controller: _emailController,
@@ -243,8 +237,10 @@ class _LoginPageState extends State<LoginPage> {
                             ],
                             _LoginButton(
                               label: '로그인',
-                              enabled: _canSubmit,
-                              onPressed: _canSubmit ? _submit : null,
+                              enabled: _canSubmit && !_submitting,
+                              onPressed: (_canSubmit && !_submitting)
+                                  ? _submit
+                                  : null,
                             ),
                             const SizedBox(height: 29),
                           ],
@@ -304,10 +300,7 @@ class _LoginTopBar extends StatelessWidget {
             child: Text(
               '로그인',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: -0.0036,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
@@ -326,7 +319,6 @@ class _LoginField extends StatelessWidget {
     required this.inputFormatters,
     required this.keyboardType,
     required this.labelBottomSpacing,
-    this.labelFontSize = 16,
   });
 
   final String label;
@@ -336,7 +328,6 @@ class _LoginField extends StatelessWidget {
   final List<TextInputFormatter> inputFormatters;
   final TextInputType keyboardType;
   final double labelBottomSpacing;
-  final double labelFontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -345,19 +336,14 @@ class _LoginField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTypography.bodyMedium.copyWith(
-            fontSize: labelFontSize,
-            height: 1.5,
-            letterSpacing: 0.0912,
-            color: AppColors.gray600,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.gray600),
         ),
         SizedBox(height: labelBottomSpacing),
         Container(
           height: 50,
           decoration: BoxDecoration(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppTokens.fieldRadius),
             border: Border.all(color: borderColor),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -372,12 +358,7 @@ class _LoginField extends StatelessWidget {
               textCapitalization: TextCapitalization.none,
               inputFormatters: inputFormatters,
               cursorColor: AppColors.black,
-              style: AppTypography.bodyMedium.copyWith(
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0.0912,
-                color: AppColors.black,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.black),
               decoration: const InputDecoration(
                 isDense: true,
                 filled: false,
@@ -409,7 +390,7 @@ class _LoginToast extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.gray500,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.errorBannerRadius),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -419,12 +400,7 @@ class _LoginToast extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTypography.labelMedium.copyWith(
-                fontSize: 14,
-                height: 1.429,
-                letterSpacing: 0.203,
-                color: AppColors.white,
-              ),
+              style: AppTypography.labelMedium.copyWith(color: AppColors.white),
             ),
           ),
         ],
@@ -448,7 +424,7 @@ class _LoginToastWarningIcon extends StatelessWidget {
       child: Center(
         child: Text(
           '!',
-          style: AppTypography.captionBold.copyWith(
+          style: AppTypography.captionSemiBold.copyWith(
             fontSize: 12,
             height: 1,
             letterSpacing: 0,
@@ -484,15 +460,13 @@ class _LoginButton extends StatelessWidget {
           disabledBackgroundColor: AppColors.gray200,
           foregroundColor: AppColors.white,
           disabledForegroundColor: AppColors.gray300,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          ),
         ),
         child: Text(
           label,
           style: AppTypography.headlineMedium.copyWith(
-            fontSize: 18,
-            height: 1.445,
-            letterSpacing: -0.0036,
-            fontWeight: FontWeight.w500,
             color: enabled ? AppColors.white : AppColors.gray300,
           ),
         ),

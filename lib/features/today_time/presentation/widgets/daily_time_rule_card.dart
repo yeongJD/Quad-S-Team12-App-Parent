@@ -68,10 +68,7 @@ class DailyTimeRuleCard extends StatelessWidget {
                 children: [
                   Text(
                     rule.dayText,
-                    style: AppTypography.headlineBold.copyWith(
-                      fontSize: 18,
-                      height: 1.445,
-                      letterSpacing: 0,
+                    style: AppTypography.headlineSemiBold.copyWith(
                       color: AppColors.gray800,
                     ),
                   ),
@@ -83,10 +80,7 @@ class DailyTimeRuleCard extends StatelessWidget {
                   ),
                   Text(
                     rule.time.displayText,
-                    style: AppTypography.headlineBold.copyWith(
-                      fontSize: 18,
-                      height: 1.445,
-                      letterSpacing: 0,
+                    style: AppTypography.headlineSemiBold.copyWith(
                       color: AppColors.gray800,
                     ),
                   ),

@@ -36,7 +36,7 @@ class MissionItem {
     required this.title,
     required this.reward,
     required this.status,
-    this.iconAsset = 'assets/icons/청소.svg',
+    this.iconAsset = MissionCategoryAssetPaths.cleaning,
   });
 
   final String title;
@@ -67,6 +67,7 @@ class ParentHomeData {
     this.timeSummary,
     this.waitingForChildTimePlan = false,
     this.hasChildTimePlan = false,
+    this.timeEmptyMessage,
     this.missions = const <MissionItem>[],
     this.totalMissionCount,
   });
@@ -76,6 +77,7 @@ class ParentHomeData {
   final TimeSummary? timeSummary;
   final bool waitingForChildTimePlan;
   final bool hasChildTimePlan;
+  final String? timeEmptyMessage;
   final List<MissionItem> missions;
   final int? totalMissionCount;
 
@@ -96,6 +98,7 @@ class ParentHomeData {
       timeSummary: timeSummary,
       waitingForChildTimePlan: waitingForChildTimePlan,
       hasChildTimePlan: hasChildTimePlan,
+      timeEmptyMessage: timeEmptyMessage,
       missions: missions,
       totalMissionCount: totalMissionCount,
     );
@@ -132,6 +135,7 @@ class ParentHomeData {
     TimeSummary? timeSummary,
     bool waitingForChildTimePlan = false,
     bool hasChildTimePlan = false,
+    String? timeEmptyMessage,
     List<MissionItem> missions = const <MissionItem>[],
     bool hasUnreadNotification = true,
   }) {
@@ -150,6 +154,7 @@ class ParentHomeData {
       timeSummary: timeSummary,
       waitingForChildTimePlan: waitingForChildTimePlan,
       hasChildTimePlan: hasChildTimePlan,
+      timeEmptyMessage: timeEmptyMessage,
       missions: missions,
       totalMissionCount: missions.length,
     );

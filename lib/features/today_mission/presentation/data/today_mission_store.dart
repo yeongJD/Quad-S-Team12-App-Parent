@@ -92,6 +92,9 @@ abstract final class TodayMissionStore {
 
   static Map<String, Object> _encodeMission(TodayMission mission) {
     return <String, Object>{
+      if (mission.missionId case final String missionId) 'missionId': missionId,
+      if (mission.performanceId case final String performanceId)
+        'performanceId': performanceId,
       'title': mission.title,
       'category': mission.category.name,
       'resetPeriod': mission.resetPeriod.name,
@@ -103,10 +106,14 @@ abstract final class TodayMissionStore {
       'verificationStatus': mission.effectiveVerificationStatus.name,
       if (mission.submittedAtText case final String submittedAtText)
         'submittedAtText': submittedAtText,
+      if (mission.proofImageUrl case final String proofImageUrl)
+        'proofImageUrl': proofImageUrl,
     };
   }
 
   static TodayMission? _decodeMission(Map<String, Object?> json) {
+    final Object? missionId = json['missionId'];
+    final Object? performanceId = json['performanceId'];
     final Object? title = json['title'];
     final Object? category = json['category'];
     final Object? resetPeriod = json['resetPeriod'];
@@ -116,8 +123,11 @@ abstract final class TodayMissionStore {
     final Object? status = json['status'];
     final Object? verificationStatus = json['verificationStatus'];
     final Object? submittedAtText = json['submittedAtText'];
+    final Object? proofImageUrl = json['proofImageUrl'];
 
-    if (title is! String ||
+    if ((missionId != null && missionId is! String) ||
+        (performanceId != null && performanceId is! String) ||
+        title is! String ||
         category is! String ||
         resetPeriod is! String ||
         confirmationMethod is! String ||
@@ -125,14 +135,12 @@ abstract final class TodayMissionStore {
         description is! String ||
         (status != null && status is! String) ||
         (verificationStatus != null && verificationStatus is! String) ||
-        (submittedAtText != null && submittedAtText is! String)) {
+        (submittedAtText != null && submittedAtText is! String) ||
+        (proofImageUrl != null && proofImageUrl is! String)) {
       return null;
     }
 
-    final MissionCategory? decodedCategory = _decodeEnum(
-      MissionCategory.values,
-      category,
-    );
+    final MissionCategory? decodedCategory = missionCategoryFromWire(category);
     final MissionResetPeriod? decodedResetPeriod = _decodeEnum(
       MissionResetPeriod.values,
       resetPeriod,
@@ -164,6 +172,8 @@ abstract final class TodayMissionStore {
           );
 
     return TodayMission(
+      missionId: missionId is String ? missionId : null,
+      performanceId: performanceId is String ? performanceId : null,
       title: title,
       category: decodedCategory,
       resetPeriod: decodedResetPeriod,
@@ -173,6 +183,7 @@ abstract final class TodayMissionStore {
       status: decodedVerificationStatus.legacyStatus,
       verificationStatus: decodedVerificationStatus,
       submittedAtText: submittedAtText is String ? submittedAtText : null,
+      proofImageUrl: proofImageUrl is String ? proofImageUrl : null,
     );
   }
 

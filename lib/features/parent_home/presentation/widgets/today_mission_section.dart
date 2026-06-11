@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../models/parent_home_models.dart';
 
@@ -47,10 +48,7 @@ class TodayMissionSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
                 child: Text(
                   '오늘의 미션',
-                  style: AppTypography.headlineBold.copyWith(
-                    fontSize: 18,
-                    height: 1.4,
-                    letterSpacing: -0.22,
+                  style: AppTypography.headlineSemiBold.copyWith(
                     color: AppColors.black,
                   ),
                 ),
@@ -61,22 +59,16 @@ class TodayMissionSection extends StatelessWidget {
             const Spacer(),
             Text(
               '$completedCount개 완료',
-              style: AppTypography.labelBold.copyWith(
-                fontSize: 12.587,
-                height: 1.429,
-                letterSpacing: 0.18,
+              style: AppTypography.captionSemiBold.copyWith(
                 color: AppColors.gray700,
               ),
             ),
             const SizedBox(width: 7),
-            Container(width: 1, height: 12.587, color: AppColors.gray300),
+            Container(width: 1, height: 12, color: AppColors.gray300),
             const SizedBox(width: 7),
             Text(
               '$totalCount',
-              style: AppTypography.labelBold.copyWith(
-                fontSize: 12.587,
-                height: 1.429,
-                letterSpacing: 0.18,
+              style: AppTypography.captionSemiBold.copyWith(
                 color: AppColors.gray200,
               ),
             ),
@@ -161,22 +153,18 @@ class _MissionCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 17.082, vertical: 16.183),
+      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 18),
       decoration: BoxDecoration(
-        color: isCompleted ? const Color(0xFFEDEEF1) : AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: isCompleted ? AppColors.gray150 : AppColors.white,
+        borderRadius: BorderRadius.circular(AppTokens.cardRadiusSmall),
       ),
       child: Row(
         children: [
           Opacity(
             opacity: isCompleted ? 0.3 : 1,
-            child: SvgPicture.asset(
-              item.iconAsset,
-              width: 43.156,
-              height: 43.156,
-            ),
+            child: SvgPicture.asset(item.iconAsset, width: 48, height: 48),
           ),
-          const SizedBox(width: 17),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,23 +174,14 @@ class _MissionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
-                    onTap: isCompleted
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('이미 완료된 미션이에요.')),
-                            );
-                          }
-                        : () => onTap(false),
+                    onTap: () => onTap(isCompleted),
                     hoverColor: feedbackColor.withValues(alpha: 0.06),
                     highlightColor: feedbackColor.withValues(alpha: 0.10),
                     splashColor: feedbackColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                     child: Text(
                       item.title,
-                      style: AppTypography.labelMedium.copyWith(
-                        fontSize: isCompleted ? 16 : 14.39,
-                        height: 1.5,
-                        letterSpacing: isCompleted ? 0.0912 : 0.082,
+                      style: AppTypography.bodyMedium.copyWith(
                         color: isCompleted
                             ? AppColors.gray300
                             : AppColors.gray800,
@@ -212,13 +191,10 @@ class _MissionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 2.7),
+                const SizedBox(height: 3),
                 Text(
                   item.reward,
                   style: AppTypography.captionRegular.copyWith(
-                    fontSize: isCompleted ? 12 : 10.79,
-                    height: 1.334,
-                    letterSpacing: isCompleted ? 0.3024 : 0.2719,
                     color: isCompleted ? AppColors.gray300 : AppColors.gray500,
                     decoration: lineThrough,
                     decorationColor: isCompleted ? AppColors.gray300 : null,
@@ -253,7 +229,7 @@ class _MissionCard extends StatelessWidget {
 class _MissionStatusIcon extends StatelessWidget {
   const _MissionStatusIcon({required this.status});
 
-  static const double _iconSize = 21.578;
+  static const double _iconSize = 22;
 
   final MissionStatus status;
 
@@ -278,7 +254,7 @@ class _MissionAddButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFEBF5FE),
+      color: AppColors.primaryLight,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -288,11 +264,9 @@ class _MissionAddButton extends StatelessWidget {
         splashColor: AppColors.primary.withValues(alpha: 0.16),
         customBorder: const CircleBorder(),
         child: const SizedBox(
-          width: 35.963,
-          height: 35.963,
-          child: Center(
-            child: _AddIcon(color: AppColors.primary, size: 21.578),
-          ),
+          width: 40,
+          height: 40,
+          child: Center(child: _AddIcon(color: AppColors.primary, size: 24)),
         ),
       ),
     );
@@ -308,6 +282,9 @@ class _AddIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const double stroke = 1.8;
+    const BorderRadius strokeRadius = BorderRadius.all(
+      Radius.circular(stroke / 2),
+    );
 
     return SizedBox(
       width: size,
@@ -318,18 +295,12 @@ class _AddIcon extends StatelessWidget {
           Container(
             width: stroke,
             height: size * 0.75,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
           Container(
             width: size * 0.75,
             height: stroke,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: color, borderRadius: strokeRadius),
           ),
         ],
       ),

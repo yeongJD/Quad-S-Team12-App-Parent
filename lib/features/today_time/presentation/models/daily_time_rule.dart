@@ -57,3 +57,29 @@ bool coversEveryWeekday(List<DailyTimeRule> rules) {
   }
   return coveredDays.length == weekdayLabels.length;
 }
+
+int calculateMonthlyMinutesForRules(
+  List<DailyTimeRule> rules, {
+  DateTime? month,
+}) {
+  final DateTime targetMonth = month ?? DateTime.now();
+  final int lastDay = DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
+  final List<int> weekdayCounts = List<int>.filled(DateTime.daysPerWeek, 0);
+  for (int day = 1; day <= lastDay; day++) {
+    final int weekdayIndex =
+        DateTime(targetMonth.year, targetMonth.month, day).weekday - 1;
+    weekdayCounts[weekdayIndex]++;
+  }
+
+  int total = 0;
+  for (final DailyTimeRule rule in rules) {
+    final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
+    for (final int dayIndex in rule.days) {
+      if (dayIndex < 0 || dayIndex >= weekdayCounts.length) {
+        continue;
+      }
+      total += dailyMinutes * weekdayCounts[dayIndex];
+    }
+  }
+  return total;
+}

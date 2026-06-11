@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../data/child_weekly_time_plan_store.dart';
-import '../data/daily_time_rule_store.dart';
-import '../data/monthly_total_time_store.dart';
+import '../../../../data/repositories/time_plan_repository.dart';
 import '../data/today_time_mock_data.dart';
-import '../data/whitelist_app_store.dart';
 import '../models/daily_time_rule.dart';
 import '../models/time_plan_confirmation.dart';
 import '../styles/time_setup_tokens.dart';
@@ -22,7 +20,10 @@ class TodayTimeConfirmationPage extends StatefulWidget {
     this.childrenId,
     this.demo,
     this.initialData,
-  });
+    TimePlanRepository? timePlanRepository,
+  }) : _timePlanRepository = timePlanRepository;
+
+  final TimePlanRepository? _timePlanRepository;
 
   final String? parentId;
   final String? childrenId;
@@ -35,8 +36,57 @@ class TodayTimeConfirmationPage extends StatefulWidget {
 }
 
 class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
+  late final TimePlanRepository _timePlanRepository =
+      widget._timePlanRepository ?? createTimePlanRepository();
   late TimePlanConfirmationData _data;
   late bool _childRevisionAllowed;
+
+  Future<List<DailyTimeRule>> _loadRules({
+    required String parentId,
+    required String childrenId,
+    required Future<Result<List<DailyTimeRule>>> Function({
+      required String parentId,
+      required String childrenId,
+    })
+    loader,
+  }) async {
+    final Result<List<DailyTimeRule>> result = await loader(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return switch (result) {
+      Success<List<DailyTimeRule>>(:final data) => data,
+      Failure<List<DailyTimeRule>>() => const <DailyTimeRule>[],
+    };
+  }
+
+  Future<int?> _loadMonthlyTotal({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    final Result<int?> result = await _timePlanRepository.loadMonthlyTotal(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return switch (result) {
+      Success<int?>(:final data) => data,
+      Failure<int?>() => null,
+    };
+  }
+
+  Future<Set<String>> _loadWhitelist({
+    required String parentId,
+    required String childrenId,
+  }) async {
+    final Result<Set<String>> result = await _timePlanRepository.loadWhitelist(
+      parentId: parentId,
+      childrenId: childrenId,
+    );
+    return switch (result) {
+      Success<Set<String>>(:final data) => data,
+      Failure<Set<String>>() => const <String>{},
+    };
+  }
 
   @override
   void initState() {
@@ -59,29 +109,28 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
       return;
     }
 
-    final List<DailyTimeRule> parentRules = await DailyTimeRuleStore.load(
+    final List<DailyTimeRule> parentRules = await _loadRules(
       parentId: parentId,
       childrenId: childrenId,
+      loader: _timePlanRepository.loadDailyRules,
     );
-    if (parentRules.isEmpty) {
-      return;
-    }
-
-    final List<DailyTimeRule> childWeeklyRules =
-        await ChildWeeklyTimePlanStore.load(
-          parentId: parentId,
-          childrenId: childrenId,
-        );
-    final int calculatedMonthlyMinutes = _calculateMonthlyMinutes(parentRules);
-    final int? savedMonthlyMinutes = await MonthlyTotalTimeStore.load(
+    final List<DailyTimeRule> childWeeklyRules = await _loadRules(
+      parentId: parentId,
+      childrenId: childrenId,
+      loader: _timePlanRepository.loadChildWeeklyRules,
+    );
+    final int? savedMonthlyMinutes = await _loadMonthlyTotal(
       parentId: parentId,
       childrenId: childrenId,
     );
     final int monthlyTotalMinutes =
-        savedMonthlyMinutes == null ||
-            savedMonthlyMinutes < calculatedMonthlyMinutes
-        ? calculatedMonthlyMinutes
-        : savedMonthlyMinutes;
+        savedMonthlyMinutes ??
+        (parentRules.isEmpty
+            ? 0
+            : calculateMonthlyMinutesForRules(parentRules));
+    if (monthlyTotalMinutes <= 0) {
+      return;
+    }
     if (!mounted) {
       return;
     }
@@ -124,36 +173,24 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
   Future<void> _openEditFlow() async {
     final String? parentId = widget.parentId;
     final String? childrenId = widget.childrenId;
-    final List<DailyTimeRule> savedRules =
+    final bool missingIds =
         parentId == null ||
-            parentId.isEmpty ||
-            childrenId == null ||
-            childrenId.isEmpty
+        parentId.isEmpty ||
+        childrenId == null ||
+        childrenId.isEmpty;
+    final List<DailyTimeRule> savedRules = missingIds
         ? <DailyTimeRule>[]
-        : await DailyTimeRuleStore.load(
+        : await _loadRules(
             parentId: parentId,
             childrenId: childrenId,
+            loader: _timePlanRepository.loadDailyRules,
           );
-    final Set<String> savedWhitelistAppIds =
-        parentId == null ||
-            parentId.isEmpty ||
-            childrenId == null ||
-            childrenId.isEmpty
+    final Set<String> savedWhitelistAppIds = missingIds
         ? <String>{}
-        : await WhitelistAppStore.load(
-            parentId: parentId,
-            childrenId: childrenId,
-          );
-    final int? savedMonthlyTotalMinutes =
-        parentId == null ||
-            parentId.isEmpty ||
-            childrenId == null ||
-            childrenId.isEmpty
+        : await _loadWhitelist(parentId: parentId, childrenId: childrenId);
+    final int? savedMonthlyTotalMinutes = missingIds
         ? null
-        : await MonthlyTotalTimeStore.load(
-            parentId: parentId,
-            childrenId: childrenId,
-          );
+        : await _loadMonthlyTotal(parentId: parentId, childrenId: childrenId);
     if (!mounted) {
       return;
     }
@@ -189,28 +226,6 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     ).toString();
   }
 
-  int _calculateMonthlyMinutes(List<DailyTimeRule> rules) {
-    final DateTime now = DateTime.now();
-    final int lastDay = DateTime(now.year, now.month + 1, 0).day;
-    final List<int> weekdayCounts = List<int>.filled(DateTime.daysPerWeek, 0);
-    for (int day = 1; day <= lastDay; day++) {
-      final int weekdayIndex = DateTime(now.year, now.month, day).weekday - 1;
-      weekdayCounts[weekdayIndex]++;
-    }
-
-    int total = 0;
-    for (final DailyTimeRule rule in rules) {
-      final int dailyMinutes = rule.time.hour * 60 + rule.time.minute;
-      for (final int dayIndex in rule.days) {
-        if (dayIndex < 0 || dayIndex >= weekdayCounts.length) {
-          continue;
-        }
-        total += dailyMinutes * weekdayCounts[dayIndex];
-      }
-    }
-    return total;
-  }
-
   int _calculateWeeklyMinutes(List<DailyTimeRule> rules) {
     int total = 0;
     for (final DailyTimeRule rule in rules) {
@@ -230,7 +245,7 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     final TimeSelection? monthlyTotal = data.monthlyTotal;
 
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -248,7 +263,9 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                   child: monthlyTotal == null
                       ? const Center(
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 21.58),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: TimeSetupSpacing.horizontalPadding,
+                            ),
                             child: _EmptyNotice(
                               message: '이번달 시간규칙이 설정되지 않았습니다.',
                             ),
@@ -261,9 +278,9 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                             children: [
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
-                                  21.58,
-                                  7.64,
-                                  21.58,
+                                  TimeSetupSpacing.horizontalPadding,
+                                  8,
+                                  TimeSetupSpacing.horizontalPadding,
                                   0,
                                 ),
                                 child: _MonthlyTimeSection(
@@ -272,17 +289,17 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
                                   onEditTap: _openEditFlow,
                                 ),
                               ),
-                              const SizedBox(height: 30.09),
+                              const SizedBox(height: 30),
                               Container(
                                 width: double.infinity,
-                                height: 6.294,
-                                color: const Color(0xFFEDEEF1),
+                                height: 7,
+                                color: AppColors.gray150,
                               ),
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
-                                  21.58,
-                                  26.33,
-                                  21.58,
+                                  TimeSetupSpacing.horizontalPadding,
+                                  26,
+                                  TimeSetupSpacing.horizontalPadding,
                                   0,
                                 ),
                                 child: _WeeklyPlanSection(
@@ -365,11 +382,11 @@ class _WeeklyPlanSection extends StatelessWidget {
         const SizedBox(height: 20),
         if (total case final TimeSelection totalTime) ...[
           TimeAmountBox(time: totalTime),
-          const SizedBox(height: 13.486),
+          const SizedBox(height: 14),
           DailyPlanRuleList(rules: rules),
         ] else
           const Padding(
-            padding: EdgeInsets.only(top: 105.192),
+            padding: EdgeInsets.only(top: 105),
             child: _EmptyNotice(message: '아직 자녀가 이번주 사용계획을\n설정하지 않았어요.'),
           ),
       ],
@@ -389,12 +406,7 @@ class _EmptyNotice extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: AppTypography.bodyMedium.copyWith(
-          fontSize: 16.183,
-          height: 1.445,
-          letterSpacing: -0.0032,
-          color: AppColors.gray300,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.gray300),
       ),
     );
   }

@@ -10,16 +10,18 @@ abstract final class AppTypography {
     fontSize: 24,
     fontWeight: FontWeight.w600,
     height: 1.364,
-    letterSpacing: -1.94,
+    letterSpacing: -0.4656,
     color: AppColors.labelStrong,
   );
+
+  static const TextStyle heading1SemiBold = heading1Bold;
 
   static const TextStyle heading1Medium = TextStyle(
     fontFamily: fontFamily,
     fontSize: 24,
     fontWeight: FontWeight.w500,
     height: 1.364,
-    letterSpacing: -1.94,
+    letterSpacing: -0.4656,
     color: AppColors.labelStrong,
   );
 
@@ -28,7 +30,7 @@ abstract final class AppTypography {
     fontSize: 24,
     fontWeight: FontWeight.w400,
     height: 1.364,
-    letterSpacing: -1.94,
+    letterSpacing: -0.4656,
     color: AppColors.labelStrong,
   );
 
@@ -37,7 +39,7 @@ abstract final class AppTypography {
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 1.4,
-    letterSpacing: -1.2,
+    letterSpacing: -0.24,
     color: AppColors.labelStrong,
   );
 
@@ -46,7 +48,7 @@ abstract final class AppTypography {
     fontSize: 20,
     fontWeight: FontWeight.w500,
     height: 1.4,
-    letterSpacing: -1.2,
+    letterSpacing: -0.24,
     color: AppColors.labelStrong,
   );
 
@@ -55,7 +57,7 @@ abstract final class AppTypography {
     fontSize: 20,
     fontWeight: FontWeight.w400,
     height: 1.4,
-    letterSpacing: -1.2,
+    letterSpacing: -0.24,
     color: AppColors.labelStrong,
   );
 
@@ -67,6 +69,8 @@ abstract final class AppTypography {
     letterSpacing: -0.02,
     color: AppColors.labelStrong,
   );
+
+  static const TextStyle headlineSemiBold = headlineBold;
 
   static const TextStyle headlineMedium = TextStyle(
     fontFamily: fontFamily,
@@ -91,16 +95,18 @@ abstract final class AppTypography {
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.5,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
     color: AppColors.labelStrong,
   );
+
+  static const TextStyle bodySemiBold = bodyBold;
 
   static const TextStyle bodyMedium = TextStyle(
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.5,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
     color: AppColors.labelStrong,
   );
 
@@ -109,7 +115,7 @@ abstract final class AppTypography {
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
-    letterSpacing: 0.57,
+    letterSpacing: 0.0912,
     color: AppColors.labelStrong,
   );
 
@@ -118,16 +124,18 @@ abstract final class AppTypography {
     fontSize: 14,
     fontWeight: FontWeight.w600,
     height: 1.429,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
     color: AppColors.labelStrong,
   );
+
+  static const TextStyle labelSemiBold = labelBold;
 
   static const TextStyle labelMedium = TextStyle(
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.429,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
     color: AppColors.labelStrong,
   );
 
@@ -136,7 +144,7 @@ abstract final class AppTypography {
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.429,
-    letterSpacing: 1.45,
+    letterSpacing: 0.203,
     color: AppColors.labelStrong,
   );
 
@@ -145,16 +153,18 @@ abstract final class AppTypography {
     fontSize: 12,
     fontWeight: FontWeight.w600,
     height: 1.334,
-    letterSpacing: 2.52,
+    letterSpacing: 0.3024,
     color: AppColors.labelStrong,
   );
+
+  static const TextStyle captionSemiBold = captionBold;
 
   static const TextStyle captionMedium = TextStyle(
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.334,
-    letterSpacing: 2.52,
+    letterSpacing: 0.3024,
     color: AppColors.labelStrong,
   );
 
@@ -163,7 +173,7 @@ abstract final class AppTypography {
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.334,
-    letterSpacing: 2.52,
+    letterSpacing: 0.3024,
     color: AppColors.labelStrong,
   );
 

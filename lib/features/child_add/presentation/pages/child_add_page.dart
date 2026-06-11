@@ -9,13 +9,17 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/auth/auth_session.dart';
 import '../../../../core/child/child_connection_store.dart';
+import '../../../../core/models/result.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../data/models/child/child_summary.dart';
+import '../../../../data/repositories/child_repository.dart';
 
 abstract final class _ChildAddMetrics {
   static const double screenMaxWidth = 375;
-  static const double horizontalPadding = 24;
-  static const double topBarHeight = 52;
+  static const double horizontalPadding = AppTokens.mobileHorizontalPadding;
+  static const double topBarHeight = AppTokens.topBarHeight;
   static const double photoTopGap = 50;
   static const double photoSize = 74;
   static const double photoInnerSize = 64;
@@ -25,13 +29,13 @@ abstract final class _ChildAddMetrics {
   static const double labelToFieldGap = 10;
   static const double helperHeight = 18;
   static const double fieldHeight = 50;
-  static const double fieldRadius = 12;
+  static const double fieldRadius = AppTokens.fieldRadius;
   static const double fieldHorizontalPadding = 16;
   static const double fieldVerticalPadding = 12;
   static const double buttonHeight = 54;
   static const double bottomButtonGap = 31;
   static const double sheetHeight = 397;
-  static const double sheetRadius = 24;
+  static const double sheetRadius = AppTokens.bottomSheetTopRadius;
   static const double sheetTitleTop = 27;
   static const double sheetPickerTop = 82;
   static const double sheetPickerHeight = 168;
@@ -63,6 +67,7 @@ class _ChildAddPageState extends State<ChildAddPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _childCodeController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
+  final ChildRepository _childRepository = createChildRepository();
 
   Uint8List? _photoBytes;
   int? _selectedBirthYear;
@@ -121,7 +126,7 @@ class _ChildAddPageState extends State<ChildAddPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color.fromRGBO(68, 68, 68, 0.6),
+      barrierColor: AppColors.scrim,
       builder: (BuildContext context) {
         return _BirthYearBottomSheet(
           years: _birthYears,
@@ -158,21 +163,6 @@ class _ChildAddPageState extends State<ChildAddPage> {
       _childCodeErrorText = null;
     });
 
-    final String childCode = _childCodeController.text.trim();
-    final bool isValidCode = await ChildConnectionStore.validateChildCode(
-      childCode,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (!isValidCode) {
-      setState(() {
-        _isSubmitting = false;
-        _childCodeErrorText = '유효하지 않은 자녀코드입니다';
-      });
-      return;
-    }
-
     final String? parentId = await AuthSession.getCurrentParentId();
     if (parentId == null || parentId.isEmpty) {
       if (!mounted) {
@@ -182,18 +172,40 @@ class _ChildAddPageState extends State<ChildAddPage> {
       return;
     }
 
-    await ChildConnectionStore.addChild(
+    final Result<ChildSummary> result = await _childRepository.addChild(
       parentId: parentId,
-      child: ChildConnectionStore.childFromCode(
-        name: _nameController.text.trim(),
-        childCode: childCode,
-        photoBase64: _photoBytes == null ? null : base64Encode(_photoBytes!),
-      ),
+      childCode: _childCodeController.text.trim(),
+      name: _nameController.text.trim(),
+      birthYear: _selectedBirthYear,
+      photoBase64: _photoBytes == null ? null : base64Encode(_photoBytes!),
     );
     if (!mounted) {
       return;
     }
-    context.pop();
+    switch (result) {
+      case Success<ChildSummary>():
+        context.pop();
+      case Failure<ChildSummary>(:final String message):
+        setState(() {
+          _isSubmitting = false;
+          _childCodeErrorText = _mapAddChildFailure(message);
+        });
+        if (_childCodeErrorText == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
+    }
+  }
+
+  String? _mapAddChildFailure(String message) {
+    if (message == ChildFailureMessages.invalidCode) {
+      return '유효하지 않은 자녀코드입니다';
+    }
+    if (message == ChildFailureMessages.duplicateChild) {
+      return '이미 등록된 자녀예요';
+    }
+    return null;
   }
 
   @override
@@ -338,15 +350,12 @@ class _ChildAddTopBar extends StatelessWidget {
             child: Text(
               '자녀등록',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: 0,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
               ),
             ),
           ),
           Positioned(
-            left: _ChildAddMetrics.horizontalPadding,
+            left: 20,
             top: 14,
             child: Material(
               color: Colors.transparent,
@@ -505,12 +514,7 @@ class _PhotoPickerState extends State<_PhotoPicker> {
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 120),
                 curve: Curves.easeOut,
-                style: AppTypography.bodyMedium.copyWith(
-                  fontSize: 16,
-                  height: 1.5,
-                  letterSpacing: 0,
-                  color: labelColor,
-                ),
+                style: AppTypography.bodyMedium.copyWith(color: labelColor),
                 child: const Text('사진등록'),
               ),
             ],
@@ -555,9 +559,6 @@ class _ChildAddTextField extends StatelessWidget {
             Text(
               label,
               style: AppTypography.bodyMedium.copyWith(
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0,
                 color: AppColors.gray600,
               ),
             ),
@@ -572,21 +573,13 @@ class _ChildAddTextField extends StatelessWidget {
             onChanged: onChanged,
             cursorColor: AppColors.gray200,
             textAlignVertical: TextAlignVertical.center,
-            style: AppTypography.bodyMedium.copyWith(
-              fontSize: 16,
-              height: 1.5,
-              letterSpacing: 0,
-              color: const Color(0xFF050505),
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.inkBlack),
             decoration: InputDecoration(
               isDense: true,
               filled: true,
               fillColor: AppColors.gray100,
               hintText: hintText,
               hintStyle: AppTypography.bodyMedium.copyWith(
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0,
                 color: AppColors.gray300,
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -637,9 +630,6 @@ class _ChildAddTextField extends StatelessWidget {
                   child: Text(
                     errorText!,
                     style: AppTypography.captionMedium.copyWith(
-                      fontSize: 12,
-                      height: 1.334,
-                      letterSpacing: 0,
                       color: AppColors.destructive,
                     ),
                   ),
@@ -664,12 +654,7 @@ class _BirthYearField extends StatelessWidget {
       children: [
         Text(
           '출생연도',
-          style: AppTypography.bodyMedium.copyWith(
-            fontSize: 16,
-            height: 1.5,
-            letterSpacing: 0,
-            color: AppColors.gray600,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.gray600),
         ),
         const SizedBox(height: _ChildAddMetrics.labelToFieldGap),
         GestureDetector(
@@ -690,12 +675,9 @@ class _BirthYearField extends StatelessWidget {
             child: Text(
               selectedYear?.toString() ?? '자녀가 태어난 연도를 입력해주세요',
               style: AppTypography.bodyMedium.copyWith(
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0,
                 color: selectedYear == null
                     ? AppColors.gray300
-                    : const Color(0xFF050505),
+                    : AppColors.inkBlack,
               ),
             ),
           ),
@@ -730,7 +712,7 @@ class _ChildCodeTooltip extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: AppColors.gray600,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTokens.errorBannerRadius),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -741,9 +723,6 @@ class _ChildCodeTooltip extends StatelessWidget {
                       child: Text(
                         '자녀코드는 어디에서 확인하나요?',
                         style: AppTypography.captionBold.copyWith(
-                          fontSize: 12,
-                          height: 1.334,
-                          letterSpacing: 0.3024,
                           color: AppColors.white,
                         ),
                       ),
@@ -763,10 +742,7 @@ class _ChildCodeTooltip extends StatelessWidget {
                 Text(
                   '자녀 회원가입 이후,\n자녀앱의 마이페이지 창에서 확인가능합니다.',
                   style: AppTypography.captionRegular.copyWith(
-                    fontSize: 12,
-                    height: 1.334,
-                    letterSpacing: 0.3024,
-                    color: const Color(0xFFEDEEF1),
+                    color: AppColors.gray150,
                   ),
                 ),
                 if (ChildConnectionStore.usesLocalTestValidator) ...[
@@ -774,9 +750,6 @@ class _ChildCodeTooltip extends StatelessWidget {
                   Text(
                     '테스트 코드: ${ChildConnectionStore.testChildCodes.join(', ')}',
                     style: AppTypography.captionBold.copyWith(
-                      fontSize: 12,
-                      height: 1.334,
-                      letterSpacing: 0.3024,
                       color: AppColors.white,
                     ),
                   ),
@@ -849,10 +822,7 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
               child: Text(
                 '출생연도',
                 style: AppTypography.headlineMedium.copyWith(
-                  fontSize: 18,
-                  height: 1.445,
-                  letterSpacing: 0,
-                  color: const Color(0xFF050505),
+                  color: AppColors.inkBlack,
                 ),
               ),
             ),
@@ -901,7 +871,7 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
                             height: 1.445,
                             letterSpacing: 0,
                             color: index == _selectedIndex
-                                ? const Color(0xFF050505)
+                                ? AppColors.inkBlack
                                 : AppColors.gray200,
                           ),
                         ),
@@ -920,7 +890,7 @@ class _BirthYearBottomSheetState extends State<_BirthYearBottomSheet> {
                           fontSize: 24,
                           height: 1.445,
                           letterSpacing: 0,
-                          color: const Color(0xFF050505),
+                          color: AppColors.inkBlack,
                         ),
                       ),
                     ),
@@ -950,23 +920,20 @@ class _BottomSheetConfirmButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primary,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.primary.withValues(alpha: 0.12),
         highlightColor: AppColors.primary.withValues(alpha: 0.18),
         splashColor: AppColors.primary.withValues(alpha: 0.20),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: SizedBox(
           height: _ChildAddMetrics.buttonHeight,
           child: Center(
             child: Text(
               '확인',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: 0,
                 color: AppColors.white,
               ),
             ),
@@ -1014,14 +981,14 @@ class _RegisterButton extends StatelessWidget {
 
     return Material(
       color: backgroundColor,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: enabled ? onTap : () => _handleDisabledTap(context),
         hoverColor: feedbackColor.withValues(alpha: enabled ? 0.12 : 0.06),
         highlightColor: feedbackColor.withValues(alpha: enabled ? 0.18 : 0.08),
         splashColor: feedbackColor.withValues(alpha: enabled ? 0.20 : 0.10),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
         child: SizedBox(
           height: _ChildAddMetrics.buttonHeight,
           width: double.infinity,
@@ -1029,9 +996,6 @@ class _RegisterButton extends StatelessWidget {
             child: Text(
               '등록',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 18,
-                height: 1.445,
-                letterSpacing: 0,
                 color: enabled ? AppColors.white : AppColors.gray300,
               ),
             ),

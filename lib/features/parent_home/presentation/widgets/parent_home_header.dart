@@ -23,31 +23,24 @@ class ParentHomeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onMyTap,
-              hoverColor: AppColors.gray800.withValues(alpha: 0.06),
-              highlightColor: AppColors.gray800.withValues(alpha: 0.10),
-              splashColor: AppColors.gray800.withValues(alpha: 0.12),
-              child: Container(
-                width: 33,
-                height: 24,
-                alignment: Alignment.center,
+          GestureDetector(
+            onTap: onMyTap,
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              width: 36,
+              height: 26,
+              child: DecoratedBox(
                 decoration: const BoxDecoration(
                   border: Border(
-                    left: BorderSide(color: AppColors.gray800, width: 1.8),
+                    left: BorderSide(color: AppColors.gray800, width: 2),
                   ),
                 ),
-                child: Text(
-                  'my',
-                  style: AppTypography.labelBold.copyWith(
-                    fontSize: 12.6,
-                    height: 1.429,
-                    letterSpacing: 0.18,
-                    color: AppColors.gray800,
+                child: Center(
+                  child: Text(
+                    'my',
+                    style: AppTypography.labelRegular.copyWith(
+                      color: AppColors.gray800,
+                    ),
                   ),
                 ),
               ),
@@ -98,6 +91,7 @@ class _NotificationIcon extends StatelessWidget {
             top: 4,
             right: 4,
             child: Container(
+              key: const Key('parent-home-notification-unread-dot'),
               width: 8,
               height: 8,
               decoration: BoxDecoration(

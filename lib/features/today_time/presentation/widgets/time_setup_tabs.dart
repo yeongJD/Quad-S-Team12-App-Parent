@@ -42,8 +42,6 @@ class TimeSetupTabs extends StatelessWidget {
               child: Text(
                 tab.value.label,
                 style: AppTypography.labelMedium.copyWith(
-                  fontSize: 14,
-                  letterSpacing: 0,
                   color: selected ? AppColors.white : AppColors.gray500,
                 ),
               ),
