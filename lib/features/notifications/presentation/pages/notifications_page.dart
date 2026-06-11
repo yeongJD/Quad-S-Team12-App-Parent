@@ -636,9 +636,6 @@ class _PastNotificationsToggle extends StatelessWidget {
               Text(
                 '지난알림 확인하기',
                 style: AppTypography.labelSemiBold.copyWith(
-                  fontSize: 13,
-                  height: 1.429,
-                  letterSpacing: 0,
                   color: AppColors.gray600,
                   decoration: TextDecoration.none,
                 ),
@@ -668,19 +665,19 @@ class _DeleteNotificationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 294.897,
-        height: 189.705,
+        width: 295,
+        height: 190,
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTokens.dialogRadius),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 33, 18, 27),
           child: Column(
             children: [
               Container(
-                width: 28.77,
-                height: 28.77,
+                width: 29,
+                height: 29,
                 decoration: const BoxDecoration(
                   color: AppColors.destructive,
                   shape: BoxShape.circle,
@@ -722,10 +719,7 @@ class _DeleteNotificationDialog extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 '알림을 삭제하시겠습니까?',
-                style: AppTypography.labelBold.copyWith(
-                  fontSize: 14.39,
-                  height: 1.5,
-                  letterSpacing: 0.082,
+                style: AppTypography.labelSemiBold.copyWith(
                   color: AppColors.gray800,
                   decoration: TextDecoration.none,
                 ),
@@ -739,7 +733,7 @@ class _DeleteNotificationDialog extends StatelessWidget {
                     filled: false,
                     onTap: context.pop,
                   ),
-                  const SizedBox(width: 13.486),
+                  const SizedBox(width: 14),
                   _DeleteDialogButton(
                     label: '확인',
                     filled: true,
@@ -774,22 +768,17 @@ class _DeleteDialogButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 107.889,
-        height: 37.761,
+        width: 108,
+        height: 38,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: filled ? AppColors.primary : const Color(0xFFEBF5FE),
-          borderRadius: BorderRadius.circular(8),
-          border: filled
-              ? null
-              : Border.all(color: AppColors.primary, width: 0.899),
+          color: filled ? AppColors.primary : AppColors.primaryLight,
+          borderRadius: BorderRadius.circular(AppTokens.buttonRadius),
+          border: filled ? null : Border.all(color: AppColors.primary),
         ),
         child: Text(
           label,
-          style: AppTypography.labelMedium.copyWith(
-            fontSize: 12.59,
-            height: 1.429,
-            letterSpacing: 0.1826,
+          style: AppTypography.captionMedium.copyWith(
             color: filled ? AppColors.white : AppColors.primary,
             decoration: TextDecoration.none,
           ),
@@ -807,7 +796,7 @@ class _NotificationsTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52,
+      height: AppTokens.topBarHeight,
       child: Stack(
         children: [
           Positioned(
@@ -841,10 +830,7 @@ class _NotificationsTopBar extends StatelessWidget {
             child: Text(
               '알림',
               style: AppTypography.headlineMedium.copyWith(
-                fontSize: 16.18,
-                height: 1.445,
-                letterSpacing: -0.0032,
-                color: const Color(0xFF050505),
+                color: AppColors.inkBlack,
                 decoration: TextDecoration.none,
               ),
             ),
