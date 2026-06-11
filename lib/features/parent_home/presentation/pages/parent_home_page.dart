@@ -526,13 +526,8 @@ class _ParentHomePageState extends State<ParentHomePage>
 
   @override
   Widget build(BuildContext context) {
-    final bool hasFilledContent =
-        _data.hasChildren ||
-        _data.hasConfiguredTime ||
-        _data.hasConfiguredMissions;
-
     return Scaffold(
-      backgroundColor: hasFilledContent ? AppColors.gray100 : AppColors.gray050,
+      backgroundColor: AppColors.gray100,
       body: Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: _clearDeleteChildStateIfNeeded,

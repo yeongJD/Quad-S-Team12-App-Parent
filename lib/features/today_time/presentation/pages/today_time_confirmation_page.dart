@@ -245,7 +245,7 @@ class _TodayTimeConfirmationPageState extends State<TodayTimeConfirmationPage> {
     final TimeSelection? monthlyTotal = data.monthlyTotal;
 
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.gray100,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,

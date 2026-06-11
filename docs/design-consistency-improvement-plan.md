@@ -73,8 +73,8 @@
 - mobile content width: `327`
 - app background:
   - main/home surface: `gray100(#F5F7FA)` 우선
-  - sub/detail page background: 부모/자녀 모두 `gray100(#F5F7FA)` 기준으로 맞추는 것을 우선 검토
-  - completion/intro처럼 의도적으로 비어 보이는 화면은 `gray050(#FAFBFC)` 예외 가능
+  - sub/detail page background: 부모/자녀 모두 `gray100(#F5F7FA)` 기준
+  - onboarding/landing처럼 제품 진입 전 화면은 `gray050(#FAFBFC)` 예외 가능
   - card/input/tile surface는 `white` 또는 `gray050`를 용도별로 사용
 - sub page topbar: status bar 이후 `52` 높이
 - back icon: 52px topbar 내부에서 y `14` 기준
@@ -193,12 +193,10 @@
 - 헤더는 자녀 앱 구현을 그대로 쓰기 전에 SafeArea 문제를 먼저 해결해야 한다.
   - 자녀 앱 audit에 따르면 `BridgeAppBar`는 inline 사용과 `Scaffold.appBar` 사용이 섞이며, notched device에서 위치가 달라질 수 있다.
   - 부모 앱의 일부 inline topbar는 실제 위치가 더 안정적으로 보이는 경우가 있다.
-- 배경색은 자녀 앱 세부화면이 더 흰색에 가깝게 보이는 원인이다.
-  - 자녀 앱 `AppColors.background`는 `gray050(#FAFBFC)`이다.
-  - 자녀 앱의 미션 상세/미션수행/시간설정/리포트 화면은 주로 `AppColors.background`를 사용한다.
-  - 부모 앱의 미션 등록/미션 확인/미션 목록과 자녀 홈/알림/마이페이지는 `gray100(#F5F7FA)`를 사용한다.
-  - 그래서 부모 앱 미션 화면과 자녀 앱 미션 세부화면을 나란히 보면 자녀 앱이 거의 흰색 배경처럼 보인다.
-  - 최종 기준은 sub/detail page를 `gray100`, 카드/입력/사진타일 surface를 `white` 또는 `gray050`로 분리하는 방향이 더 자연스럽다.
+- 배경색은 세부화면이 홈 화면과 같은 `gray100` 위에 놓이도록 맞춘다.
+  - 부모/자녀 앱의 `AppColors.background`는 `gray100(#F5F7FA)` 기준이다.
+  - 미션 상세/미션수행/시간설정/마이페이지 계열 화면은 홈과 같은 `gray100`를 사용한다.
+  - 카드/입력/사진타일 surface는 `white` 또는 `gray050`를 유지해 깊이감을 분리한다.
 
 ## 화면별 개선 계획
 
@@ -407,7 +405,7 @@ Figma에서 확인한 미션 정보 화면의 주요 수치는 다음과 같다.
 
 | 요소 | Figma 기준 | 현재 코드 관찰 | 판단 |
 | --- | --- | --- | --- |
-| 화면 배경 | `white`로 추출되지만 앱 전체 톤에서는 detail page 배경을 별도 판정 필요 | 부모 미션 등록/확인은 `gray100`, 자녀 미션 정보/수행은 `gray050` | 부모/자녀 세부화면 배경이 다르게 보이는 원인이다. 앱 톤 기준으로 `gray100` 통일을 우선 검토한다. |
+| 화면 배경 | `white`로 추출되지만 앱 전체 톤에서는 detail page 배경을 별도 판정 필요 | 부모/자녀 모두 홈과 같은 `gray100` 기준으로 정리 | 카드/입력/사진타일 surface만 `white` 또는 `gray050`로 분리한다. |
 | content column | left `24`, width `327` | 부모/자녀 모두 대체로 page padding `24` | 좌우 padding 값 자체는 큰 문제가 아니다. 체감 차이는 chip width/spacing과 배경색에서 더 크게 발생한다. |
 | topbar | status bar `44` 이후 topbar height `52`, title `18 Medium`, back icon x `24` y `14` | 부모는 로컬 topbar, 자녀는 `BridgeAppBar` 계열 | title font/height/back icon touch area를 같은 규칙으로 고정해야 한다. |
 | tab | width `190`, label `16`, active SemiBold, inactive Medium, underline `1.4` | 자녀는 16pt에 가깝고, 부모 확인 탭은 14pt 계열 | 부모 확인 탭 typography를 자녀/Figma 기준으로 올리는 것이 우선이다. |
@@ -485,9 +483,8 @@ Figma에서 확인한 미션 정보 화면의 주요 수치는 다음과 같다.
 - 자녀 수행 화면의 사진 업로드/프리뷰/로딩 overlay는 현재 방향이 맞다.
   - 추가로 `ModalBarrier`의 `Color(0x66000000)`는 별도 token 또는 `AppColors.scrim` 계열로 맞출 수 있다.
   - `CameraCTA`, `BridgePhotoTile`, `BridgeAddPhotoTile`은 작은 radius token 정리가 진행되어 있어 큰 구조 변경은 우선순위가 낮다.
-- 자녀 미션 상세/수행 화면의 `Scaffold.backgroundColor`는 `AppColors.background`라서 실제로는 `gray050(#FAFBFC)`이다.
-  - 순백색은 아니지만 부모 미션 화면의 `gray100(#F5F7FA)`보다 밝아 거의 흰색처럼 보인다.
-  - 미션 세부화면을 부모 앱과 맞추려면 `mission_info_page.dart`의 info/cameraPrompt/photoPreview/submitted Scaffold 배경을 `gray100` 계열로 맞추는 것이 우선 후보이다.
+- 자녀 미션 상세/수행 화면의 `Scaffold.backgroundColor`는 `AppColors.background`를 사용한다.
+  - `AppColors.background`를 홈과 같은 `gray100(#F5F7FA)`로 맞추면 미션/시간설정 세부화면의 배경 톤이 함께 정리된다.
   - 단, 카드/사진 타일 내부 surface까지 같이 회색으로 바꾸면 깊이감이 사라지므로 page background만 조정한다.
 
 ### 미션 화면 개선 우선순위

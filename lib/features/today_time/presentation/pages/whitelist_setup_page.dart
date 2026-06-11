@@ -244,7 +244,7 @@ class _WhitelistSetupPageState extends State<WhitelistSetupPage> {
     final List<WhitelistAppCategory> categories = _filteredCategories;
 
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.gray100,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

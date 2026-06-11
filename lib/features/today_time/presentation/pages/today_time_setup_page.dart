@@ -190,7 +190,7 @@ class _TodayTimeSetupPageState extends State<TodayTimeSetupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.gray100,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

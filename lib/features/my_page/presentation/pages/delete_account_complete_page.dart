@@ -89,7 +89,7 @@ class _DeleteAccountCompletePageState extends State<DeleteAccountCompletePage> {
     };
 
     return Scaffold(
-      backgroundColor: AppColors.gray050,
+      backgroundColor: AppColors.gray100,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
