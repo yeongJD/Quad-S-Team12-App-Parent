@@ -270,8 +270,8 @@ class _NotificationStyle {
         );
       case NotificationType.missionCompleted:
         return const _NotificationStyle(
-          accentColor: Color(0xFFFFCC33),
-          backgroundColor: Color(0xFFFFCC33),
+          accentColor: AppColors.secondaryYellow,
+          backgroundColor: AppColors.secondaryYellow,
           icon: Icons.check_rounded,
         );
       case NotificationType.missionConfirmationRequested:

@@ -22,6 +22,7 @@ abstract final class AppColors {
   static const Color cautionary = Color(0xFFFF9200);
   static const Color destructive = Color(0xFFFF4242);
   static const Color destructiveSubtle = Color(0xFFFFD3D3);
+  static const Color secondaryYellow = Color(0xFFFFCC33);
 
   static const Color labelStrong = black;
   static const Color labelNormal = Color(0xFF171719);
