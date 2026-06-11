@@ -36,6 +36,7 @@ import 'package:bridge_p/features/today_time/presentation/pages/today_time_compl
 import 'package:bridge_p/features/today_time/presentation/pages/today_time_setup_page.dart';
 import 'package:bridge_p/features/today_time/presentation/pages/whitelist_setup_page.dart';
 import 'package:bridge_p/features/today_time/presentation/routes/today_time_routes.dart';
+import 'package:bridge_p/features/today_time/presentation/widgets/daily_time_rule_sheet.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -720,6 +721,30 @@ void main() {
     expect(find.text('기타'), findsOneWidget);
     expect(find.text('루틴'), findsNothing);
     expect(find.text('심부름'), findsNothing);
+  });
+
+  testWidgets('mission reward picker starts at zero time', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TodayMissionEditPage(parentId: 'parent-1', childrenId: '22'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder timeSelector = find.byType(TimeSelectorPart).first;
+    await tester.ensureVisible(timeSelector);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.ancestor(of: timeSelector, matching: find.byType(GestureDetector)),
+    );
+    await tester.pumpAndSettle();
+
+    final Finder pickers = find.byType(PickerColumn);
+    expect(pickers, findsNWidgets(2));
+    expect(tester.widget<PickerColumn>(pickers.at(0)).selectedIndex, 0);
+    expect(tester.widget<PickerColumn>(pickers.at(1)).selectedIndex, 0);
   });
 
   testWidgets('home screen renders Bridge entry actions', (

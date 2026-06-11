@@ -723,9 +723,7 @@ class _MissionRewardTimeSheetState extends State<_MissionRewardTimeSheet> {
   @override
   void initState() {
     super.initState();
-    final TimeSelection initialTime = widget.initialTime.isEmpty
-        ? const TimeSelection(hour: 1, minute: 5)
-        : widget.initialTime;
+    final TimeSelection initialTime = widget.initialTime;
     _selectedHourIndex = _initialIndexFor(_hours, initialTime.hour);
     _selectedMinuteIndex = _initialIndexFor(_minutes, initialTime.minute);
     _hourController = FixedExtentScrollController(

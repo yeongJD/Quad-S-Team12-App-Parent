@@ -363,8 +363,8 @@ class _MissionCheckTab extends StatelessWidget {
             label,
             style:
                 (selected
-                        ? AppTypography.labelSemiBold
-                        : AppTypography.labelMedium)
+                        ? AppTypography.bodySemiBold
+                        : AppTypography.bodyMedium)
                     .copyWith(
                       color: selected ? AppColors.black : AppColors.gray400,
                     ),
