@@ -124,7 +124,7 @@ class _TimeSummaryContent extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    '월간 남은시간',
+                    '현재 남은 보너스 시간',
                     style: AppTypography.captionMedium.copyWith(
                       color: _TimeRingPainter.monthlyRemainingColor,
                     ),

@@ -1318,7 +1318,7 @@ void main() {
     expect(find.text('01:00'), findsNothing);
   });
 
-  testWidgets('parent home renders monthly remaining minutes as bonus time', (
+  testWidgets('parent home renders reward pool minutes as bonus time', (
     WidgetTester tester,
   ) async {
     const String parentId = 'extended-time-parent@example.com';
@@ -1370,7 +1370,7 @@ void main() {
     expect(find.text('00:15'), findsNothing);
   });
 
-  testWidgets('parent home pull refresh reloads monthly remaining bonus time', (
+  testWidgets('parent home pull refresh reloads reward pool bonus time', (
     WidgetTester tester,
   ) async {
     const String parentId = 'refresh-bonus-parent@example.com';

@@ -227,6 +227,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
         : const <String, dynamic>{};
     final int baseMinutes = _intValue(todaySchedule['baseMinutes']);
     final int extendedMinutes = _intValue(todaySchedule['extendedMinutes']);
+    final int rewardPoolMinutes = _intValue(json['rewardPoolMinutes']);
     return ChildTimeSummary(
       parentPolicyExists: json['parentPolicyExists'] == true,
       childPlanExists: json['childPlanExists'] == true,
@@ -239,13 +240,8 @@ class ApiTimePlanRepository implements TimePlanRepository {
         todaySchedule['totalAvailableMinutes'],
         fallback: baseMinutes + extendedMinutes,
       ),
-      rewardPoolMinutes: _intValue(json['rewardPoolMinutes']),
-      monthlyRemainingMinutes: _intValue(
-        json['totalAvailableTime'],
-        fallback:
-            _intValue(json['basePolicyMinutes']) +
-            _intValue(json['rewardPoolMinutes']),
-      ),
+      rewardPoolMinutes: rewardPoolMinutes,
+      monthlyRemainingMinutes: rewardPoolMinutes,
     );
   }
 
@@ -290,7 +286,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 0,
-        monthlyRemainingMinutes: monthlyTotal,
+        monthlyRemainingMinutes: 0,
       );
     }
 
@@ -312,7 +308,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
         extendedMinutes: 0,
         totalAvailableMinutes: 0,
         rewardPoolMinutes: 0,
-        monthlyRemainingMinutes: monthlyTotal,
+        monthlyRemainingMinutes: 0,
       );
     }
 
@@ -326,7 +322,7 @@ class ApiTimePlanRepository implements TimePlanRepository {
       extendedMinutes: 0,
       totalAvailableMinutes: baseMinutes,
       rewardPoolMinutes: 0,
-      monthlyRemainingMinutes: monthlyTotal,
+      monthlyRemainingMinutes: 0,
     );
   }
 
