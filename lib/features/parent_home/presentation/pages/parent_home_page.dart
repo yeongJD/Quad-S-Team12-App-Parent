@@ -281,9 +281,9 @@ class _ParentHomePageState extends State<ParentHomePage>
 
     return TimeSummary(
       basicTime: _formatTime(summary.totalAvailableMinutes),
-      bonusTime: _formatTime(summary.monthlyRemainingMinutes),
+      bonusTime: _formatTime(summary.rewardPoolMinutes),
       basicProgress: 1.0,
-      bonusProgress: summary.monthlyRemainingMinutes > 0 ? 1.0 : 0.0,
+      bonusProgress: summary.rewardPoolMinutes > 0 ? 1.0 : 0.0,
     );
   }
 
